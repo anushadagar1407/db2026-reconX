@@ -2527,9 +2527,9 @@ psql -h localhost -p 5432 -U reconx -d reconx_dev   # password: reconx
 
 Before standup tomorrow, all of the following should be green:
 
-- [ ] GitHub repo created and private, branch protection on both `main` and `develop`, CODEOWNERS in place (TICKET-ADV001).
-- [ ] C4 Context, Container, and Component diagrams committed under `docs/architecture/` or `db/diagrams/` (TICKET-ADV002–1.4).
-- [ ] ER diagram at `db/erd.md` covering all 8 entities with FK arrows and the partition column called out (TICKET-ADV006).
+- [*] GitHub repo created and private, branch protection on both `main` and `develop`, CODEOWNERS in place (TICKET-ADV001).
+- [*] C4 Context, Container, and Component diagrams committed under `docs/architecture/` or `db/diagrams/` (TICKET-ADV002–1.4).
+- [*] ER diagram at `db/erd.md` covering all 8 entities with FK arrows and the partition column called out (TICKET-ADV006).
 - [ ] Liquibase migrations apply cleanly on a fresh DB; `\d+ trades` shows the partition key and child partitions; `\d+ mv_daily_recon_summary` shows the materialised view (TICKET-ADV007, 1.8, 1.12).
 - [ ] JSONB `metadata` column on `instruments` with a GIN index using `jsonb_path_ops` (TICKET-ADV009).
 - [ ] VWAP window-function query and recursive-CTE lifecycle query committed to `db/queries.sql` (TICKET-ADV010, 1.11).
@@ -2538,7 +2538,7 @@ Before standup tomorrow, all of the following should be green:
 - [ ] At least 3 ADRs under `docs/adr/` with the prompt template committed at `docs/adr/README.md` (TICKET-ADV015).
 - [ ] Project board has epics + one card per Day-1 exercise; at least one card has moved through all columns (TICKET-ADV016).
 - [ ] Seed data loaded — counts of 10 / 50 / 500 and roughly even spread across the four monthly partitions (TICKET-ADV017).
-- [ ] At least one PR has been opened, reviewed by two team-mates, and merged to `develop`.
+- [*] At least one PR has been opened, reviewed by two team-mates, and merged to `develop`.
 
 If any of these are red at the end of the day, raise it in standup tomorrow
 before you start on Day 2 — schema drift between today's deliverables and
