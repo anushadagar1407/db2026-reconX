@@ -1,0 +1,6 @@
+# .github/CODEOWNERS
+*               @anushadagar1407
+backend/        @anushadagar1407 @NJBodam
+frontend/       @anushadagar1407 @TB-DevAcc
+db/             @anushadagar1407 @gb-dev04
+.github/        @anushadagar1407
