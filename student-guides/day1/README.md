@@ -2530,7 +2530,7 @@ Before standup tomorrow, all of the following should be green:
 - [*] GitHub repo created and private, branch protection on both `main` and `develop`, CODEOWNERS in place (TICKET-ADV001).
 - [*] C4 Context, Container, and Component diagrams committed under `docs/architecture/` or `db/diagrams/` (TICKET-ADV002–1.4).
 - [*] ER diagram at `db/erd.md` covering all 8 entities with FK arrows and the partition column called out (TICKET-ADV006).
-- [ ] Liquibase migrations apply cleanly on a fresh DB; `\d+ trades` shows the partition key and child partitions; `\d+ mv_daily_recon_summary` shows the materialised view (TICKET-ADV007, 1.8, 1.12).
+- [*] Liquibase migrations apply cleanly on a fresh DB; `\d+ trades` shows the partition key and child partitions; `\d+ mv_daily_recon_summary` shows the materialised view (TICKET-ADV007, 1.8, 1.12).
 - [ ] JSONB `metadata` column on `instruments` with a GIN index using `jsonb_path_ops` (TICKET-ADV009).
 - [ ] VWAP window-function query and recursive-CTE lifecycle query committed to `db/queries.sql` (TICKET-ADV010, 1.11).
 - [ ] At least one rollback tag (`release-1.0` or equivalent) is set; `liquibase:rollbackSQL` emits sensible reverse-DDL (TICKET-ADV013).
