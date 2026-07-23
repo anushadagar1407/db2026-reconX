@@ -1,0 +1,62 @@
+
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="004-partitioning-trades" author="NJBodam">
+        <preConditions>
+            <dbms type="postgresql"/>
+        </preConditions>
+
+        <!--Trades Table -->
+        <sql>
+            CREATE TABLE IF NOT EXISTS trades (
+            bigint id PK
+            varchar trade_ref UK
+            bigint instrument_id FK
+            bigint counterparty_id FK
+            varchar asset_class
+            varchar side
+            numeric quantity
+            numeric price
+            date trade_date "PARTITION KEY (ADV007)"
+            varchar status
+            timestamp deleted_at "ADV067 soft delete"
+            timestamp created_at
+            timestamp modified_at
+            )
+            PARTITION BY RANGE (trade_date);
+        </sql>
+
+        <!--Trades monthly partitions -->
+        <sql>
+
+            CREATE TABLE IF NOT EXISTS trades_2026_04
+                PARTITION OF trades
+                FOR VALUES FROM ('2026-04-01') TO (2026-05-01)
+
+            CREATE TABLE IF NOT EXISTS trades_2026_04
+                PARTITION OF trades
+                FOR VALUES FROM ('2026-05-01') TO (2026-06-01)
+
+            CREATE TABLE IF NOT EXISTS trades_2026_04
+                PARTITION OF trades
+                FOR VALUES FROM ('2026-06-01') TO (2026-07-01)
+
+            CREATE TABLE IF NOT EXISTS trades_2026_04
+                PARTITION OF trades
+                FOR VALUES FROM ('2026-07-01') TO (2026-08-01)
+        </sql>
+
+        <!--default partition -->
+        <sql>
+            CREATE TABLE IF NOT EXISTS trades_default
+                PARTITION OF trades
+                DEFAULT;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

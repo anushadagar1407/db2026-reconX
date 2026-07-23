@@ -23,15 +23,69 @@
          taught in the trainer guide Day-1 Sprint 0B. In this starter we
          create a single partition for the rolling-current-month so the
          seed data has somewhere to land. -->
-    <changeSet id="004-partition-current-month" author="trainer">
+    <changeSet id="004-partition-parent-table" author="trainer">
         <preConditions onFail="MARK_RAN">
             <dbms type="postgresql"/>
         </preConditions>
         <comment>Placeholder: students rebuild this in ADV007. Trainer copy
                  ships a no-op so dev/uat boot cleanly.</comment>
-        <sql>SELECT 1;</sql>
+        <!--Trades Table -->
+        <sql>
+            CREATE TABLE trades (
+            id BIGINT PRIMARY KEY,
+            trade_ref VARCHAR(255) UNIQUE NOT NULL,
+            instrument_id BIGINT NOT NULL,
+            counterparty_id BIGINT NOT NULL,
+            asset_class VARCHAR(100),
+            side VARCHAR(10),
+            quantity NUMERIC(18,2),
+            price NUMERIC(18,4),
+            trade_date DATE NOT NULL,
+            status VARCHAR(50),
+            deleted_at TIMESTAMP NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT uk_trades_trade_ref
+                UNIQUE (trade_ref, trade_date),
+            CONSTRAINT fk_trades_instrument
+                FOREIGN KEY (instrument_id)
+                REFERENCES instruments(id),
+            CONSTRAINT fk_trades_counterparty
+                FOREIGN KEY (counterparty_id)
+                REFERENCES counterparties(id)
+        )
+        PARTITION BY RANGE(trade_date);
+        </sql>
+    </changeSet>
+
+    <changeSet id="004-partition-child-tables" author="trainer">
+        <!--default partition -->
+        <!--Trades monthly partitions -->
+        <sql>
+            CREATE TABLE IF NOT EXISTS trades_2026_04
+            PARTITION OF trades
+            FOR VALUES FROM ('2026-04-01') TO (2026-05-01);
+
+            CREATE TABLE IF NOT EXISTS trades_2026_05
+            PARTITION OF trades
+            FOR VALUES FROM ('2026-05-01') TO (2026-06-01);
+
+            CREATE TABLE IF NOT EXISTS trades_2026_06
+            PARTITION OF trades
+            FOR VALUES FROM ('2026-06-01') TO (2026-07-01);
+
+            CREATE TABLE IF NOT EXISTS trades_2026_07
+            PARTITION OF trades
+            FOR VALUES FROM ('2026-07-01') TO (2026-08-01);
+
+            CREATE TABLE IF NOT EXISTS trades_default
+            PARTITION OF trades
+            DEFAULT;
+        </sql>
         <rollback>
-            <sql>SELECT 1;</sql>
+            <sql>
+                DROP TABLE IF EXISTS trades CASCADE;
+            </sql>
         </rollback>
     </changeSet>
 
