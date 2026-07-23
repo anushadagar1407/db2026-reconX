@@ -34,6 +34,10 @@
         <!--Trades monthly partitions -->
         <sql>
             CREATE TABLE IF NOT EXISTS trades_2026_04
+            PARTITION OF trades
+                FOR VALUES FROM ('2026-03-01') TO (2026-04-01)
+
+            CREATE TABLE IF NOT EXISTS trades_2026_04
                 PARTITION OF trades
                 FOR VALUES FROM ('2026-04-01') TO (2026-05-01)
 
