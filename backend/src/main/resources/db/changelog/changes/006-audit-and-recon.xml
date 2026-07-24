@@ -43,15 +43,16 @@
                 <constraints primaryKey="true"/>
             </column>
             <column name="trade_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="trade_date" type="DATE"><constraints nullable="false"/></column>
             <column name="discrepancy_type" type="VARCHAR(30)"><constraints nullable="false"/></column>
             <column name="status" type="VARCHAR(20)" defaultValue="OPEN"><constraints nullable="false"/></column>
             <column name="detected_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="resolved_at" type="TIMESTAMP"/>
             <column name="resolution_note" type="VARCHAR(500)"/>
         </createTable>
-        <addForeignKeyConstraint baseTableName="recon_breaks" baseColumnNames="trade_id"
+        <addForeignKeyConstraint baseTableName="recon_breaks" baseColumnNames="trade_id, trade_date"
                                  constraintName="fk_recon_breaks_trade"
-                                 referencedTableName="trades" referencedColumnNames="id"/>
+                                 referencedTableName="trades" referencedColumnNames="id, trade_date"/>
         <rollback>
             <dropTable tableName="recon_breaks"/>
         </rollback>

@@ -31,9 +31,9 @@
                  ships a no-op so dev/uat boot cleanly.</comment>
         <!--Trades Table -->
         <sql>
-            CREATE TABLE trades (
-            id BIGINT PRIMARY KEY,
-            trade_ref VARCHAR(255) UNIQUE NOT NULL,
+            CREATE TABLE IF NOT EXISTS trades (
+            id BIGINT NOT NULL,
+            trade_ref VARCHAR(255) NOT NULL,
             instrument_id BIGINT NOT NULL,
             counterparty_id BIGINT NOT NULL,
             asset_class VARCHAR(100),
@@ -45,6 +45,8 @@
             deleted_at TIMESTAMP NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT pk_trades_id
+                PRIMARY KEY (id, trade_date),
             CONSTRAINT uk_trades_trade_ref
                 UNIQUE (trade_ref, trade_date),
             CONSTRAINT fk_trades_instrument
@@ -64,19 +66,19 @@
         <sql>
             CREATE TABLE IF NOT EXISTS trades_2026_04
             PARTITION OF trades
-            FOR VALUES FROM ('2026-04-01') TO (2026-05-01);
+            FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
 
             CREATE TABLE IF NOT EXISTS trades_2026_05
             PARTITION OF trades
-            FOR VALUES FROM ('2026-05-01') TO (2026-06-01);
+            FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
 
             CREATE TABLE IF NOT EXISTS trades_2026_06
             PARTITION OF trades
-            FOR VALUES FROM ('2026-06-01') TO (2026-07-01);
+            FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
 
             CREATE TABLE IF NOT EXISTS trades_2026_07
             PARTITION OF trades
-            FOR VALUES FROM ('2026-07-01') TO (2026-08-01);
+            FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
 
             CREATE TABLE IF NOT EXISTS trades_default
             PARTITION OF trades
