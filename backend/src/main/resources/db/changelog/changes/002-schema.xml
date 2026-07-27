@@ -87,6 +87,26 @@
         </rollback>
     </changeSet>
 
+    <!-- ADV006 — settlements -->
+    <changeSet id="002-create-settlements" author="trainer">
+        <validCheckSum>9:a7c03fe299981de1312eb964c2bc8b11</validCheckSum>
+        <createTable tableName="settlements">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="trade_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="settlement_date" type="DATE"><constraints nullable="false"/></column>
+            <column name="amount" type="NUMERIC(18,4)"><constraints nullable="false"/></column>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="settlements" baseColumnNames="trade_id"
+                                 constraintName="fk_settlements_trade"
+                                 referencedTableName="trades" referencedColumnNames="id"/>
+        <rollback>
+            <dropTable tableName="settlements"/>
+        </rollback>
+    </changeSet>
+
     <!-- Release boundary after the initial schema is in place. -->
     <changeSet id="tag-release-1-0" author="trainer">
         <tagDatabase tag="release-1.0"/>
