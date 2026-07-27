@@ -32,13 +32,9 @@
                 COUNT(*) FILTER (WHERE status IN ('UNMATCHED','DISPUTED')) AS break_trades,
                 COALESCE(SUM(quantity * price), 0)                AS total_notional
             FROM trades t
-            LEFT JOIN recon_breaks rb
-                ON rb.trade_id = t.id
-                AND rb.trade_date = t.trade_date
             INNER JOIN counterparties c
                 ON c.id = t.counterparty_id
-
-            WHERE deleted_at IS NULL
+            WHERE t.deleted_at IS NULL
             GROUP BY t.trade_date, c.region, t.asset_class;
 
             CREATE UNIQUE INDEX uq_mv_daily_recon_summary_trade_date
@@ -47,6 +43,11 @@
         <rollback>
             <sql>DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;</sql>
         </rollback>
+    </changeSet>
+
+    <!-- Release boundary after the daily recon matview + unique index. -->
+    <changeSet id="tag-release-1-2" author="trainer">
+        <tagDatabase tag="release-1.2"/>
     </changeSet>
 
 </databaseChangeLog>

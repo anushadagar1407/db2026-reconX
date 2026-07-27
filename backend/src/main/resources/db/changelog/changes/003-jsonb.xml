@@ -30,4 +30,9 @@
         </rollback>
     </changeSet>
 
+    <!-- Release boundary after the JSONB metadata column + GIN index. -->
+    <changeSet id="tag-release-1-1" author="trainer">
+        <tagDatabase tag="release-1.1"/>
+    </changeSet>
+
 </databaseChangeLog>
