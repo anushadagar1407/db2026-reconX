@@ -1,7 +1,7 @@
 # TICKET-ADV016 — ReconX Day 1 Delivery Board Setup
 
 ## Why this file exists
-GitHub Project automation could not be completed from this environment due access restrictions (GitHub Projects API/CLI blocked). Manual project creation is required.
+GitHub Project automation could not be completed from this environment due to access restrictions (GitHub Projects API/CLI blocked). Manual project creation is required.
 
 ## Project definition
 - **Project name:** `ReconX Day 1 Delivery Board`
