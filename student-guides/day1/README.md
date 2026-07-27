@@ -34,7 +34,7 @@ still stuck. If you are still stuck after Hint 3, ask your trainer.
 
 ### Workshop 1A — GitHub & C4
 
-### TICKET-ADV001 — Create GitHub repo with branch protection
+### TICKET-ADV001 — Create GitHub repo with branch protection ✅
 
 **Goal:** Stand up a private team repository with enforced branch protection
 rules on `main` and `develop`, plus a CODEOWNERS file that routes PR reviews
@@ -159,7 +159,7 @@ git push origin throwaway-push-test:main   # MUST be rejected by GitHub
 
 ---
 
-### TICKET-ADV002 — Design C4 Context diagram
+### TICKET-ADV002 — Design C4 Context diagram ✅
 
 **Goal:** Produce a C4 Level 1 (Context) diagram for ReconX showing the
 system as a single box, the human actors who interact with it, and the
@@ -277,7 +277,7 @@ ls -l db/diagrams/c4-context.md
 
 ---
 
-### TICKET-ADV003 — Design C4 Container diagram
+### TICKET-ADV003 — Design C4 Container diagram ✅
 
 **Goal:** Produce a C4 Level 2 (Container) diagram showing each
 independently deployable unit inside the ReconX boundary, and how they
@@ -394,7 +394,7 @@ ls -l db/diagrams/c4-container.md
 
 ---
 
-### TICKET-ADV004 — Design C4 Component diagram
+### TICKET-ADV004 — Design C4 Component diagram ✅
 
 **Goal:** Produce a C4 Level 3 (Component) diagram for ONE container —
 usually the recon-service API — showing its major logical components and
@@ -537,7 +537,7 @@ ls -l db/diagrams/c4-component.md
 
 ### Workshop 1B — Schema, partitioning, materialised view, JSONB, window fns
 
-### TICKET-ADV006 — Design ER model (8 entities)
+### TICKET-ADV006 — Design ER model (8 entities) ✅
 
 **Goal:** Produce an entity-relationship diagram covering the eight core
 ReconX tables with primary keys, foreign keys, and key columns annotated.
