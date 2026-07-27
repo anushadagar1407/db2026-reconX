@@ -1,94 +1,124 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
- ============================================================================
- TICKET-ADV007 — Monthly partitioning of trades on Postgres
- WHAT:    Convert trades into a range-partitioned parent on trade_date and
-          create partitions for the current rolling 12 months.
- HOW:     Postgres-only via raw SQL. The trainer guide for Day 1 documents
-          the "rename, recreate as partitioned, copy data" pattern that
-          students must run if production data already exists. In this clean
-          starter we recreate trades directly since there's nothing to copy.
- WHY:     500-million-row trades table would kill EXPLAIN; monthly partitions
-          give predictable prune-by-date plans.
- OBSERVE: \d+ trades shows "Partitioned table" + 12 child partitions.
- ============================================================================
--->
+
 <databaseChangeLog
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
-    <!-- Demonstration only: the partitioning conversion is destructive and is
-         taught in the trainer guide Day-1 Sprint 0B. In this starter we
-         create a single partition for the rolling-current-month so the
-         seed data has somewhere to land. -->
-    <changeSet id="004-partition-parent-table" author="trainer">
-        <preConditions onFail="MARK_RAN">
+
+    <changeSet id="004-partition-parent-table" author="SaltyRain">
+
+        <preConditions onFail="HALT">
             <dbms type="postgresql"/>
         </preConditions>
-        <comment>Placeholder: students rebuild this in ADV007. Trainer copy
-                 ships a no-op so dev/uat boot cleanly.</comment>
-        <!--Trades Table -->
+
+        <comment>
+            Convert trades into a RANGE-partitioned table using trade_date as the partition key.
+        </comment>
+
         <sql>
-            CREATE TABLE IF NOT EXISTS trades (
-            id BIGINT NOT NULL,
-            trade_ref VARCHAR(255) NOT NULL,
-            instrument_id BIGINT NOT NULL,
-            counterparty_id BIGINT NOT NULL,
-            asset_class VARCHAR(100),
-            side VARCHAR(10),
-            quantity NUMERIC(18,2),
-            price NUMERIC(18,4),
-            trade_date DATE NOT NULL,
-            status VARCHAR(50),
-            deleted_at TIMESTAMP NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT pk_trades_id
-                PRIMARY KEY (id, trade_date),
-            CONSTRAINT uk_trades_trade_ref
-                UNIQUE (trade_ref, trade_date),
-            CONSTRAINT fk_trades_instrument
-                FOREIGN KEY (instrument_id)
-                REFERENCES instruments(id),
-            CONSTRAINT fk_trades_counterparty
-                FOREIGN KEY (counterparty_id)
-                REFERENCES counterparties(id)
-        )
-        PARTITION BY RANGE(trade_date);
+            ALTER TABLE trades RENAME TO trades_legacy;
         </sql>
+
+        <sql>
+            CREATE TABLE trades (
+                id BIGINT NOT NULL,
+                trade_ref VARCHAR(255) NOT NULL,
+                instrument_id BIGINT NOT NULL,
+                counterparty_id BIGINT NOT NULL,
+                asset_class VARCHAR(100),
+                side VARCHAR(10),
+                quantity NUMERIC(18,2),
+                price NUMERIC(18,4),
+                trade_date DATE NOT NULL,
+                status VARCHAR(50),
+                deleted_at TIMESTAMP NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                CONSTRAINT pk_trades_id
+                    PRIMARY KEY (id, trade_date),
+
+                CONSTRAINT uk_trades_trade_ref
+                    UNIQUE (trade_ref, trade_date),
+
+                CONSTRAINT fk_trades_instrument
+                    FOREIGN KEY (instrument_id)
+                    REFERENCES instruments(id),
+
+                CONSTRAINT fk_trades_counterparty
+                    FOREIGN KEY (counterparty_id)
+                    REFERENCES counterparties(id)
+            )
+            PARTITION BY RANGE (trade_date);
+        </sql>
+
     </changeSet>
 
-    <changeSet id="004-partition-child-tables" author="trainer">
-        <!--default partition -->
-        <!--Trades monthly partitions -->
+
+    <changeSet id="004-partition-child-tables" author="SaltyRain">
+
+        <comment>
+            Create monthly partitions for April-July 2026 and a default catch-all partition.
+        </comment>
+
         <sql>
-            CREATE TABLE IF NOT EXISTS trades_2026_04
+            CREATE TABLE trades_2026_04
             PARTITION OF trades
             FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
 
-            CREATE TABLE IF NOT EXISTS trades_2026_05
+            CREATE TABLE trades_2026_05
             PARTITION OF trades
             FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
 
-            CREATE TABLE IF NOT EXISTS trades_2026_06
+            CREATE TABLE trades_2026_06
             PARTITION OF trades
             FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
 
-            CREATE TABLE IF NOT EXISTS trades_2026_07
+            CREATE TABLE trades_2026_07
             PARTITION OF trades
             FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
 
-            CREATE TABLE IF NOT EXISTS trades_default
+            CREATE TABLE trades_default
             PARTITION OF trades
             DEFAULT;
         </sql>
+
+        <sql>
+            CREATE INDEX idx_trades_partitioned_status
+                ON trades(status);
+
+            CREATE INDEX idx_trades_partitioned_instrument_id
+                ON trades(instrument_id);
+
+            CREATE INDEX idx_trades_partitioned_counterparty_id
+                ON trades(counterparty_id);
+        </sql>
+
+    </changeSet>
+
+
+    <changeSet id="004-partition-data-migration" author="SaltyRain">
+
+        <comment>
+            Copy existing trade data into the new partitioned table.
+        </comment>
+
+        <sql>
+            INSERT INTO trades
+            SELECT *
+            FROM trades_legacy;
+        </sql>
+
         <rollback>
             <sql>
                 DROP TABLE IF EXISTS trades CASCADE;
+                ALTER TABLE trades_legacy RENAME TO trades;
             </sql>
         </rollback>
+
     </changeSet>
+
 
 </databaseChangeLog>
