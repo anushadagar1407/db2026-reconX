@@ -25,7 +25,6 @@ spring:
   # the JSONB GIN-index step on H2 (see 003-jsonb.xml).
   jpa:
     properties:
-      hibernate.dialect: org.hibernate.dialect.H2Dialect
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
