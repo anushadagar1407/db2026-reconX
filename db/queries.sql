@@ -4,6 +4,9 @@
 SELECT DISTINCT
     t.instrument_id,
     t.trade_date,
+    t.quantity,
+    t.price,
+    t.price * t.quantity as notional,
     SUM(t.price * t.quantity) OVER (PARTITION BY t.instrument_id, t.trade_date)
         / NULLIF(SUM(t.quantity) OVER (PARTITION BY t.instrument_id, t.trade_date), 0)
             AS vwap
