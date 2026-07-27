@@ -58,9 +58,20 @@
         )
         PARTITION BY RANGE(trade_date);
         </sql>
+        <rollback>
+            <sql>DROP TABLE IF EXISTS trades CASCADE;</sql>
+        </rollback>
     </changeSet>
 
     <changeSet id="004-partition-child-tables" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) FROM pg_partitioned_table pt
+                JOIN pg_class c ON c.oid = pt.partrelid
+                WHERE c.relname = 'trades'
+            </sqlCheck>
+        </preConditions>
         <!--default partition -->
         <!--Trades monthly partitions -->
         <sql>

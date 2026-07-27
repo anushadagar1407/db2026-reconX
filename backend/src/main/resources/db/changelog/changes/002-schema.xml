@@ -106,4 +106,9 @@
         </rollback>
     </changeSet>
 
+    <!-- Release boundary after the initial 4-table schema is in place. -->
+    <changeSet id="tag-release-1-0" author="trainer">
+        <tagDatabase tag="release-1.0"/>
+    </changeSet>
+
 </databaseChangeLog>

@@ -38,6 +38,9 @@
         <jjwt.version>0.12.6</jjwt.version>
         <testcontainers.version>1.20.3</testcontainers.version>
         <hypersistence.version>3.9.0</hypersistence.version>
+        <liquibase.url>jdbc:postgresql://localhost:5432/reconx</liquibase.url>
+        <liquibase.username>reconx_user</liquibase.username>
+        <liquibase.password>reconx_pass</liquibase.password>
     </properties>
 
     <dependencies>
@@ -195,6 +198,20 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <!-- ADV013 — enables liquibase:rollbackSQL / liquibase:rollback for
+                 previewing and applying reverse-DDL against named release tags.
+                 Override connection via -Dliquibase.url / .username / .password. -->
+            <plugin>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-maven-plugin</artifactId>
+                <configuration>
+                    <changeLogFile>db/changelog/db.changelog-master.xml</changeLogFile>
+                    <url>${liquibase.url}</url>
+                    <username>${liquibase.username}</username>
+                    <password>${liquibase.password}</password>
+                    <driver>org.postgresql.Driver</driver>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

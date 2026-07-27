@@ -49,4 +49,9 @@
         </rollback>
     </changeSet>
 
+    <!-- Release boundary after the daily recon matview + unique index. -->
+    <changeSet id="tag-release-1-2" author="trainer">
+        <tagDatabase tag="release-1.2"/>
+    </changeSet>
+
 </databaseChangeLog>
