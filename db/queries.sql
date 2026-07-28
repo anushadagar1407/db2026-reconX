@@ -32,7 +32,7 @@ WITH RECURSIVE trade_lifecycle AS (
         1              AS stage,
         'EXECUTION'    AS stage_name,
         t.created_at   AS event_at,
-        t.status       AS event_status
+        t.status::text AS event_status
     FROM trades t
     WHERE t.deleted_at IS NULL
 
