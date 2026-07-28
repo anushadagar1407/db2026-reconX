@@ -102,6 +102,13 @@
         <!-- Real BCrypt hashes (cost=10) for admin123 / trader123 / viewer123 / recon123.
              Generated via: htpasswd -bnBC 10 "" <pw> | tr -d ':\n'
              Spring Security's BCryptPasswordEncoder accepts both $2a$ and $2y$ prefixes. -->
+        
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM users
+            </sqlCheck>
+        </preConditions>
+
         <insert tableName="users">
             <column name="email" value="admin@db.com"/>
             <column name="password_hash" value="$2y$10$L9iP3BfsBS2LbVJRfc86TuWnJvP.AohjX3PNLwdtjlZfyB7YSp87C"/>

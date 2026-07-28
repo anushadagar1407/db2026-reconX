@@ -586,7 +586,7 @@ After this ticket, `BondTrade` compiles, the builder refuses a maturity before t
 
 ---
 
-### TICKET-ADV022 — `DerivativeTrade` (underlying, strike, expiry, option type)
+### TICKET-ADV022 — `DerivativeTrade` (underlying, strike, expiry, option type) ✅
 
 **Goal:** Build the derivative trade type with an option-type enum and strike/expiry validation, without over-validating historical records.
 
