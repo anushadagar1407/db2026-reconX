@@ -49,7 +49,6 @@ public final class FXTrade implements TradeType {
 
     /** Notional in ccy2 = notionalCcy1 * fxRate. */
     @Override public Money notional() {
-        // TODO(TICKET-ADV020): return new Money(notionalCcy1 * fxRate, ccy2).
         return new Money(notionalCcy1.multiply(fxRate), ccy2);
     }
 
@@ -92,11 +91,6 @@ public final class FXTrade implements TradeType {
         public Builder counterpartyId(long v)      { this.counterpartyId = v; return this; }
 
         public FXTrade build() {
-            // TODO(TICKET-ADV020):
-            //   - Objects.requireNonNull each required field.
-            //   - ccy1 must differ from ccy2 (IllegalStateException otherwise).
-            //   - fxRate must be > 0.
-            //   - return new FXTrade(this).
             Objects.requireNonNull(tradeRef, "tradeRef is required");
             Objects.requireNonNull(ccy1, "ccy1 is required");
             Objects.requireNonNull(ccy2, "ccy2 is required");
@@ -106,11 +100,15 @@ public final class FXTrade implements TradeType {
             Objects.requireNonNull(tradeDate, "tradeDate is required");
 
             if (ccy1.equals(ccy2)) {
-                throw new IllegalStateException("CCY1 and CCY2 must differ");
+                throw new IllegalStateException("ccy1 and ccy2 must differ");
+            }
+
+            if (notionalCcy1.signum() <= 0) {
+                throw new IllegalStateException("notionalCcy1 must be > 0");
             }
 
             if (fxRate.signum() <= 0) {
-                throw new IllegalStateException("FXRate must be > 0");
+                throw new IllegalStateException("fxRate must be > 0");
             }
 
             return new FXTrade(this);
