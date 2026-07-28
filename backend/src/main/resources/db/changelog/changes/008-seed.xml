@@ -18,13 +18,19 @@
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
     <changeSet id="008-seed-counterparties" author="trainer">
-        <loadData file="data/counterparties.csv" tableName="counterparties"
-                  separator="," relativeToChangelogFile="true">
-            <column name="id" type="NUMERIC"/>
-            <column name="name" type="STRING"/>
-            <column name="lei_code" type="STRING"/>
-            <column name="region" type="STRING"/>
-        </loadData>
+        <sql>
+            INSERT INTO counterparties (name, lei_code, region) VALUES
+                ('Apex Brokers Inc',           '5493001ABCDE12345001', 'NAMR'),
+                ('Vertex Securities LLC',      '5493001ABCDE12345002', 'NAMR'),
+                ('Helix Capital Markets',      '5493001ABCDE12345003', 'APAC'),
+                ('Aurora Markets SA',          '5493001ABCDE12345004', 'LATAM'),
+                ('Borealis Trading GmbH',      '5493001ABCDE12345005', 'EMEA'),
+                ('Cascadia Investments PLC',   '5493001ABCDE12345006', 'EMEA'),
+                ('Delphi Asset Management',    '5493001ABCDE12345007', 'EMEA'),
+                ('Equinox Securities Pty',     '5493001ABCDE12345008', 'APAC'),
+                ('Fjord Capital Partners',     '5493001ABCDE12345009', 'EMEA'),
+                ('Granite Hill Brokers',       '5493001ABCDE12345010', 'NAMR');
+        </sql>
         <rollback>
             <sql>DELETE FROM counterparties;</sql>
         </rollback>
