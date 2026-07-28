@@ -18,6 +18,13 @@
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
     <changeSet id="008-seed-counterparties" author="trainer">
+     
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM counterparties
+            </sqlCheck>
+        </preConditions>
+
         <loadData file="data/counterparties.csv" tableName="counterparties"
                   separator="," relativeToChangelogFile="true">
             <column name="id" type="NUMERIC"/>
@@ -31,6 +38,13 @@
     </changeSet>
 
     <changeSet id="008-seed-instruments" author="trainer">
+
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM instruments
+            </sqlCheck>
+        </preConditions>
+
         <loadData file="data/instruments.csv" tableName="instruments"
                   separator="," relativeToChangelogFile="true">
             <column name="id" type="NUMERIC"/>
@@ -49,6 +63,13 @@
         <!-- Real BCrypt hashes (cost=10) for admin123 / trader123 / viewer123 / recon123.
              Generated via: htpasswd -bnBC 10 "" <pw> | tr -d ':\n'
              Spring Security's BCryptPasswordEncoder accepts both $2a$ and $2y$ prefixes. -->
+        
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM users
+            </sqlCheck>
+        </preConditions>
+
         <insert tableName="users">
             <column name="email" value="admin@db.com"/>
             <column name="password_hash" value="$2y$10$L9iP3BfsBS2LbVJRfc86TuWnJvP.AohjX3PNLwdtjlZfyB7YSp87C"/>

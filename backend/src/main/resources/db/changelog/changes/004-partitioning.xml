@@ -63,6 +63,10 @@
     <changeSet id="004-partition-child-tables" author="trainer">
         <!--default partition -->
         <!--Trades monthly partitions -->
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+        </preConditions>
+        
         <sql>
             CREATE TABLE IF NOT EXISTS trades_2026_04
             PARTITION OF trades
