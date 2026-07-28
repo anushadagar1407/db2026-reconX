@@ -280,7 +280,7 @@ After this ticket, `Side` and `EquityTrade` compile; an `EquityTrade` can only b
 
 ---
 
-### TICKET-ADV020 — `FXTrade` (two currencies and FX rate)
+### TICKET-ADV020 — `FXTrade` (two currencies and FX rate) ✅
 
 **Goal:** Build the FX trade type with two currency fields, a notional in the base currency, and an FX rate — all type-safe.
 
