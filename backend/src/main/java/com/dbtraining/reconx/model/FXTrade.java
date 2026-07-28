@@ -67,7 +67,8 @@ public final class FXTrade implements TradeType {
 
     @Override public String toString() {
         // TODO(TICKET-ADV030): "FXTrade[ref=..., CCY1/CCY2, notional=... CCY1, rate=..., side=...]"
-        throw new UnsupportedOperationException("TICKET-ADV030");
+        return "FXTrade[ref=%s, %s/%s,notional=%s %s, rate= %s, side=%s]"
+        .formatted(tradeRef, ccy1.getCurrencyCode(), ccy2.getCurrencyCode(), notionalCcy1.toPlainString(), ccy1, fxRate.toPlainString(), side);
     }
 
     public static final class Builder {

@@ -62,8 +62,8 @@ public final class BondTrade implements TradeType {
 
 
     @Override public String toString() {
-        // TODO(TICKET-ADV030): "BondTrade[ref=..., isin=..., face=... CCY, coupon=..., maturity=..., side=...]"
-        throw new UnsupportedOperationException("TICKET-ADV030");
+        return "DerivativeTrade[ref=%s, isin=%s, face=%s %s, coupon=%s, maturity=%s, side=%s]"
+        .formatted(tradeRef, isin,faceValue.toPlainString(), currency.getCurrencyCode(), couponRate, maturityDate, side);
     }
 
     public static final class Builder {
