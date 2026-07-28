@@ -55,13 +55,11 @@ public final class BondTrade implements TradeType {
     public long counterpartyId()      { return counterpartyId; }
 
     @Override public boolean equals(Object o) {
-        // TODO(TICKET-ADV028): pattern-match on BondTrade and compare tradeRef.
-        throw new UnsupportedOperationException("TICKET-ADV028");
+        return (o instanceof BondTrade other) && tradeRef.equals(other.tradeRef());
+
     }
-    @Override public int hashCode() {
-        // TODO(TICKET-ADV028): hash from tradeRef.
-        throw new UnsupportedOperationException("TICKET-ADV028");
-    }
+    @Override public int hashCode() { return tradeRef.hashCode(); }
+
 
     @Override public String toString() {
         // TODO(TICKET-ADV030): "BondTrade[ref=..., isin=..., face=... CCY, coupon=..., maturity=..., side=...]"
