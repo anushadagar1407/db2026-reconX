@@ -1,6 +1,10 @@
 package com.dbtraining.reconx.dto;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -16,30 +20,32 @@ import java.time.LocalDate;
  * ============================================================================
  */
 public record TradeRequest(
-        @NotNull
-        @Pattern(regexp = "^[A-Z]{3}-\\d{8}-\\d{4}$",
-                 message = "tradeRef must match AAA-YYYYMMDD-NNNN")
-        String tradeRef,
 
-        @NotNull
-        Long instrumentId,
+                @NotNull        @Pattern(
+                                        regexp = "^[A-Z]{3}-\\d{8}-\\d{4}$",
+                                                        message = "tradeRef must match AAA-YYYYMMDD-NNNN"
+                )
+                        String tradeRef,
 
-        @NotNull
-        Long counterpartyId,
+                                @NotNull        Long instrumentId,
 
-        @NotBlank
-        String assetClass,
+                                        @NotNull
+                                                Long counterpartyId,
 
-        @NotBlank
-        @Pattern(regexp = "^(BUY|SELL)$")
-        String side,
+                                                        @NotBlank
+                                                                String assetClass,
 
-        @NotNull @Positive
-        BigDecimal quantity,
+                                                                        @NotBlank
+                                                                                @Pattern(
+                                                                                                        regexp = "^(BUY|SELL)$",
+                                                                                                                        message = "side must be BUY or SELL"
+                                                                                                                                )
+                                                                                                                                        String side,
 
-        @NotNull @PositiveOrZero
-        BigDecimal price,
+                                                                                                                                                @NotNull        @Positive        BigDecimal quantity,
 
-        @NotNull
-        LocalDate tradeDate
-) {}
+                                                                                                                                                        @NotNull        @PositiveOrZero        BigDecimal price,
+
+                                                                                                                                                                @NotNull        LocalDate tradeDate
+
+                                                                                                                                                                ) {}
