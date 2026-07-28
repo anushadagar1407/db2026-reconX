@@ -49,7 +49,23 @@ public class ReconciliationEngine {
         //     return internal.parallelStream()
         //         .map(in -> matchOne(in, externalByRef.get(in.tradeRef().value()), rule))
         //         .toList();
-        throw new UnsupportedOperationException("TICKET-ADV033");
+        // Handle null or empty inputs gracefully
+        if (internal == null || internal.isEmpty() || external == null || external.isEmpty()) {
+            return List.of(); // Return an empty list
+        }
+
+        // Pre-index the external trades by tradeRef for constant-time lookups
+        Map<String, TradeType> externalByRef = external.stream()
+                .collect(Collectors.toMap(
+                        trade -> trade.tradeRef().value(), // Key: tradeRef
+                        Function.identity(),              // Value: the trade itself
+                        (a, b) -> a                       // In case of duplicates, keep the first
+                ));
+
+        // Stream over the internal trades, match each one with the external trades, and collect results into a List
+        return internal.stream()
+                .map(trade -> matchOne(trade, externalByRef.get(trade.tradeRef().value()), rule))
+                .collect(Collectors.toList());
     }
 
     /**
