@@ -430,7 +430,7 @@ After this ticket, `FXTrade` compiles, builder rejects equal `ccy1`/`ccy2`, bad 
 
 ---
 
-### TICKET-ADV021 — `BondTrade` (coupon, maturity, face value, ISIN)
+### TICKET-ADV021 — `BondTrade` (coupon, maturity, face value, ISIN) ✅
 
 **Goal:** Build the bond trade type with fixed-income-specific fields and fail-fast validation on maturity ordering and ISIN shape.
 
