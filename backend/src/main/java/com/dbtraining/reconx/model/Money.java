@@ -49,16 +49,6 @@ public record Money(BigDecimal amount, Currency currency) {
         }
     }
 
-    public static void main(String[] args) {
-        Money m1 = Money.of("1000", "USD");
-        Money m2 = Money.of("200", "EUR");
-        Money m3 = Money.of("500", "USD");
-
-        System.out.println(m1.plus(m3).amount);
-        System.out.println(m1.times(new BigDecimal("2.5")).amount);
-        System.out.println(m1.plus(m2));
-    }
-
     public Money times(BigDecimal multiplier) {
         return Money.of(this.amount.multiply(multiplier), this.currency.getCurrencyCode());
     }
