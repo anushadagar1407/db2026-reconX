@@ -84,6 +84,14 @@
                 (ARRAY['PENDING','MATCHED','UNMATCHED','DISPUTED','MATCHED','MATCHED'])[1 + (n % 6)]
             FROM generate_series(1, 500) AS n;
 
+            INSERT INTO recon_breaks (trade_id, trade_date, discrepancy_type, status)
+                SELECT id,
+                    trade_date,
+                    (ARRAY['PRICE_MISMATCH','QUANTITY_MISMATCH','DATE_MISMATCH'])[1 + (id % 3)],
+                    'OPEN'
+                FROM trades
+                WHERE status IN ('UNMATCHED','DISPUTED')
+                LIMIT 30;
         </sql>
         <rollback>
             <sql>DELETE FROM trades;</sql>
