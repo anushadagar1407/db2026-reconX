@@ -41,13 +41,25 @@ public record Money(BigDecimal amount, Currency currency) {
 
     /** Add another Money of the same currency. Throws on currency mismatch. */
     public Money plus(Money other) {
-        // TODO(TICKET-ADV024): validate same currency, then return a new Money
-        //                     whose amount = this.amount + other.amount.
-        throw new UnsupportedOperationException("TICKET-ADV024");
+        if (this.currency.equals(other.currency)) {
+            BigDecimal newAmount = this.amount.add(other.amount);
+            return new Money(newAmount, this.currency);
+        } else {
+            throw new IllegalArgumentException("Mismatched Currencies");
+        }
+    }
+
+    public static void main(String[] args) {
+        Money m1 = Money.of("1000", "USD");
+        Money m2 = Money.of("200", "EUR");
+        Money m3 = Money.of("500", "USD");
+
+        System.out.println(m1.plus(m3).amount);
+        System.out.println(m1.times(new BigDecimal("2.5")).amount);
+        System.out.println(m1.plus(m2));
     }
 
     public Money times(BigDecimal multiplier) {
-        // TODO(TICKET-ADV024): return a new Money whose amount = this.amount * multiplier.
-        throw new UnsupportedOperationException("TICKET-ADV024");
+        return Money.of(this.amount.multiply(multiplier), this.currency.getCurrencyCode());
     }
 }
