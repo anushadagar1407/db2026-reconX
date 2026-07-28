@@ -1,31 +1,31 @@
 # ReconX Context Diagram
 
 ```mermaid
-graph LR
+C4Context
+    title C4 Context - ReconX Enterprise Trade Reconciliation Platform
 
-Trader[Trader]
-Operations[Operations Analyst]
-Support[Support Engineer]
-Compliance[Compliance Officer]
+    Person(trader, "Trader", "Books and amends trades; investigates breaks.")
+    Person(analyst, "Recon Analyst", "Resolves daily reconciliation breaks.")
+    Person(admin, "Ops Admin", "Manages users and audits activity.")
+    Person(compliance, "Compliance Officer", "Reads audit logs and reports.")
 
-ReconX[ReconX Platform]
+    System(reconx, "ReconX", "Matches internal and external trade records, surfaces breaks, and tracks resolution.")
 
-OMS[Order Management System]
-SFTP[SFTP Service]
-Bloomberg[Bloomberg]
-Email[Email Service]
-SSO[Corporate SSO]
-Grafana[Grafana]
+    System_Ext(oms, "Internal OMS", "Source of internal trade records.")
+    System_Ext(sftp, "Counterparty SFTP", "Source of end-of-day trade files.")
+    System_Ext(bloomberg, "Bloomberg Pricing", "Reference market data.")
+    System_Ext(email, "Corporate Email Gateway", "Break notifications.")
+    System_Ext(sso, "Corporate SSO", "OIDC identity provider.")
+    System_Ext(grafana, "Grafana / Prometheus", "Operational monitoring.")
 
-Trader -->|HTTPS| ReconX
-Operations -->|HTTPS| ReconX
-Support -->|HTTPS| ReconX
-Compliance -->|HTTPS| ReconX
-
-ReconX -->|Trade Data| OMS
-ReconX -->|Market Data| Bloomberg
-ReconX -->|File Exchange| SFTP
-ReconX -->|Notifications| Email
-ReconX -->|Authentication| SSO
-Grafana -->|Monitoring| ReconX
+    Rel(trader, reconx, "Books trades and views breaks", "HTTPS")
+    Rel(analyst, reconx, "Investigates and resolves breaks", "HTTPS")
+    Rel(admin, reconx, "Administers users and audits", "HTTPS")
+    Rel(compliance, reconx, "Reads audit history and reports", "HTTPS, read-only")
+    Rel(oms, reconx, "Streams internal trades", "Kafka")
+    Rel(sftp, reconx, "Drops counterparty trade files", "SFTP")
+    Rel(reconx, bloomberg, "Fetches reference prices", "HTTPS / REST")
+    Rel(reconx, email, "Sends break notifications", "SMTP")
+    Rel(reconx, sso, "Authenticates users", "OIDC / HTTPS")
+    Rel(grafana, reconx, "Scrapes health and metrics", "HTTPS / Prometheus")
 ```

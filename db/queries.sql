@@ -1,16 +1,19 @@
 -- ============================================================================
 -- TICKET-ADV010 — VWAP per instrument per day (window function)
 -- ============================================================================
-SELECT DISTINCT
+SELECT
+    t.trade_ref,
     t.instrument_id,
     t.trade_date,
+    i.symbol,
     t.quantity,
     t.price,
-    t.price * t.quantity as notional,
+    t.price * t.quantity AS notional,
     SUM(t.price * t.quantity) OVER (PARTITION BY t.instrument_id, t.trade_date)
         / NULLIF(SUM(t.quantity) OVER (PARTITION BY t.instrument_id, t.trade_date), 0)
             AS vwap
 FROM trades t
+JOIN instruments i ON i.id = t.instrument_id
 WHERE t.deleted_at IS NULL
   AND t.asset_class = 'EQUITY'
 ORDER BY t.trade_date DESC, t.instrument_id;
@@ -21,37 +24,79 @@ ORDER BY t.trade_date DESC, t.instrument_id;
 --                -> recon_break -> resolution)
 -- ============================================================================
 WITH RECURSIVE trade_lifecycle AS (
-    -- anchor: every trade in its execution state
+    -- Anchor: every trade starts at execution.
     SELECT
         t.id           AS trade_id,
         t.trade_ref,
-        1              AS step,
-        'EXECUTED'     AS state,
-        t.created_at   AS at_ts,
-        NULL::text     AS detail
+        t.trade_date,
+        1              AS stage,
+        'EXECUTION'    AS stage_name,
+        t.created_at   AS event_at,
+        t.status       AS event_status
     FROM trades t
     WHERE t.deleted_at IS NULL
 
     UNION ALL
 
-    -- recursive: each subsequent state derived from the previous step
+    -- Each branch emits only the stage following the current one.
     SELECT
         tl.trade_id,
         tl.trade_ref,
-        tl.step + 1,
-        CASE tl.step
-            WHEN 1 THEN 'CONFIRMED'
-            WHEN 2 THEN 'SETTLED'
-            WHEN 3 THEN 'RECONCILED'
-        END                                          AS state,
-        s.settlement_date::timestamp                  AS at_ts,
-        s.status                                      AS detail
+        tl.trade_date,
+        tl.stage + 1,
+        next_event.stage_name,
+        next_event.event_at,
+        next_event.event_status
     FROM trade_lifecycle tl
-    JOIN settlements s ON s.trade_id = tl.trade_id
-    WHERE tl.step < 4
+    JOIN LATERAL (
+        SELECT
+            'CONFIRMATION'::text AS stage_name,
+            COALESCE(t.modified_at, t.created_at) AS event_at,
+            t.status::text AS event_status
+        FROM trades t
+        WHERE tl.stage = 1
+          AND t.id = tl.trade_id
+          AND t.trade_date = tl.trade_date
+
+        UNION ALL
+
+        SELECT
+            'SETTLEMENT',
+            s.settlement_date::timestamp,
+            s.status::text
+        FROM settlements s
+        WHERE tl.stage = 2
+          AND s.trade_id = tl.trade_id
+          AND s.trade_date = tl.trade_date
+
+        UNION ALL
+
+        SELECT
+            'RECON_BREAK',
+            rb.detected_at,
+            rb.status::text
+        FROM recon_breaks rb
+        WHERE tl.stage = 3
+          AND rb.trade_id = tl.trade_id
+          AND rb.trade_date = tl.trade_date
+
+        UNION ALL
+
+        SELECT
+            'RESOLUTION',
+            rb.resolved_at,
+            rb.status::text
+        FROM recon_breaks rb
+        WHERE tl.stage = 4
+          AND rb.trade_id = tl.trade_id
+          AND rb.trade_date = tl.trade_date
+          AND rb.resolved_at IS NOT NULL
+    ) next_event ON TRUE
+    WHERE tl.stage < 5
 )
-SELECT * FROM trade_lifecycle
-ORDER BY trade_id, step;
+SELECT trade_id, trade_ref, stage, stage_name, event_at, event_status
+FROM trade_lifecycle
+ORDER BY trade_id, stage;
 
 
 -- ============================================================================

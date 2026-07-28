@@ -1,3 +1,6 @@
+# ReconX API Component Diagram
+
+```mermaid
 C4Component
     title C4 Component — recon-service API
 
@@ -48,3 +51,4 @@ C4Component
     Rel(producer, kafka, "publish trade-events")
     Rel(consumer, kafka, "subscribe recon-results")
     Rel(consumer, reconSvc, "callback")
+```
