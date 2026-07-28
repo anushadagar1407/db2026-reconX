@@ -61,8 +61,7 @@ public final class FXTrade implements TradeType {
     public long counterpartyId()     { return counterpartyId; }
 
     @Override public boolean equals(Object o) {
-        // TODO(TICKET-ADV028): pattern-match on FXTrade and compare tradeRef.
-        throw new UnsupportedOperationException("TICKET-ADV028");
+        return (o instanceof FXTrade other) && tradeRef.equals(other.tradeRef());
     }
     @Override public int hashCode() { return tradeRef.hashCode(); }
 
