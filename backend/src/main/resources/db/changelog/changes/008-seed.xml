@@ -20,15 +20,15 @@
     <changeSet id="008-seed-counterparties" author="trainer">
         <sql>
             INSERT INTO counterparties (name, lei_code, region) VALUES
-                ('Apex Brokers Inc',           '5493001ABCDE12345001', 'NAMR'),
-                ('Vertex Securities LLC',      '5493001ABCDE12345002', 'NAMR'),
-                ('Helix Capital Markets',      '5493001ABCDE12345003', 'APAC'),
-                ('Aurora Markets SA',          '5493001ABCDE12345004', 'LATAM'),
-                ('Borealis Trading GmbH',      '5493001ABCDE12345005', 'EMEA'),
-                ('Cascadia Investments PLC',   '5493001ABCDE12345006', 'EMEA'),
-                ('Delphi Asset Management',    '5493001ABCDE12345007', 'EMEA'),
-                ('Equinox Securities Pty',     '5493001ABCDE12345008', 'APAC'),
-                ('Fjord Capital Partners',     '5493001ABCDE12345009', 'EMEA'),
+                ('Citi',           '5493001ABCDE12345001', 'NAMR'),
+                ('JP Morgan',      '5493001ABCDE12345002', 'NAMR'),
+                ('Bank of China',      '5493001ABCDE12345003', 'APAC'),
+                ('Banco ABC Brasil',          '5493001ABCDE12345004', 'LATAM'),
+                ('Bank of America',      '5493001ABCDE12345005', 'EMEA'),
+                ('Barclays',   '5493001ABCDE12345006', 'EMEA'),
+                ('Deutsche Bank',    '5493001ABCDE12345007', 'EMEA'),
+                ('HSBC',     '5493001ABCDE12345008', 'APAC'),
+                ('UBS',     '5493001ABCDE12345009', 'EMEA'),
                 ('Granite Hill Brokers',       '5493001ABCDE12345010', 'NAMR');
         </sql>
         <rollback>
@@ -37,15 +37,16 @@
     </changeSet>
 
     <changeSet id="008-seed-instruments" author="trainer">
-        <loadData file="data/instruments.csv" tableName="instruments"
-                  separator="," relativeToChangelogFile="true">
-            <column name="id" type="NUMERIC"/>
-            <column name="symbol" type="STRING"/>
-            <column name="name" type="STRING"/>
-            <column name="asset_class" type="STRING"/>
-            <column name="currency" type="STRING"/>
-            <column name="isin" type="STRING"/>
-        </loadData>
+        <sql>
+            INSERT INTO instruments (symbol, name, asset_class, currency, isin, metadata)
+                'GEN' || LPAD(g::TEXT, 4, '0'),
+                'Generated Instrument ' || g,
+                (ARRAY['EQUITY','FIXED_INCOME','FX','COMMODITY','DERIVATIVE'])[1 + (g % 5)],
+                (ARRAY['USD','EUR','GBP','JPY','CHF'])[1 + (g % 5)],
+                NULL,
+                jsonb_build_object('seq', g, 'auto', true)
+            FROM generate_series(1, 45) AS g;
+        </sql>
         <rollback>
             <sql>DELETE FROM instruments;</sql>
         </rollback>
