@@ -30,7 +30,7 @@ The foundation. If this workshop lands clean, the rest of the day follows. Take 
 
 ---
 
-### TICKET-ADV018 — Sealed interface `TradeType` and abstract base
+### TICKET-ADV018 — Sealed interface `TradeType` and abstract base ✅
 
 **Goal:** Establish the closed-world polymorphic root for every trade type in the platform, plus an internal shared-state base class.
 
