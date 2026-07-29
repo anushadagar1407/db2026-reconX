@@ -2249,7 +2249,7 @@ Run the Testcontainers-backed integration test (Docker must be running).
 
 ---
 
-### TICKET-ADV079 — Verify Liquibase ran on a fresh DB
+### TICKET-ADV079 — Verify Liquibase ran on a fresh DB ✅
 
 **Goal:** Prove that every Liquibase changeset applies cleanly against an empty Postgres and that seed data lands.
 
