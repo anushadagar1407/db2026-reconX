@@ -47,7 +47,7 @@ public class ReconciliationEngine {
     public List<ReconResult> reconcile(List<TradeType> internal,
                                        List<TradeType> external,
                                        ReconciliationRule rule) {
-        // TODO(TICKET-ADV033): build a Map<tradeRef, TradeType> from `external`
+        // TICKET-ADV033: build a Map<tradeRef, TradeType> from `external`
         //   (O(1) lookups beat O(n*m) nested iteration), then parallelStream
         //   over `internal` and call matchOne(in, externalByRef.get(...), rule)
         //   for each. Guard against null/empty inputs (TICKET-ADV047).
@@ -102,7 +102,7 @@ public class ReconciliationEngine {
     }
 
     private ReconResult matchOne(TradeType internal, TradeType external, ReconciliationRule rule) {
-        // TODO(TICKET-ADV033): if external is null return ReconResult.breakResult(ref, "MISSING_EXTERNAL", ...).
+        // TICKET-ADV033: if external is null return ReconResult.breakResult(ref, "MISSING_EXTERNAL", ...).
         //   Otherwise pull priceQty() for both sides, compare via rule.matches(...),
         //   return ReconResult.matched(ref) or breakResult(ref, "VALUE_MISMATCH", details).
         throw new UnsupportedOperationException("TICKET-ADV033");
