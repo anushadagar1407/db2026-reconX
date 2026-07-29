@@ -1841,7 +1841,7 @@ After this ticket, every concrete trade has a hand-written `toString` that inclu
 
 ---
 
-### TICKET-ADV031 — Javadoc on all public domain classes
+### TICKET-ADV031 — Javadoc on all public domain classes ✅
 
 **Goal:** Document the public contract of every domain class and public method so that a reader of the Javadoc could re-implement against it without reading the code.
 
