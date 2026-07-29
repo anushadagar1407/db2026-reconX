@@ -663,7 +663,7 @@ docker compose exec postgres psql -U reconx -d reconx \
 
 ---
 
-### TICKET-ADV068 — POST /api/v1/recon/run
+### TICKET-ADV068 — POST /api/v1/recon/run ✅
 
 **Goal:** Trigger a reconciliation job asynchronously and return a job handle the client can poll.
 
