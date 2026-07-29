@@ -551,7 +551,7 @@ curl -i -X PATCH http://localhost:8080/api/v1/trades/1/status \
 
 ---
 
-### TICKET-ADV067 — DELETE /api/v1/trades/{id} (soft delete)
+### TICKET-ADV067 — DELETE /api/v1/trades/{id} (soft delete) ✅
 
 **Goal:** Logically delete a trade so it disappears from list responses while remaining in the database for audit.
 
