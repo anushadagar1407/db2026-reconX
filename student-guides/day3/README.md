@@ -48,7 +48,7 @@ new syntax — you are rewiring how you think about iteration. By the end of
 this block you should be able to look at a `for` loop with a mutable
 accumulator and immediately see the Collector that replaces it.
 
-### TICKET-ADV033 — ReconciliationEngine using Streams
+### TICKET-ADV033 — ReconciliationEngine using Streams ✅
 
 **Goal:** Build a `reconcile(internal, external)` method on `ReconciliationEngine` that pairs trades from two lists and returns a map of results keyed by trade reference.
 
