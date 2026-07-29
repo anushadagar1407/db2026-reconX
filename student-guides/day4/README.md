@@ -373,7 +373,7 @@ SPRING_PROFILES_ACTIVE=uat ./mvnw spring-boot:run
 
 ---
 
-### TICKET-ADV050 — `@Entity Trade` with `@ManyToOne` + auditing
+### TICKET-ADV050 — `@Entity Trade` with `@ManyToOne` + auditing ✅
 
 **Goal:** Define the `Trade` JPA entity with lazy-loaded relationships to `Counterparty` and `Instrument`, plus Spring Data auditing columns and Hibernate Envers tracking.
 
