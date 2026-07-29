@@ -1,6 +1,10 @@
 package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.ReconResult;
+import com.dbtraining.reconx.model.BondTrade;
+import com.dbtraining.reconx.model.DerivativeTrade;
+import com.dbtraining.reconx.model.EquityTrade;
+import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.TradeType;
 import io.micrometer.core.annotation.Timed;
