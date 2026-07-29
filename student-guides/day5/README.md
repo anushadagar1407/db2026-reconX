@@ -1112,7 +1112,7 @@ sprinkling `@PreAuthorize` annotations against.
 
 ---
 
-### TICKET-ADV072 — JWT issuance on /api/auth/login
+### TICKET-ADV072 — JWT issuance on /api/auth/login ✅
 
 **Goal:** Authenticate a user with username/password and return a signed JWT containing the user's roles.
 
