@@ -85,7 +85,7 @@ public class ReconciliationEngine {
             Map<Long, List<TradeType>> internalByCp,
             Map<Long, List<TradeType>> externalByCp,
             ReconciliationRule rule) {
-        // TODO(TICKET-ADV037): for each counterparty key in internalByCp launch a
+        // TICKET-ADV037: for each counterparty key in internalByCp launch a
         //   CompletableFuture.supplyAsync(() -> reconcile(...)). Combine via
         //   CompletableFuture.allOf(...).thenApply(v -> futures.stream()
         //       .flatMap(f -> f.join().stream()).toList()).

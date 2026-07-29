@@ -42,7 +42,7 @@ public enum ReconciliationRule {
      */
     public boolean matches(BigDecimal internalPrice, BigDecimal internalQty,
                            BigDecimal externalPrice, BigDecimal externalQty) {
-        // TODO(TICKET-ADV026):
+        // TICKET-ADV026:
         //   1. Compute |internalPrice - externalPrice| as priceDiff.
         //   2. priceDiffPct = priceDiff / internalPrice (guard divide-by-zero).
         //   3. qtyDiff = |internalQty - externalQty|.

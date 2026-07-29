@@ -382,7 +382,7 @@ Unit-test the custom VWAP collector on a known fixture.
 
 ---
 
-### TICKET-ADV036 — P&L per instrument
+### TICKET-ADV036 — P&L per instrument ✅
 
 **Goal:** Produce a `Map<String, BigDecimal>` of summed P&L per instrument symbol from a list of trades.
 
@@ -467,7 +467,7 @@ Unit-test the P&L-per-instrument reducer.
 
 ---
 
-### TICKET-ADV037 — CompletableFuture: parallel recon by counterparty
+### TICKET-ADV037 — CompletableFuture: parallel recon by counterparty ✅
 
 **Goal:** Split the reconciliation by counterparty so that each counterparty is reconciled on its own thread, then merge the results back into a single map.
 
