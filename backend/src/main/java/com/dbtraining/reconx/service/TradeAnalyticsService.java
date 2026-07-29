@@ -4,7 +4,6 @@ import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.BondTrade;
 import com.dbtraining.reconx.model.DerivativeTrade;
 import com.dbtraining.reconx.model.EquityTrade;
-import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.TradeType;
 import org.springframework.stereotype.Service;
 
@@ -90,9 +89,6 @@ public class TradeAnalyticsService {
 
     public record NotionalSummary(long count, BigDecimal total) {
         public static NotionalSummary combine(NotionalSummary a, NotionalSummary b) {
-            if (a == null) return b;
-            if (b == null) return a;
-
             long combinedCount = a.count + b.count;
             BigDecimal combinedTotal = a.total.add(b.total);
 
