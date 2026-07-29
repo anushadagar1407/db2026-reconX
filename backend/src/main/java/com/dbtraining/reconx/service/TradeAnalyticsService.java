@@ -4,7 +4,6 @@ import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.BondTrade;
 import com.dbtraining.reconx.model.DerivativeTrade;
 import com.dbtraining.reconx.model.EquityTrade;
-import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.TradeType;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +12,7 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+import java.util.function.Function;
 /**
  * ============================================================================
  * TICKET-ADV034 — Trade analytics with Collectors (groupingBy + summarizing)
@@ -26,11 +25,27 @@ public class TradeAnalyticsService {
 
     /** TICKET-ADV034 — count + sum of notional per counterparty. */
     public Map<Long, NotionalSummary> notionalByCounterparty(List<? extends TradeType> trades) {
-        // TODO(TICKET-ADV034): Collectors.groupingBy(this::counterpartyIdOf,
-        //   Collectors.collectingAndThen(toList(), list -> new NotionalSummary(
-        //       list.size(),
-        //       list.stream().map(t -> t.notional().amount()).reduce(ZERO, BigDecimal::add)))).
-        throw new UnsupportedOperationException("TICKET-ADV034");
+        // Handle null or empty input gracefully
+        if (trades == null || trades.isEmpty()) {
+            return Map.of(); // Return an empty map
+        }
+
+        // Group trades by counterpartyId and compute the summary statistics in one pass
+        return trades.stream()
+                .collect(Collectors.groupingBy(
+                        this::counterpartyIdOf,
+                        Collectors.collectingAndThen(
+                                Collectors.reducing(
+                                        new NotionalSummary(0, BigDecimal.ZERO),
+                                        trade -> {
+                                            BigDecimal notional = trade.notional().amount();
+                                            return new NotionalSummary(1, notional);
+                                        },
+                                        NotionalSummary::combine
+                                ),
+                                Function.identity()
+                        )
+                ));
     }
 
     /**
@@ -72,5 +87,12 @@ public class TradeAnalyticsService {
         };
     }
 
-    public record NotionalSummary(long count, BigDecimal total) {}
+    public record NotionalSummary(long count, BigDecimal total) {
+        public static NotionalSummary combine(NotionalSummary a, NotionalSummary b) {
+            long combinedCount = a.count + b.count;
+            BigDecimal combinedTotal = a.total.add(b.total);
+
+            return new NotionalSummary(combinedCount, combinedTotal);
+        }
+    }
 }
