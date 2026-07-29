@@ -1348,7 +1348,7 @@ curl -i -X POST http://localhost:8080/api/auth/login \
 
 ---
 
-### TICKET-ADV073 — JwtAuthenticationFilter
+### ✅ TICKET-ADV073 — JwtAuthenticationFilter
 
 **Goal:** Read the Bearer token off each request, validate it, and populate the Spring Security context.
 
