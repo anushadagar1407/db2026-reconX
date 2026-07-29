@@ -1161,7 +1161,7 @@ curl "http://localhost:8080/api/v1/trades?counterpartyId=1&status=PENDING"
 
 ---
 
-### TICKET-ADV056 — Specification-based dynamic queries
+### TICKET-ADV056 — Specification-based dynamic queries ✅
 
 **Goal:** Replace the `(:param IS NULL OR ...)` style with composable JPA Specifications so each filter is independently testable.
 
