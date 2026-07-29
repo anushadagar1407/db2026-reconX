@@ -3,6 +3,7 @@ package com.dbtraining.reconx.observability;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
@@ -24,6 +25,7 @@ public class KafkaHealthIndicator extends AbstractHealthIndicator {
     private final String bootstrapServers;
     private final Function<Map<String, Object>, AdminClient> adminClientFactory;
 
+    @Autowired
     public KafkaHealthIndicator(
             @Value("${spring.kafka.bootstrap-servers}") String bootstrapServers) {
         this(bootstrapServers, AdminClient::create);
