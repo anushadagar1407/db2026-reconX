@@ -119,7 +119,7 @@ After this ticket, the sealed `TradeType` interface and its `AssetClass` enum ex
 
 ---
 
-### TICKET-ADV019 — `EquityTrade` with Builder pattern
+### TICKET-ADV019 — `EquityTrade` with Builder pattern ✅
 
 **Goal:** Implement the first concrete trade with a fluent Builder that enforces required fields and domain invariants at build time.
 
@@ -759,7 +759,7 @@ Now that the four trade types exist, you build the supporting cast: the entry po
 
 ---
 
-### TICKET-ADV023 — `TradeFactory`
+### TICKET-ADV023 — `TradeFactory` ✅
 
 **Goal:** Build a single entry point that constructs any concrete `TradeType` from a discriminator string and a parameter map, absorbing the cost of type erasure so callers stay clean.
 
@@ -910,7 +910,7 @@ After this ticket, `TradeFactory.create("EQUITY", map)` returns a typed `EquityT
 
 ---
 
-### TICKET-ADV024 — `Money` and `TradeRef` value objects
+### TICKET-ADV024 — `Money` and `TradeRef` value objects ✅
 
 **Goal:** Introduce two immutable value objects: `Money` (amount plus currency) and `TradeRef` (regex-validated trade reference).
 
@@ -1085,7 +1085,7 @@ After this ticket, `Money` and `TradeRef` are records, validate in their compact
 
 ---
 
-### TICKET-ADV025 — Exception hierarchy
+### TICKET-ADV025 — Exception hierarchy ✅
 
 **Goal:** Define the platform's exception ladder rooted at an abstract `ReconException`, with four concrete subtypes covering construction, lookup, duplication, and reconciliation outcomes.
 
@@ -1230,7 +1230,7 @@ After this ticket, the four-level exception ladder compiles, every subtype exten
 
 ---
 
-### TICKET-ADV026 — `ReconciliationRule` enum
+### TICKET-ADV026 — `ReconciliationRule` enum ✅
 
 **Goal:** Model the closed set of reconciliation tolerance rules as an enum, with thresholds and a behaviour method on each constant.
 
@@ -1500,7 +1500,7 @@ After this ticket, `TradeType` extends `Comparable<TradeType>`, a shared `NATURA
 
 ---
 
-### TICKET-ADV028 — `equals` and `hashCode` keyed on `tradeRef`
+### TICKET-ADV028 — `equals` and `hashCode` keyed on `tradeRef` ✅
 
 **Goal:** Implement value-based equality on every concrete trade, keyed on the natural business key (`tradeRef`), so collections behave correctly pre- and post-persist.
 
@@ -1608,7 +1608,7 @@ After this ticket, every concrete trade overrides `equals` and `hashCode` keyed 
 
 ---
 
-### TICKET-ADV029 — JSR-380 validation on the request DTO
+### TICKET-ADV029 — JSR-380 validation on the request DTO ✅
 
 **Goal:** Add declarative validation to the inbound HTTP DTO, leaving the domain Builder as the second line of defence.
 
@@ -1730,7 +1730,7 @@ After this ticket, `TradeRequest` compiles as a record in `com.dbtraining.reconx
 
 ---
 
-### TICKET-ADV030 — PII-safe `toString` for logging
+### TICKET-ADV030 — PII-safe `toString` for logging ✅
 
 **Goal:** Override `toString` on every concrete trade so that default logging never leaks counterparty or settlement PII.
 
@@ -1974,7 +1974,7 @@ open backend/target/site/apidocs/index.html
 
 ---
 
-### TICKET-ADV032 — PR review with two approvals
+### TICKET-ADV032 — PR review with two approvals ✅
 
 **Goal:** Open a pull request containing the day's work and obtain two reviewers' approval before merging into the team branch.
 

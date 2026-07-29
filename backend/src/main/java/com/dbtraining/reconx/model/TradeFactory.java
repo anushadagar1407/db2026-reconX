@@ -27,7 +27,7 @@ public final class TradeFactory {
     private TradeFactory() { }
 
     /**
-     * TODO(TICKET-ADV023):
+     * TICKET-ADV023:
      *   1. Parse assetClass string into TradeType.AssetClass enum (toUpperCase first).
      *   2. switch on the enum and dispatch to the matching equity/fx/bond/derivative
      *      helper below.
@@ -44,7 +44,7 @@ public final class TradeFactory {
     }
 
     /**
-     * TODO(TICKET-ADV023):
+     * TICKET-ADV023:
      *   Build an EquityTrade from the map. Expected keys: tradeRef, symbol,
      *   quantity, price, currency, side, tradeDate, counterpartyId.
      */
@@ -63,7 +63,7 @@ public final class TradeFactory {
 
 
     /**
-     * TODO(TICKET-ADV023):
+     * TICKET-ADV023:
      *   Build an FXTrade from the map. Expected keys: tradeRef, ccy1, ccy2,
      *   notionalCcy1, fxRate, side, tradeDate, counterpartyId.
      */
@@ -81,7 +81,7 @@ public final class TradeFactory {
     }
 
     /**
-     * TODO(TICKET-ADV023):
+     * TICKET-ADV023:
      *   Build a BondTrade from the map. Expected keys: tradeRef, isin,
      *   faceValue, couponRate, maturityDate, currency, side, tradeDate,
      *   counterpartyId.
@@ -101,7 +101,7 @@ public final class TradeFactory {
     }
 
     /**
-     * TODO(TICKET-ADV023):
+     * TICKET-ADV023:
      *   Build a DerivativeTrade from the map. Expected keys: tradeRef,
      *   underlying, strike, quantity, expiry, optionType, currency, side,
      *   tradeDate, counterpartyId.
