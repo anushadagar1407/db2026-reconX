@@ -53,11 +53,35 @@ public class TradeAnalyticsService {
      * EquityTrade has a meaningful price-volume pair.
      */
     public Map<String, BigDecimal> vwapByInstrument(List<EquityTrade> equityTrades) {
-        // TODO(TICKET-ADV035): group by EquityTrade::instrumentSymbol, then for
-        //   each bucket compute SUM(price * qty) / SUM(qty) using BigDecimal
-        //   with RoundingMode.HALF_UP. Return BigDecimal.ZERO when totalQty is 0
-        //   (avoid ArithmeticException on division by zero).
-        throw new UnsupportedOperationException("TICKET-ADV035");
+        if (equityTrades == null || equityTrades.isEmpty()) {
+            return Map.of();
+        }
+
+        return equityTrades.stream()
+            .collect(Collectors.groupingBy(EquityTrade::instrumentSymbol))
+            .entrySet()
+            .stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> calculateVwap(entry.getValue())
+            ));
+    }
+
+    private BigDecimal calculateVwap(List<EquityTrade> trades) {
+        BigDecimal totalQty = trades.stream()
+            .map(EquityTrade::quantity)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Using signum() is cleaner and faster than compareTo
+        if (totalQty.signum() == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal weightedPrice = trades.stream()
+            .map(t -> t.price().multiply(t.quantity()))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return weightedPrice.divide(totalQty, 4, RoundingMode.HALF_UP);
     }
 
     /** TICKET-ADV036 — P&L per instrument symbol (sign by Side). */
