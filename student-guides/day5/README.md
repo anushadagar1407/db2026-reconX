@@ -1504,7 +1504,7 @@ curl -i http://localhost:8080/api/v1/trades \
 
 ---
 
-### TICKET-ADV074 — SecurityFilterChain + RBAC
+### TICKET-ADV074 — SecurityFilterChain + RBAC ✅
 
 **Goal:** Wire the filter into the chain and enforce URL-level RBAC for trades, recon, and audit endpoints.
 
