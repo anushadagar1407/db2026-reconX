@@ -30,6 +30,19 @@
         </rollback>
     </changeSet>
 
+    <!-- H2 has no GIN indexes, but dev still needs the metadata column so the
+         shared seed data can be applied against the same logical schema. -->
+    <changeSet id="003-json-on-instruments-h2" author="trainer" dbms="h2">
+        <addColumn tableName="instruments">
+            <column name="metadata" type="JSON" defaultValue="{}">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="instruments" columnName="metadata"/>
+        </rollback>
+    </changeSet>
+
     <!-- Release boundary after the JSONB metadata column + GIN index. -->
     <changeSet id="tag-release-1-1" author="trainer">
         <tagDatabase tag="release-1.1"/>
