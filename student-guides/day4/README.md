@@ -1787,7 +1787,7 @@ curl -s "http://localhost:8080/api/actuator/health" | jq '.components.reconxKafk
 
 ---
 
-### TICKET-ADV061 — Structured logging with MDC
+### TICKET-ADV061 — Structured logging with MDC ✅
 
 **Goal:** Emit human-readable logs in `dev` and JSON logs in `uat`/`prod`, with a per-request `correlationId` (plus optional `tradeRef`) carried across the request via SLF4J's MDC.
 
