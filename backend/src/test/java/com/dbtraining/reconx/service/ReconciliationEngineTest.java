@@ -2,6 +2,7 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -18,9 +19,21 @@ class ReconciliationEngineTest {
     private final ReconciliationEngine engine = new ReconciliationEngine();
 
     @Test
+    @DisplayName("Reconcile exact match returns MATCHED")
     void testReconcile_exactMatch_returnsMatched() {
         // TODO(TICKET-ADV040): two identical EquityTrades + EXACT rule -> one ReconResult with status MATCHED.
-        org.junit.jupiter.api.Assertions.fail("TICKET-ADV040 not implemented yet");
+        // Given: two identical EquityTrades and an EXACT rule
+        EquityTrade internalTrade = equity("ABC-20260729-1234", "100.00", "10");
+        EquityTrade externalTrade = equity("ABC-20260729-1234", "100.00", "10");
+        ReconciliationRule exactRule = ReconciliationRule.EXACT;
+
+        // When: reconcile is called
+        List<ReconResult> results = engine.reconcile(List.of(internalTrade), List.of(externalTrade), exactRule);
+
+        // Then: the result contains one MATCHED ReconResult
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).status()).isEqualTo(ReconResult.Status.MATCHED);
+
     }
 
     @Test
