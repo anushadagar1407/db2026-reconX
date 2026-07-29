@@ -78,9 +78,10 @@ public class TradeService {
     }
 
     public void softDelete(Long id, String actor) {
-        // TODO(TICKET-ADV067): load, call t.softDelete() (sets deleted_at), save,
-        //   publish a TRADE_CANCELLED event.
-        throw new UnsupportedOperationException("TICKET-ADV067");
+        Trade trade = tradeRepo.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("id=" + id));
+        trade.softDelete();
+        tradeRepo.save(trade);
     }
 
     @Transactional(readOnly = true)
