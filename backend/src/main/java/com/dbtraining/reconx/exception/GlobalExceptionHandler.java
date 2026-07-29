@@ -8,6 +8,9 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.net.URI;
 import java.time.Instant;
@@ -167,6 +170,10 @@ public class GlobalExceptionHandler {
         problem.setType(URI.create(type));
         problem.setTitle(title);
         problem.setProperty("timestamp", Instant.now());
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes instanceof ServletRequestAttributes servletRequestAttributes) {
+            problem.setInstance(URI.create(servletRequestAttributes.getRequest().getRequestURI()));
+        }
         return problem;
     }
 }

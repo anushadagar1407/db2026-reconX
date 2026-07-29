@@ -55,6 +55,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.title").value("Trade not found"))
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.detail").value("trade 999 was not found"))
+                .andExpect(jsonPath("$.instance").value("/probe/not-found"))
                 .andExpect(jsonPath("$.timestamp").isNotEmpty());
     }
 
