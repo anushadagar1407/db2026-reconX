@@ -54,7 +54,7 @@ public final class EquityTrade implements TradeType {
     /** Notional = quantity * price in the trade currency. */
     @Override public Money notional() {
         // TODO(TICKET-ADV019): return new Money(quantity * price, currency).
-        throw new UnsupportedOperationException("TICKET-ADV019");
+        return new Money(quantity.multiply(price), currency);
     }
 
     public String instrumentSymbol() { return instrumentSymbol; }
@@ -105,7 +105,22 @@ public final class EquityTrade implements TradeType {
             //     quantity, price, currency, side, tradeDate).
             //   - quantity and price must be > 0 (IllegalStateException otherwise).
             //   - return new EquityTrade(this).
-            throw new UnsupportedOperationException("TICKET-ADV019");
+            Objects.requireNonNull(tradeRef, "tradeRef is required");
+            Objects.requireNonNull(instrumentSymbol, "instrumentSymbol is required");
+            Objects.requireNonNull(quantity, "quantity is required");
+            Objects.requireNonNull(price, "price is required");
+            Objects.requireNonNull(currency, "currency is required");
+            Objects.requireNonNull(side, "side is required");
+            Objects.requireNonNull(tradeDate, "tradeDate is required");
+
+            if (quantity.signum() <= 0) {
+                throw new IllegalStateException("quantity must be > 0");
+            }
+            if (price.signum() <= 0) {
+                throw new IllegalStateException("price must be > 0");
+            }
+
+            return new EquityTrade(this);
         }
     }
 }
