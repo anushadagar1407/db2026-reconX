@@ -25,13 +25,6 @@ import java.util.function.Function;
 public class TradeAnalyticsService {
 
     /** TICKET-ADV034 — count + sum of notional per counterparty. */
-    /*public Map<Long, NotionalSummary> notionalByCounterparty(List<? extends TradeType> trades) {
-        // TODO(TICKET-ADV034): Collectors.groupingBy(this::counterpartyIdOf,
-        //   Collectors.collectingAndThen(toList(), list -> new NotionalSummary(
-        //       list.size(),
-        //       list.stream().map(t -> t.notional().amount()).reduce(ZERO, BigDecimal::add)))).
-        throw new UnsupportedOperationException("TICKET-ADV034");
-    }*/
     public Map<Long, NotionalSummary> notionalByCounterparty(List<? extends TradeType> trades) {
         // Handle null or empty input gracefully
         if (trades == null || trades.isEmpty()) {
