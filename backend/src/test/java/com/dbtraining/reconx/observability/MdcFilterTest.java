@@ -37,6 +37,7 @@ class MdcFilterTest {
 
     @Test
     void propagatesExplicitCorrelationAndTradeReferenceBeforeTheChain() throws Exception {
+        MDC.put("stale", "stale-value");
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(MdcFilter.HDR_CORRELATION, "foo-123");
         request.addHeader(MdcFilter.HDR_TRADE_REF, "TRD-42");
@@ -92,6 +93,7 @@ class MdcFilterTest {
 
     @Test
     void clearsMdcWhenTheChainThrows() {
+        MDC.put("stale", "stale-value");
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader(MdcFilter.HDR_CORRELATION, "exception-correlation");
         request.addHeader(MdcFilter.HDR_TRADE_REF, "exception-trade");
