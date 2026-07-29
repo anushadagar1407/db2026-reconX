@@ -47,7 +47,7 @@ public class ReconciliationEngine {
     public List<ReconResult> reconcile(List<TradeType> internal,
                                        List<TradeType> external,
                                        ReconciliationRule rule) {
-        // TODO(TICKET-ADV033): build a Map<tradeRef, TradeType> from `external`
+        // TICKET-ADV033: build a Map<tradeRef, TradeType> from `external`
         //   (O(1) lookups beat O(n*m) nested iteration), then parallelStream
         //   over `internal` and call matchOne(in, externalByRef.get(...), rule)
         //   for each. Guard against null/empty inputs (TICKET-ADV047).
@@ -57,13 +57,15 @@ public class ReconciliationEngine {
         //     return internal.parallelStream()
         //         .map(in -> matchOne(in, externalByRef.get(in.tradeRef().value()), rule))
         //         .toList();
-        // Handle null or empty inputs gracefully
-        if (internal == null || internal.isEmpty() || external == null || external.isEmpty()) {
-            return List.of(); // Return an empty list
+        // With no internal trades there is nothing to reconcile. A missing
+        // external feed, however, must produce one MISSING_EXTERNAL break per
+        // internal trade.
+        if (internal == null || internal.isEmpty()) {
+            return List.of();
         }
 
         // Pre-index the external trades by tradeRef for constant-time lookups
-        Map<String, TradeType> externalByRef = external.stream()
+        Map<String, TradeType> externalByRef = (external == null ? List.<TradeType>of() : external).stream()
                 .collect(Collectors.toMap(
                         trade -> trade.tradeRef().value(), // Key: tradeRef
                         Function.identity(),              // Value: the trade itself
@@ -71,7 +73,7 @@ public class ReconciliationEngine {
                 ));
 
         // Stream over the internal trades, match each one with the external trades, and collect results into a List
-        return internal.stream()
+        return internal.parallelStream()
                 .map(trade -> matchOne(trade, externalByRef.get(trade.tradeRef().value()), rule))
                 .collect(Collectors.toList());
     }
@@ -102,10 +104,32 @@ public class ReconciliationEngine {
     }
 
     private ReconResult matchOne(TradeType internal, TradeType external, ReconciliationRule rule) {
-        // TODO(TICKET-ADV033): if external is null return ReconResult.breakResult(ref, "MISSING_EXTERNAL", ...).
+        // TICKET-ADV033: if external is null return ReconResult.breakResult(ref, "MISSING_EXTERNAL", ...).
         //   Otherwise pull priceQty() for both sides, compare via rule.matches(...),
         //   return ReconResult.matched(ref) or breakResult(ref, "VALUE_MISMATCH", details).
-        throw new UnsupportedOperationException("TICKET-ADV033");
+        String ref = internal.tradeRef().value();
+        if (external == null) {
+            return ReconResult.breakResult(
+                    ref,
+                    "MISSING_EXTERNAL",
+                    "No external trade found for " + ref);
+        }
+
+        BigDecimal[] internalPair = priceQty(internal);
+        BigDecimal[] externalPair = priceQty(external);
+        if (rule.matches(
+                internalPair[0],
+                internalPair[1],
+                externalPair[0],
+                externalPair[1])) {
+            return ReconResult.matched(ref);
+        }
+
+        return ReconResult.breakResult(
+                ref,
+                "VALUE_MISMATCH",
+                "internal=%s/%s external=%s/%s".formatted(
+                        internalPair[0], internalPair[1], externalPair[0], externalPair[1]));
     }
 
     /** TICKET-ADV018 — exhaustive switch over the sealed hierarchy. */
@@ -129,8 +153,8 @@ public class ReconciliationEngine {
 
             case BondTrade bond ->
                     new BigDecimal[]{
-                            bond.faceValue(),
-                            BigDecimal.ONE
+                            bond.couponRate(),
+                            bond.faceValue()
                     };
 
             case DerivativeTrade derivative ->
