@@ -1050,7 +1050,7 @@ find target/generated-sources/annotations -name "TradeMapperImpl.java"
 
 ---
 
-### TICKET-ADV055 — `TradeRepository` with `@Query`
+### TICKET-ADV055 — `TradeRepository` with `@Query` ✅
 
 **Goal:** Define a Spring Data JPA repository that exposes a `findByTradeRef` derived query and a `findByFilters` JPQL query supporting optional date range, status, and counterparty filters.
 
