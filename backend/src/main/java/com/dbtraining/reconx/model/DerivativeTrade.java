@@ -70,7 +70,7 @@ public final class DerivativeTrade implements TradeType {
 
 
     @Override public String toString() {
-        // TODO(TICKET-ADV030): "DerivativeTrade[ref=..., TYPE UNDERLYING on date, strike=... CCY, qty=..., expiry=..., side=...]"
+        // TICKET-ADV030: "DerivativeTrade[ref=..., TYPE UNDERLYING on date, strike=... CCY, qty=..., expiry=..., side=...]"
         return "DerivativeTrade[ref=%s, TYPE UNDERLYING on date, strike=%s %s, qty=%s, expiry=%s, side=%s]"
         .formatted(tradeRef, strike, currency.getCurrencyCode(), quantity, expiry.toString(), side);
     }
