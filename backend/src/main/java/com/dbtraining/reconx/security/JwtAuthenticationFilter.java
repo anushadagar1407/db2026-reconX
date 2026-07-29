@@ -1,13 +1,22 @@
 package com.dbtraining.reconx.security;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * ============================================================================
@@ -24,27 +33,6 @@ import java.io.IOException;
  * OBSERVE: A request with a valid token populates SecurityContextHolder; the
  *          downstream controller can use @AuthenticationPrincipal etc.
  * ============================================================================
- *
- *  TODO(TICKET-ADV073):
- *    String header = req.getHeader("Authorization");
- *    if (header != null && header.startsWith("Bearer ")) {
- *        String token = header.substring(7);
- *        try {
- *            Claims claims = provider.parse(token);
- *            String email = claims.getSubject();
- *            String role  = (String) claims.get("role");
- *            var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
- *            var auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
- *            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
- *            SecurityContextHolder.getContext().setAuthentication(auth);
- *        } catch (JwtException ex) {
- *            SecurityContextHolder.clearContext();
- *        }
- *    }
- *    chain.doFilter(req, res);
- *
- *  HINT: Always call chain.doFilter at the end — even on auth failure — so
- *        Spring's normal exception flow can produce a clean 401.
  * ============================================================================
  */
 @Component
@@ -57,8 +45,51 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
             throws ServletException, IOException {
-        // TODO(TICKET-ADV073): parse the Authorization header, populate the
-        //                     SecurityContext, then call chain.doFilter.
+        String header = req.getHeader(HttpHeaders.AUTHORIZATION);
+        if (header != null && header.startsWith("Bearer ")) {
+            try {
+                Claims claims = provider.parse(header.substring("Bearer ".length()));
+                if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                    String subject = claims.getSubject();
+                    List<String> roles = extractRoles(claims);
+                    if (subject == null || subject.isBlank() || roles.isEmpty()) {
+                        SecurityContextHolder.clearContext();
+                    } else {
+                        List<SimpleGrantedAuthority> authorities = roles.stream()
+                                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                                .toList();
+                        var authentication = new UsernamePasswordAuthenticationToken(
+                                subject, null, authorities);
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
+                }
+            } catch (JwtException ex) {
+                SecurityContextHolder.clearContext();
+            } catch (RuntimeException ex) {
+                SecurityContextHolder.clearContext();
+            }
+        }
         chain.doFilter(req, res);
+    }
+
+    private List<String> extractRoles(Claims claims) {
+        Object rolesClaim = claims.get("roles");
+        if (rolesClaim instanceof Collection<?> roles) {
+            return roles.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .filter(role -> !role.isBlank())
+                    .toList();
+        }
+        if (rolesClaim instanceof String role && !role.isBlank()) {
+            return List.of(role);
+        }
+
+        Object roleClaim = claims.get("role");
+        if (roleClaim instanceof String role && !role.isBlank()) {
+            return List.of(role);
+        }
+        return List.of();
     }
 }
