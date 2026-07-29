@@ -13,6 +13,7 @@ import com.dbtraining.reconx.dto.TradeEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +56,7 @@ public class TradeService {
         this.metrics = metrics;
     }
 
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public Trade create(TradeRequest req, String actor) {
         // TODO(TICKET-ADV064): reject duplicate tradeRef via DuplicateTradeRefException,
         //   build a new Trade with instrument + counterparty looked up from
@@ -65,18 +67,21 @@ public class TradeService {
         throw new UnsupportedOperationException("TICKET-ADV064");
     }
 
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public Trade update(Long id, TradeRequest req, String actor) {
         // TODO(TICKET-ADV065): load by id (throw TradeNotFoundException if missing),
         //   copy mutable fields from req, save, publish a TRADE_UPDATED event.
         throw new UnsupportedOperationException("TICKET-ADV065");
     }
 
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public Trade updateStatus(Long id, String status, String actor) {
         // TODO(TICKET-ADV066): load, setStatus(status), save, publish TRADE_UPDATED
         //   with the new status in the "after" slot of the event.
         throw new UnsupportedOperationException("TICKET-ADV066");
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void softDelete(Long id, String actor) {
         // TODO(TICKET-ADV067): load, call t.softDelete() (sets deleted_at), save,
         //   publish a TRADE_CANCELLED event.
@@ -84,6 +89,7 @@ public class TradeService {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('VIEWER', 'TRADER', 'RECON_ANALYST', 'ADMIN')")
     public Page<Trade> list(LocalDate from, LocalDate to, String status, Long counterpartyId, Pageable pageable) {
         // TODO(TICKET-ADV055 + TICKET-ADV056): combine the static helpers from
         //   TradeSpecifications (hasStatus, tradeDateBetween, hasCounterparty)

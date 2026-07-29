@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,6 +49,7 @@ public class TradeController {
 
     @GetMapping
     @Operation(summary = "List trades — paginated, filterable, sortable")
+    @PreAuthorize("hasAnyRole('VIEWER', 'TRADER', 'RECON_ANALYST', 'ADMIN')")
     public PagedResponse<TradeResponse> list(
             @RequestParam(required = false) LocalDate from,
             @RequestParam(required = false) LocalDate to,
@@ -63,6 +65,7 @@ public class TradeController {
 
     @PostMapping
     @Operation(summary = "Create a trade")
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public ResponseEntity<TradeResponse> create(@Valid @RequestBody TradeRequest req,
                                                 @AuthenticationPrincipal Object principal) {
         // TODO(TICKET-ADV064): call service.create(req, actor), build a Location
@@ -73,6 +76,7 @@ public class TradeController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Full update of a trade")
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public TradeResponse update(@PathVariable Long id, @Valid @RequestBody TradeRequest req,
                                 @AuthenticationPrincipal Object principal) {
         // TODO(TICKET-ADV065): delegate to service.update(id, req, actor) and
@@ -82,6 +86,7 @@ public class TradeController {
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Update only the status field")
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public TradeResponse updateStatus(@PathVariable Long id,
                                       @RequestBody Map<String, String> body,
                                       @AuthenticationPrincipal Object principal) {
@@ -92,6 +97,7 @@ public class TradeController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Soft delete (sets deleted_at)")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id,
                                        @AuthenticationPrincipal Object principal) {
         // TODO(TICKET-ADV067): service.softDelete(id, actor); return 204 No Content.
