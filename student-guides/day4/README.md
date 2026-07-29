@@ -207,7 +207,7 @@ Confirm the reactor (or single-module pom) compiles cleanly before wiring anythi
 
 ---
 
-### TICKET-ADV049 — Spring profiles: dev / uat / prod
+### TICKET-ADV049 — Spring profiles: dev / uat / prod ✅
 
 **Goal:** Configure three Spring profiles so that the same JAR can boot against H2 in dev, Postgres in UAT, and a secrets-driven Postgres in prod.
 
