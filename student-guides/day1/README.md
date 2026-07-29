@@ -34,7 +34,7 @@ still stuck. If you are still stuck after Hint 3, ask your trainer.
 
 ### Workshop 1A — GitHub & C4
 
-### TICKET-ADV001 — Create GitHub repo with branch protection
+### TICKET-ADV001 — Create GitHub repo with branch protection ✅
 
 **Goal:** Stand up a private team repository with enforced branch protection
 rules on `main` and `develop`, plus a CODEOWNERS file that routes PR reviews
@@ -159,7 +159,7 @@ git push origin throwaway-push-test:main   # MUST be rejected by GitHub
 
 ---
 
-### TICKET-ADV002 — Design C4 Context diagram
+### TICKET-ADV002 — Design C4 Context diagram ✅
 
 **Goal:** Produce a C4 Level 1 (Context) diagram for ReconX showing the
 system as a single box, the human actors who interact with it, and the
@@ -277,7 +277,7 @@ ls -l db/diagrams/c4-context.md
 
 ---
 
-### TICKET-ADV003 — Design C4 Container diagram
+### TICKET-ADV003 — Design C4 Container diagram ✅
 
 **Goal:** Produce a C4 Level 2 (Container) diagram showing each
 independently deployable unit inside the ReconX boundary, and how they
@@ -394,7 +394,7 @@ ls -l db/diagrams/c4-container.md
 
 ---
 
-### TICKET-ADV004 — Design C4 Component diagram
+### TICKET-ADV004 — Design C4 Component diagram ✅
 
 **Goal:** Produce a C4 Level 3 (Component) diagram for ONE container —
 usually the recon-service API — showing its major logical components and
@@ -537,7 +537,7 @@ ls -l db/diagrams/c4-component.md
 
 ### Workshop 1B — Schema, partitioning, materialised view, JSONB, window fns
 
-### TICKET-ADV006 — Design ER model (8 entities)
+### TICKET-ADV006 — Design ER model (8 entities) ✅
 
 **Goal:** Produce an entity-relationship diagram covering the eight core
 ReconX tables with primary keys, foreign keys, and key columns annotated.
@@ -718,7 +718,7 @@ ls -l db/erd.md
 
 ---
 
-### TICKET-ADV007 — CREATE TABLE with monthly partitioning
+### TICKET-ADV007 — CREATE TABLE with monthly partitioning ✅
 
 **Goal:** Create the `trades` table as a RANGE-partitioned parent table on
 `trade_date`, with one child partition per calendar month for the active
@@ -855,7 +855,7 @@ psql -h localhost -p 5432 -U reconx -d reconx_dev   # password: reconx
 
 ---
 
-### TICKET-ADV008 — Materialised view: mv_daily_recon_summary
+### TICKET-ADV008 — Materialised view: mv_daily_recon_summary ✅
 
 **Goal:** Create a materialised view that aggregates trades and recon
 breaks by trade_date, region, and asset class, and make it refreshable
@@ -1006,7 +1006,7 @@ psql -h localhost -p 5432 -U reconx -d reconx_dev   # password: reconx
 
 ---
 
-### TICKET-ADV009 — Add JSONB column to instruments
+### TICKET-ADV009 — Add JSONB column to instruments ✅
 
 **Goal:** Add a `metadata` JSONB column to the `instruments` table for
 schema-flexible attributes (sector, issuer, rating, tags) and back it with
@@ -1168,7 +1168,7 @@ psql -h localhost -p 5432 -U reconx -d reconx_dev   # password: reconx
 
 ---
 
-### TICKET-ADV010 — Window Function: VWAP per instrument per day
+### TICKET-ADV010 — Window Function: VWAP per instrument per day ✅
 
 **Goal:** Write a query that returns every trade row alongside its
 instrument-day volume-weighted average price, using a window function so
@@ -1274,7 +1274,7 @@ psql -h localhost -p 5432 -U reconx -d reconx_dev
 
 ---
 
-### TICKET-ADV011 — Recursive CTE: trade lifecycle rollup
+### TICKET-ADV011 — Recursive CTE: trade lifecycle rollup ✅
 
 **Goal:** Write a recursive CTE that walks each trade through its lifecycle
 stages (execution → confirmation → settlement → recon break → resolution)
@@ -1408,7 +1408,7 @@ psql -h localhost -p 5432 -U reconx -d reconx_dev -f db/queries.sql
 
 ### Workshop 1C — Liquibase, AI ADRs, Jira, seed
 
-### TICKET-ADV012 — Liquibase master changelog
+### TICKET-ADV012 — Liquibase master changelog ✅
 
 **Goal:** Wire a Liquibase master changelog that uses `<include>` to
 compose one-changeset-per-file chapter files, and configure Spring Boot to
@@ -1673,7 +1673,7 @@ psql -h localhost -p 5432 -U reconx -d reconx_dev   # password: reconx
 
 ---
 
-### TICKET-ADV013 — Add rollback tags
+### TICKET-ADV013 — Add rollback tags ✅
 
 **Goal:** Make every changeset reversible — either via Liquibase's
 auto-rollback for structured changes or an explicit `<rollback>` block for
@@ -1809,7 +1809,7 @@ cat /tmp/rollback.sql
 
 ---
 
-### TICKET-ADV014 — Add preconditions
+### TICKET-ADV014 — Add preconditions ✅
 
 **Goal:** Guard each changeset with a `<preConditions>` block that asks
 "should this run on THIS database right now?" using the appropriate
@@ -1984,7 +1984,7 @@ psql -h localhost -p 5432 -U reconx -d reconx_dev -c \
 
 ---
 
-### TICKET-ADV015 — Use Claude to generate ADRs
+### TICKET-ADV015 — Use Claude to generate ADRs ✅
 
 **Goal:** Author at least three Architecture Decision Records in the
 Michael Nygard format covering real decisions made today (e.g., partition
@@ -2137,7 +2137,7 @@ head -40 docs/adr/0001-*.md
 
 ---
 
-### TICKET-ADV016 — Set up Jira / Kanban with epics
+### TICKET-ADV016 — Set up Jira / Kanban with epics ✅
 
 **Goal:** Create a project board (Jira or GitHub Projects) with epics that
 group related work, one card per Day-1 exercise, and a sensible column
@@ -2263,7 +2263,7 @@ A project board (Jira or GitHub Projects) is set up with three epics, one card p
 
 ---
 
-### TICKET-ADV017 — Seed data: 10 counterparties, 50 instruments, 500 trades
+### TICKET-ADV017 — Seed data: 10 counterparties, 50 instruments, 500 trades ✅
 
 **Goal:** Load deterministic seed data into the database — 10
 counterparties, 50 instruments (5 explicit + 45 generated), and 500 trades
@@ -2527,10 +2527,10 @@ psql -h localhost -p 5432 -U reconx -d reconx_dev   # password: reconx
 
 Before standup tomorrow, all of the following should be green:
 
-- [ ] GitHub repo created and private, branch protection on both `main` and `develop`, CODEOWNERS in place (TICKET-ADV001).
-- [ ] C4 Context, Container, and Component diagrams committed under `docs/architecture/` or `db/diagrams/` (TICKET-ADV002–1.4).
-- [ ] ER diagram at `db/erd.md` covering all 8 entities with FK arrows and the partition column called out (TICKET-ADV006).
-- [ ] Liquibase migrations apply cleanly on a fresh DB; `\d+ trades` shows the partition key and child partitions; `\d+ mv_daily_recon_summary` shows the materialised view (TICKET-ADV007, 1.8, 1.12).
+- [*] GitHub repo created and private, branch protection on both `main` and `develop`, CODEOWNERS in place (TICKET-ADV001).
+- [*] C4 Context, Container, and Component diagrams committed under `docs/architecture/` or `db/diagrams/` (TICKET-ADV002–1.4).
+- [*] ER diagram at `db/erd.md` covering all 8 entities with FK arrows and the partition column called out (TICKET-ADV006).
+- [*] Liquibase migrations apply cleanly on a fresh DB; `\d+ trades` shows the partition key and child partitions; `\d+ mv_daily_recon_summary` shows the materialised view (TICKET-ADV007, 1.8, 1.12).
 - [ ] JSONB `metadata` column on `instruments` with a GIN index using `jsonb_path_ops` (TICKET-ADV009).
 - [ ] VWAP window-function query and recursive-CTE lifecycle query committed to `db/queries.sql` (TICKET-ADV010, 1.11).
 - [ ] At least one rollback tag (`release-1.0` or equivalent) is set; `liquibase:rollbackSQL` emits sensible reverse-DDL (TICKET-ADV013).
@@ -2538,7 +2538,7 @@ Before standup tomorrow, all of the following should be green:
 - [ ] At least 3 ADRs under `docs/adr/` with the prompt template committed at `docs/adr/README.md` (TICKET-ADV015).
 - [ ] Project board has epics + one card per Day-1 exercise; at least one card has moved through all columns (TICKET-ADV016).
 - [ ] Seed data loaded — counts of 10 / 50 / 500 and roughly even spread across the four monthly partitions (TICKET-ADV017).
-- [ ] At least one PR has been opened, reviewed by two team-mates, and merged to `develop`.
+- [*] At least one PR has been opened, reviewed by two team-mates, and merged to `develop`.
 
 If any of these are red at the end of the day, raise it in standup tomorrow
 before you start on Day 2 — schema drift between today's deliverables and

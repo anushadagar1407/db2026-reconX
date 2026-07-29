@@ -30,7 +30,7 @@ The foundation. If this workshop lands clean, the rest of the day follows. Take 
 
 ---
 
-### TICKET-ADV018 — Sealed interface `TradeType` and abstract base
+### TICKET-ADV018 — Sealed interface `TradeType` and abstract base ✅
 
 **Goal:** Establish the closed-world polymorphic root for every trade type in the platform, plus an internal shared-state base class.
 
@@ -119,7 +119,7 @@ After this ticket, the sealed `TradeType` interface and its `AssetClass` enum ex
 
 ---
 
-### TICKET-ADV019 — `EquityTrade` with Builder pattern
+### TICKET-ADV019 — `EquityTrade` with Builder pattern ✅
 
 **Goal:** Implement the first concrete trade with a fluent Builder that enforces required fields and domain invariants at build time.
 
@@ -280,7 +280,7 @@ After this ticket, `Side` and `EquityTrade` compile; an `EquityTrade` can only b
 
 ---
 
-### TICKET-ADV020 — `FXTrade` (two currencies and FX rate)
+### TICKET-ADV020 — `FXTrade` (two currencies and FX rate) ✅
 
 **Goal:** Build the FX trade type with two currency fields, a notional in the base currency, and an FX rate — all type-safe.
 
@@ -430,7 +430,7 @@ After this ticket, `FXTrade` compiles, builder rejects equal `ccy1`/`ccy2`, bad 
 
 ---
 
-### TICKET-ADV021 — `BondTrade` (coupon, maturity, face value, ISIN)
+### TICKET-ADV021 — `BondTrade` (coupon, maturity, face value, ISIN) ✅
 
 **Goal:** Build the bond trade type with fixed-income-specific fields and fail-fast validation on maturity ordering and ISIN shape.
 
@@ -586,7 +586,7 @@ After this ticket, `BondTrade` compiles, the builder refuses a maturity before t
 
 ---
 
-### TICKET-ADV022 — `DerivativeTrade` (underlying, strike, expiry, option type)
+### TICKET-ADV022 — `DerivativeTrade` (underlying, strike, expiry, option type) ✅
 
 **Goal:** Build the derivative trade type with an option-type enum and strike/expiry validation, without over-validating historical records.
 
@@ -759,7 +759,7 @@ Now that the four trade types exist, you build the supporting cast: the entry po
 
 ---
 
-### TICKET-ADV023 — `TradeFactory`
+### TICKET-ADV023 — `TradeFactory` ✅
 
 **Goal:** Build a single entry point that constructs any concrete `TradeType` from a discriminator string and a parameter map, absorbing the cost of type erasure so callers stay clean.
 
@@ -910,7 +910,7 @@ After this ticket, `TradeFactory.create("EQUITY", map)` returns a typed `EquityT
 
 ---
 
-### TICKET-ADV024 — `Money` and `TradeRef` value objects
+### TICKET-ADV024 — `Money` and `TradeRef` value objects ✅
 
 **Goal:** Introduce two immutable value objects: `Money` (amount plus currency) and `TradeRef` (regex-validated trade reference).
 
@@ -1085,7 +1085,7 @@ After this ticket, `Money` and `TradeRef` are records, validate in their compact
 
 ---
 
-### TICKET-ADV025 — Exception hierarchy
+### TICKET-ADV025 — Exception hierarchy ✅
 
 **Goal:** Define the platform's exception ladder rooted at an abstract `ReconException`, with four concrete subtypes covering construction, lookup, duplication, and reconciliation outcomes.
 
@@ -1230,7 +1230,7 @@ After this ticket, the four-level exception ladder compiles, every subtype exten
 
 ---
 
-### TICKET-ADV026 — `ReconciliationRule` enum
+### TICKET-ADV026 — `ReconciliationRule` enum ✅
 
 **Goal:** Model the closed set of reconciliation tolerance rules as an enum, with thresholds and a behaviour method on each constant.
 
@@ -1367,7 +1367,7 @@ The final stretch. You add the contract methods that integrate your trades with 
 
 ---
 
-### TICKET-ADV027 — `Comparable<TradeType>` natural ordering
+### TICKET-ADV027 — `Comparable<TradeType>` natural ordering ✅
 
 **Goal:** Give `TradeType` a natural ordering that is safe for `TreeSet` and `TreeMap` and consistent with the equality you will add in TICKET-ADV028.
 
@@ -1500,7 +1500,7 @@ After this ticket, `TradeType` extends `Comparable<TradeType>`, a shared `NATURA
 
 ---
 
-### TICKET-ADV028 — `equals` and `hashCode` keyed on `tradeRef`
+### TICKET-ADV028 — `equals` and `hashCode` keyed on `tradeRef` ✅
 
 **Goal:** Implement value-based equality on every concrete trade, keyed on the natural business key (`tradeRef`), so collections behave correctly pre- and post-persist.
 
@@ -1608,7 +1608,7 @@ After this ticket, every concrete trade overrides `equals` and `hashCode` keyed 
 
 ---
 
-### TICKET-ADV029 — JSR-380 validation on the request DTO
+### TICKET-ADV029 — JSR-380 validation on the request DTO ✅
 
 **Goal:** Add declarative validation to the inbound HTTP DTO, leaving the domain Builder as the second line of defence.
 
@@ -1730,7 +1730,7 @@ After this ticket, `TradeRequest` compiles as a record in `com.dbtraining.reconx
 
 ---
 
-### TICKET-ADV030 — PII-safe `toString` for logging
+### TICKET-ADV030 — PII-safe `toString` for logging ✅
 
 **Goal:** Override `toString` on every concrete trade so that default logging never leaks counterparty or settlement PII.
 
@@ -1841,7 +1841,7 @@ After this ticket, every concrete trade has a hand-written `toString` that inclu
 
 ---
 
-### TICKET-ADV031 — Javadoc on all public domain classes
+### TICKET-ADV031 — Javadoc on all public domain classes ✅
 
 **Goal:** Document the public contract of every domain class and public method so that a reader of the Javadoc could re-implement against it without reading the code.
 
@@ -1974,7 +1974,7 @@ open backend/target/site/apidocs/index.html
 
 ---
 
-### TICKET-ADV032 — PR review with two approvals
+### TICKET-ADV032 — PR review with two approvals ✅
 
 **Goal:** Open a pull request containing the day's work and obtain two reviewers' approval before merging into the team branch.
 

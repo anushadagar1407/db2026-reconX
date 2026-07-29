@@ -12,23 +12,41 @@ class EquityTradeTest {
 
     @Test
     void builder_buildsWhenAllRequiredPresent() {
-        // TODO(TICKET-ADV019): build an EquityTrade via the Builder with all required fields,
-        //                     then assert tradeRef, notional (price*qty) and assetClass = EQUITY.
-        org.junit.jupiter.api.Assertions.fail("TICKET-ADV019 not implemented yet");
+        EquityTrade trade = sampleEquity("ABC-20260306-0001");
+        assertThat(trade.tradeRef()).isEqualTo(TradeRef.of("ABC-20260306-0001"));
+        assertThat(trade.notional().amount()).isEqualByComparingTo("10000");
+        assertThat(trade.assetClass()).isEqualTo(TradeType.AssetClass.EQUITY);
+        // TICKET-ADV019: build an EquityTrade via the Builder with all required fields,
+        //                     then assert tradeRef, notional (price*qty) and assetClass = EQUITY.    }
     }
 
     @Test
     void builder_missingPrice_throws() {
-        // TODO(TICKET-ADV019): omit .price(...) on the Builder and assert build() throws
-        //                     NullPointerException whose message mentions "price".
-        org.junit.jupiter.api.Assertions.fail("TICKET-ADV019 not implemented yet");
+
+        assertThatThrownBy(() -> EquityTrade.builder()
+                .tradeRef(TradeRef.of("ABC-20260306-0001"))
+                .instrumentSymbol("SAP.DE")
+                .quantity(new BigDecimal("100"))
+                .currency("EUR")
+                .side(Side.BUY)
+                .tradeDate(LocalDate.of(2026, 6, 3))
+                .counterpartyId(1L)
+                .build()
+    )
+                .isInstanceOf(NullPointerException.class);
     }
+        // TICKET-ADV019: omit .price(...) on the Builder and assert build() throws
+        //                     NullPointerException whose message mentions "price".
 
     @Test
     void equality_byTradeRef() {
-        // TODO(TICKET-ADV028): two EquityTrades with the same tradeRef are equal and share hashCode;
+        // TICKET-ADV028: two EquityTrades with the same tradeRef are equal and share hashCode;
         //                     a third with a different tradeRef is not equal.
-        org.junit.jupiter.api.Assertions.fail("TICKET-ADV028 not implemented yet");
+        //org.junit.jupiter.api.Assertions.fail("TICKET-ADV028 not implemented yet");
+        EquityTrade t1 = sampleEquity("ABC-20260306-0001");
+        EquityTrade t2 = sampleEquity("ABC-20260306-0001");
+        
+        assertThat(t1.equals(t2));
     }
 
     private EquityTrade sampleEquity(String ref) {

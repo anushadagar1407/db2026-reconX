@@ -18,27 +18,93 @@
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
     <changeSet id="005-mv-daily-recon-summary" author="trainer">
+        <validCheckSum>9:0ba41b5867b2f8b412dcd0e05a5af167</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <dbms type="postgresql"/>
         </preConditions>
         <sql splitStatements="false"><![CDATA[
             CREATE MATERIALIZED VIEW mv_daily_recon_summary AS
             SELECT
-                trade_date,
-                COUNT(*)                                          AS total_trades,
-                COUNT(*) FILTER (WHERE status = 'MATCHED')        AS matched_trades,
-                COUNT(*) FILTER (WHERE status IN ('UNMATCHED','DISPUTED')) AS break_trades,
-                COALESCE(SUM(quantity * price), 0)                AS total_notional
-            FROM trades
-            WHERE deleted_at IS NULL
-            GROUP BY trade_date;
+                t.trade_date,
+                c.region,
+                t.asset_class,
+                COUNT(*) AS total_trades,
+                COUNT(*) FILTER (WHERE t.status = 'MATCHED') AS matched_trades,
+                COALESCE(SUM(rb.open_breaks), 0) AS open_breaks,
+                COALESCE(SUM(t.quantity * t.price), 0) AS gross_notional,
+                ROUND(
+                    100.0 * COUNT(*) FILTER (WHERE t.status = 'MATCHED')
+                    / NULLIF(COUNT(*), 0),
+                    2
+                ) AS match_rate_pct
+            FROM trades t
+            LEFT JOIN (
+                SELECT trade_id, trade_date,
+                       COUNT(*) FILTER (WHERE status = 'OPEN') AS open_breaks
+                FROM recon_breaks
+                GROUP BY trade_id, trade_date
+            ) rb ON rb.trade_id = t.id AND rb.trade_date = t.trade_date
+            INNER JOIN counterparties c
+                ON c.id = t.counterparty_id
+
+            WHERE t.deleted_at IS NULL
+            GROUP BY t.trade_date, c.region, t.asset_class;
 
             CREATE UNIQUE INDEX uq_mv_daily_recon_summary_trade_date
-                ON mv_daily_recon_summary (trade_date);
+                ON mv_daily_recon_summary (trade_date, region, asset_class);
         ]]></sql>
         <rollback>
             <sql>DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;</sql>
         </rollback>
+    </changeSet>
+
+    <!-- Upgrade databases that applied the earlier summary shape. -->
+    <changeSet id="005-upgrade-mv-daily-recon-summary" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <dbms type="postgresql"/>
+                <not>
+                    <columnExists tableName="mv_daily_recon_summary" columnName="open_breaks"/>
+                </not>
+            </and>
+        </preConditions>
+        <sql splitStatements="true"><![CDATA[
+            DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;
+            CREATE MATERIALIZED VIEW mv_daily_recon_summary AS
+            SELECT
+                t.trade_date,
+                c.region,
+                t.asset_class,
+                COUNT(*) AS total_trades,
+                COUNT(*) FILTER (WHERE t.status = 'MATCHED') AS matched_trades,
+                COALESCE(SUM(rb.open_breaks), 0) AS open_breaks,
+                COALESCE(SUM(t.quantity * t.price), 0) AS gross_notional,
+                ROUND(
+                    100.0 * COUNT(*) FILTER (WHERE t.status = 'MATCHED')
+                    / NULLIF(COUNT(*), 0),
+                    2
+                ) AS match_rate_pct
+            FROM trades t
+            LEFT JOIN (
+                SELECT trade_id, trade_date,
+                       COUNT(*) FILTER (WHERE status = 'OPEN') AS open_breaks
+                FROM recon_breaks
+                GROUP BY trade_id, trade_date
+            ) rb ON rb.trade_id = t.id AND rb.trade_date = t.trade_date
+            INNER JOIN counterparties c ON c.id = t.counterparty_id
+            WHERE t.deleted_at IS NULL
+            GROUP BY t.trade_date, c.region, t.asset_class;
+            CREATE UNIQUE INDEX uq_mv_daily_recon_summary_trade_date
+                ON mv_daily_recon_summary (trade_date, region, asset_class);
+        ]]></sql>
+        <rollback>
+            <sql>DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- Release boundary after the daily recon matview + unique index. -->
+    <changeSet id="tag-release-1-2" author="trainer">
+        <tagDatabase tag="release-1.2"/>
     </changeSet>
 
 </databaseChangeLog>
