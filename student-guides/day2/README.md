@@ -1367,7 +1367,7 @@ The final stretch. You add the contract methods that integrate your trades with 
 
 ---
 
-### TICKET-ADV027 — `Comparable<TradeType>` natural ordering
+### TICKET-ADV027 — `Comparable<TradeType>` natural ordering ✅
 
 **Goal:** Give `TradeType` a natural ordering that is safe for `TreeSet` and `TreeMap` and consistent with the equality you will add in TICKET-ADV028.
 
