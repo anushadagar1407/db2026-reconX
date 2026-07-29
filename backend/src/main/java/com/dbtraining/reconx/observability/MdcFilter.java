@@ -17,8 +17,8 @@ import java.util.UUID;
 @Order(1)
 public class MdcFilter implements Filter {
 
-    static final String CORRELATION_HEADER = "X-Correlation-Id";
-    static final String TRADE_REF_HEADER = "X-Trade-Ref";
+    static final String HDR_CORRELATION = "X-Correlation-Id";
+    static final String HDR_TRADE_REF = "X-Trade-Ref";
     static final String CORRELATION_KEY = "correlationId";
     static final String TRADE_REF_KEY = "tradeRef";
 
@@ -26,8 +26,8 @@ public class MdcFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
-        String correlationId = header(httpRequest, CORRELATION_HEADER, UUID.randomUUID().toString());
-        String tradeRef = header(httpRequest, TRADE_REF_HEADER, null);
+        String correlationId = header(httpRequest, HDR_CORRELATION, UUID.randomUUID().toString());
+        String tradeRef = header(httpRequest, HDR_TRADE_REF, null);
 
         try {
             MDC.put(CORRELATION_KEY, correlationId);
