@@ -51,7 +51,9 @@ services:
     networks: [reconx]
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     image: ghcr.io/sidoncode/reconx-backend:latest
     container_name: reconx-backend
     depends_on:

@@ -100,9 +100,11 @@ jobs:
       matrix:
         include:
           - component: backend
-            context: ./backend
+            context: .
+            dockerfile: ./backend/Dockerfile
           - component: frontend
             context: ./frontend
+            dockerfile: ./frontend/Dockerfile
 
     steps:
       - name: Check out repository
@@ -118,6 +120,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: false
           provenance: false
           sbom: false

@@ -6,12 +6,15 @@
 # ============================================================================
 
 FROM eclipse-temurin:25-jdk AS build
-WORKDIR /workspace
-COPY pom.xml mvnw ./
-COPY .mvn .mvn
+WORKDIR /workspace/backend
+COPY backend/pom.xml backend/mvnw ./
+COPY backend/.mvn .mvn
 RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
+COPY recon-audit-starter/pom.xml /workspace/recon-audit-starter/pom.xml
+COPY recon-audit-starter/src /workspace/recon-audit-starter/src
+RUN ./mvnw -q -B -f ../recon-audit-starter/pom.xml install
 RUN ./mvnw -q -B dependency:go-offline || true
-COPY src src
+COPY backend/src src
 RUN ./mvnw -q -B -DskipTests package && \
     mv target/reconx-*.jar app.jar
 
