@@ -60,7 +60,7 @@ public final class TradeFactory {
     }
 
     /**
-     * TODO(TICKET-ADV023):
+     * TICKET-ADV023:
      *   Build an EquityTrade from the map. Expected keys: tradeRef, symbol,
      *   quantity, price, currency, side, tradeDate, counterpartyId.
      */
@@ -79,7 +79,7 @@ public final class TradeFactory {
 
 
     /**
-     * TODO(TICKET-ADV023):
+     * TICKET-ADV023:
      *   Build an FXTrade from the map. Expected keys: tradeRef, ccy1, ccy2,
      *   notionalCcy1, fxRate, side, tradeDate, counterpartyId.
      */
@@ -97,7 +97,7 @@ public final class TradeFactory {
     }
 
     /**
-     * TODO(TICKET-ADV023):
+     * TICKET-ADV023:
      *   Build a BondTrade from the map. Expected keys: tradeRef, isin,
      *   faceValue, couponRate, maturityDate, currency, side, tradeDate,
      *   counterpartyId.
@@ -117,7 +117,7 @@ public final class TradeFactory {
     }
 
     /**
-     * TODO(TICKET-ADV023):
+     * TICKET-ADV023:
      *   Build a DerivativeTrade from the map. Expected keys: tradeRef,
      *   underlying, strike, quantity, expiry, optionType, currency, side,
      *   tradeDate, counterpartyId.

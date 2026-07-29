@@ -66,7 +66,7 @@ public final class EquityTrade implements TradeType {
      * @return non-null {@link Money} representing cash notional
      */
     @Override public Money notional() {
-        // TODO(TICKET-ADV019): return new Money(quantity * price, currency).
+        // TICKET-ADV019: return new Money(quantity * price, currency).
         return new Money(quantity.multiply(price), currency);
     }
 
@@ -231,7 +231,7 @@ public final class EquityTrade implements TradeType {
          *                               {@code price} is not strictly positive
          */
         public EquityTrade build() {
-            // TODO(TICKET-ADV019):
+            // TICKET-ADV019:
             //   - Objects.requireNonNull each required field (tradeRef, instrumentSymbol,
             //     quantity, price, currency, side, tradeDate).
             //   - quantity and price must be > 0 (IllegalStateException otherwise).
