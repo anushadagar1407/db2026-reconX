@@ -2,6 +2,7 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 class ReconciliationEngineTest {
 
-    private final ReconciliationEngine engine = new ReconciliationEngine();
+    private final ReconciliationEngine engine = new ReconciliationEngine(new SimpleMeterRegistry());
 
     @Test
     @DisplayName("Reconcile exact match returns MATCHED")
