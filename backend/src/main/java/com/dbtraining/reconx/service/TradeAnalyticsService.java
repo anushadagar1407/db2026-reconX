@@ -1,5 +1,8 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.model.FXTrade;
+import com.dbtraining.reconx.model.BondTrade;
+import com.dbtraining.reconx.model.DerivativeTrade;
 import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.TradeType;
 import org.springframework.stereotype.Service;
@@ -43,15 +46,18 @@ public class TradeAnalyticsService {
 
     /** TICKET-ADV036 — P&L per instrument symbol (sign by Side). */
     public Map<String, BigDecimal> pnlByInstrument(List<EquityTrade> equityTrades) {
+        return equityTrades.stream()
+                .collect(Collectors.groupingBy(EquityTrade::instrumentSymbol,
+                        Collectors.mapping(this::pnl, Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))));
         // TODO(TICKET-ADV036): groupingBy(EquityTrade::instrumentSymbol,
         //   mapping(this::pnl, reducing(BigDecimal.ZERO, BigDecimal::add))).
         //   Side.SELL contributes positively; Side.BUY contributes negatively.
-        throw new UnsupportedOperationException("TICKET-ADV036");
     }
 
     private BigDecimal pnl(EquityTrade t) {
         // TODO(TICKET-ADV036): BigDecimal abs = price * qty; SELL -> abs, BUY -> abs.negate().
-        throw new UnsupportedOperationException("TICKET-ADV036");
+        BigDecimal abs = t.price().multiply(t.quantity());
+        return t.side() == com.dbtraining.reconx.model.Side.SELL ? abs : abs.negate();
     }
 
     private long counterpartyIdOf(TradeType t) {
