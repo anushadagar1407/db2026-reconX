@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
     paths:
       - "backend/**"
+      - "recon-audit-starter/**"
       - "frontend/**"
       - ".github/workflows/build.yml"
   workflow_dispatch:
@@ -41,7 +42,13 @@ jobs:
           distribution: temurin
           java-version: "25"
           cache: maven
-          cache-dependency-path: backend/pom.xml
+          cache-dependency-path: |
+            backend/pom.xml
+            recon-audit-starter/pom.xml
+
+      - name: Build audit starter
+        working-directory: recon-audit-starter
+        run: ../backend/mvnw --batch-mode --no-transfer-progress install
 
       - name: Build backend
         run: ./mvnw --batch-mode --no-transfer-progress -DskipTests package
