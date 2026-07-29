@@ -7,7 +7,7 @@
           to keep the answer key easy to boot. The trainer guide day4 shows the
           multi-module split.
  HOW:     Standard Spring Boot 3 parent + java.version=25.
- WHY:     Students need a project that runs in one `mvn spring-boot:run`. Once
+ WHY:     Students need a project that runs in one `mvn sinpring-boot:run`. Once
           they pass Day 4 they can split this into modules and re-import.
  OBSERVE: `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` boots cleanly,
           Liquibase migrations apply, /actuator/health returns UP.
