@@ -34,7 +34,7 @@ still stuck. If you are still stuck after Hint 3, ask your trainer.
 
 ### Workshop 1A — GitHub & C4
 
-### TICKET-ADV001 — Create GitHub repo with branch protection
+### TICKET-ADV001 — Create GitHub repo with branch protection ✅
 
 **Goal:** Stand up a private team repository with enforced branch protection
 rules on `main` and `develop`, plus a CODEOWNERS file that routes PR reviews
