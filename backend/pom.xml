@@ -246,6 +246,18 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- ADV031 — domain Javadoc site for model + exception only -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <subpackages>com.dbtraining.reconx.model:com.dbtraining.reconx.exception</subpackages>
+                    <doclint>all</doclint>
+                    <failOnWarnings>true</failOnWarnings>
+                    <quiet>false</quiet>
+                    <outputDirectory>${project.build.directory}/site</outputDirectory>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

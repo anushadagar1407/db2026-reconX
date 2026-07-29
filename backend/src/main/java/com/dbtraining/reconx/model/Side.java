@@ -1,9 +1,20 @@
 package com.dbtraining.reconx.model;
 
 /**
- * BUY (we acquire) / SELL (we dispose). Used across all TradeType impls.
- * Kept as a tiny enum rather than a String so a typo can't survive compile.
+ * ============================================================================
+ * Side
+ *
+ * WHAT:    Trade direction: {@link #BUY} (we acquire) or {@link #SELL} (we dispose).
+ *          Used across every {@link TradeType} implementation.
+ * HOW:     Tiny two-value enum rather than a free-form String.
+ * WHY:     A typo such as {@code "BUYY"} cannot survive compilation; call sites
+ *          get exhaustiveness checks in switches.
+ * OBSERVE: Passing an unknown string to {@code Side.valueOf} fails fast at the boundary.
+ * ============================================================================
  */
 public enum Side {
-    BUY, SELL
+    /** We acquire the instrument / base currency. */
+    BUY,
+    /** We dispose of the instrument / base currency. */
+    SELL
 }

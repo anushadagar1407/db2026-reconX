@@ -6,32 +6,48 @@ import java.util.Map;
 
 /**
  * ============================================================================
- * TICKET-ADV023 — TradeFactory: build a TradeType by asset-class string
+ * TradeFactory: build a TradeType by asset-class string
  *
  * WHAT:    Single entry point that takes an asset-class string + a map of
- *          field values and returns the right TradeType impl.
+ *          field values and returns the right {@link TradeType} impl.
  * HOW:     Switch on the asset-class string, dispatch to the correct
  *          builder. Map values are cast/parsed per asset class.
  * WHY:     The Kafka consumer + REST POST endpoint both need to convert an
- *          untyped payload into a typed TradeType. Centralising the
+ *          untyped payload into a typed {@code TradeType}. Centralising the
  *          construction here means the parsing logic lives in one place.
  * OBSERVE: TradeFactoryTest.create_unknownAssetClass_throws fails when a
- *          new TradeType impl is added without updating the switch.
- * HINT:    Sealed hierarchy guarantees that every concrete TradeType MUST be
- *          listed in TradeType.permits — so this switch can be made
+ *          new {@code TradeType} impl is added without updating the switch.
+ * HINT:    Sealed hierarchy guarantees that every concrete {@code TradeType} MUST be
+ *          listed in {@code TradeType.permits} — so this switch can be made
  *          exhaustive over assetClass enum.
  * ============================================================================
+ *
+ * <p>This class is not instantiable; use {@link #create(String, Map)}.
  */
 public final class TradeFactory {
 
     private TradeFactory() { }
 
     /**
-     * TODO(TICKET-ADV023):
-     *   1. Parse assetClass string into TradeType.AssetClass enum (toUpperCase first).
-     *   2. switch on the enum and dispatch to the matching equity/fx/bond/derivative
-     *      helper below.
-     *   3. The switch must be exhaustive — every TradeType.AssetClass case handled.
+     * Builds a typed trade from an asset-class name and a field map.
+     *
+     * <p>Expected map keys depend on the asset class (see private helpers):
+     * equity needs {@code tradeRef}, {@code symbol}, {@code quantity}, {@code price},
+     * {@code currency}, {@code side}, {@code tradeDate}, {@code counterpartyId}; FX,
+     * bond, and derivative each have their own required key sets.
+     *
+     * @param assetClass case-insensitive name matching {@link TradeType.AssetClass}
+     *                   ({@code EQUITY}, {@code FX}, {@code BOND}, {@code DERIVATIVE})
+     * @param p          field bag; must contain the keys required by the chosen asset class
+     * @return a fully built, validated {@link TradeType}; never {@code null}
+     * @throws NullPointerException     if {@code assetClass} or {@code p} is {@code null},
+     *                                  or a required map value is missing/{@code null}
+     * @throws IllegalArgumentException if {@code assetClass} is not a known
+     *                                  {@link TradeType.AssetClass} name, a nested value
+     *                                  fails parsing (e.g. bad {@link TradeRef}), or a
+     *                                  builder invariant fails during construction
+     * @throws ClassCastException       if a map value has an unexpected runtime type
+     * @throws java.time.format.DateTimeParseException if a date field is not ISO-8601
      */
     public static TradeType create(String assetClass, Map<String, Object> p) {
         TradeType.AssetClass ac = TradeType.AssetClass.valueOf(assetClass.toUpperCase());
