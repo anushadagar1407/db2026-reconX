@@ -6,7 +6,6 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 import java.util.Map;
@@ -14,8 +13,6 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@TestPropertySource(properties =
-        "spring.jpa.properties.hypersistence.utils.jackson.object.mapper=com.fasterxml.jackson.databind.ObjectMapper")
 class InstrumentRepositoryTest {
 
     @Autowired
@@ -52,5 +49,14 @@ class InstrumentRepositoryTest {
 
         assertThat(reloaded.getAssetClass()).isEqualTo(AssetClass.EQUITY);
         assertThat(reloaded.getMetadata()).isEqualTo(metadata);
+    }
+
+    @Test
+    void seededInstrumentMetadataAndClassificationsRemainReadable() {
+        Instrument equity = instrumentRepository.findBySymbol("SAP.DE").orElseThrow();
+        Instrument fixedIncome = instrumentRepository.findBySymbol("US10Y").orElseThrow();
+
+        assertThat(equity.getMetadata()).containsEntry("sector", "Technology");
+        assertThat(fixedIncome.getAssetClass()).isEqualTo(AssetClass.FIXED_INCOME);
     }
 }
