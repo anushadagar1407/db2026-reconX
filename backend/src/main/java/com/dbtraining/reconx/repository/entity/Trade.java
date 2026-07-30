@@ -1,15 +1,30 @@
 package com.dbtraining.reconx.repository.entity;
 
-import jakarta.persistence.*;
-import org.hibernate.annotations.SQLRestriction;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
+
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 /**
  * ============================================================================
@@ -36,9 +51,7 @@ import java.util.Objects;
         @Index(name = "idx_trades_status", columnList = "status")
 })
 @EntityListeners(AuditingEntityListener.class)
-// NOTE(TICKET-ADV052): Enable @Audited after the Envers trades_aud and revinfo
-// tables are added by that ticket's Liquibase migration.
-// @org.hibernate.envers.Audited
+@Audited
 @SQLRestriction("deleted_at IS NULL")
 public class Trade {
 
@@ -51,10 +64,12 @@ public class Trade {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "instrument_id", nullable = false)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Instrument instrument;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "counterparty_id", nullable = false)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Counterparty counterparty;
 
     @Column(name = "asset_class", nullable = false, length = 20)

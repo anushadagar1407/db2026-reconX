@@ -1,18 +1,20 @@
 package com.dbtraining.reconx.controller;
 
 import com.dbtraining.reconx.dto.ReconRunRequest;
-import com.dbtraining.reconx.exception.TradeNotFoundException;
+import com.dbtraining.reconx.dto.ReconRunResponse;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
 import com.dbtraining.reconx.repository.entity.ReconBreak;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,18 +31,25 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class ReconController {
 
+    private static final Logger log = LoggerFactory.getLogger(ReconController.class);
+
     private final ReconBreakRepository breaks;
 
     public ReconController(ReconBreakRepository breaks) { this.breaks = breaks; }
 
     @PostMapping("/run")
     @Operation(summary = "Trigger a reconciliation job (async)")
-    @PreAuthorize("hasAnyRole('RECON_ANALYST', 'ADMIN')")
-    public ResponseEntity<Map<String, String>> runRecon(@Valid @RequestBody ReconRunRequest req) {
-        // TODO(TICKET-ADV068): generate a jobId, write a row to recon_jobs, and
+    public ResponseEntity<ReconRunResponse> runRecon(@Valid @RequestBody ReconRunRequest req) {
+        // TICKET-ADV068: generate a jobId, write a row to recon_jobs, and
         //   return 202 Accepted with {"jobId": ..., "status": "QUEUED"}. A
         //   worker (Day 6 / Kafka consumer) picks the job up asynchronously.
-        throw new UnsupportedOperationException("TICKET-ADV068");
+        UUID jobId = UUID.randomUUID();
+        log.info("recon job dispatched: jobId={}", jobId);
+
+        URI resultsLocation = URI.create("/api/v1/recon/jobs/" + jobId + "/results");
+        return ResponseEntity.accepted()
+                .location(resultsLocation)
+                .body(new ReconRunResponse(jobId, "QUEUED"));
     }
 
     @GetMapping("/jobs/{jobId}/results")

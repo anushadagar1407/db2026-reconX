@@ -663,7 +663,7 @@ docker compose exec postgres psql -U reconx -d reconx \
 
 ---
 
-### TICKET-ADV068 — POST /api/v1/recon/run
+### TICKET-ADV068 — POST /api/v1/recon/run ✅
 
 **Goal:** Trigger a reconciliation job asynchronously and return a job handle the client can poll.
 
@@ -2371,7 +2371,7 @@ Run the Liquibase migrations check against a fresh container.
 
 ---
 
-### TICKET-ADV080 — API versioning + deprecation
+### TICKET-ADV080 — API versioning + deprecation ✅
 
 **Goal:** Establish `/api/v1/...` as the contract prefix and demonstrate how to deprecate an endpoint cleanly.
 

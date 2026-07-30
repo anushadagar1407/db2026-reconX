@@ -14,13 +14,15 @@ package com.dbtraining.reconx.exception;
  */
 public class ReconciliationMismatchException extends ReconException {
 
+    private final Long reconBreakId;
+
     /**
      * Creates a mismatch exception for an unreconciled trade pair.
      *
      * @param message detail describing the internal/external divergence
      */
     public ReconciliationMismatchException(String message) {
-        super(message);
+        this(message, null, null);
     }
 
     /**
@@ -30,6 +32,41 @@ public class ReconciliationMismatchException extends ReconException {
      * @param cause   underlying comparison failure; may be {@code null}
      */
     public ReconciliationMismatchException(String message, Throwable cause) {
+        this(message, null, cause);
+    }
+
+    /**
+     * Creates a mismatch exception associated with a persisted reconciliation break.
+     *
+     * @param message      detail describing the internal/external divergence
+     * @param reconBreakId identifier of the reconciliation break, when available
+     */
+    public ReconciliationMismatchException(String message, long reconBreakId) {
+        this(message, reconBreakId, null);
+    }
+
+    /**
+     * Creates a mismatch exception associated with a persisted reconciliation break
+     * and an underlying cause.
+     *
+     * @param message      detail describing the internal/external divergence
+     * @param reconBreakId identifier of the reconciliation break, when available
+     * @param cause        underlying comparison failure; may be {@code null}
+     */
+    public ReconciliationMismatchException(String message, long reconBreakId, Throwable cause) {
+        this(message, Long.valueOf(reconBreakId), cause);
+    }
+
+    private ReconciliationMismatchException(String message, Long reconBreakId, Throwable cause) {
         super(message, cause);
+        this.reconBreakId = reconBreakId;
+    }
+
+    /**
+     * @return the associated reconciliation break identifier, or {@code null} when
+     *         the mismatch was raised before a break was persisted
+     */
+    public Long getReconBreakId() {
+        return reconBreakId;
     }
 }
