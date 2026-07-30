@@ -25,6 +25,7 @@
     <include file="changes/005-mat-views.xml"     relativeToChangelogFile="true"/>
     <include file="changes/007-users-rbac.xml"    relativeToChangelogFile="true"/>
     <include file="changes/008-seed.xml"          relativeToChangelogFile="true"/>
-    <include file="changes/009-soft-delete.xml"   relativeToChangelogFile="true"/>
+    <include file="changes/009-trade-envers.xml"  relativeToChangelogFile="true"/>
+    <include file="changes/011-soft-delete.xml"   relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

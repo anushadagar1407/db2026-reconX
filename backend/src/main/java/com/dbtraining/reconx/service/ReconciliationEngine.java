@@ -1,9 +1,5 @@
 package com.dbtraining.reconx.service;
 
-import com.dbtraining.reconx.model.FXTrade;
-import com.dbtraining.reconx.model.BondTrade;
-import com.dbtraining.reconx.model.DerivativeTrade;
-import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.BondTrade;
 import com.dbtraining.reconx.model.DerivativeTrade;
@@ -11,7 +7,8 @@ import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.TradeType;
-import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -26,7 +23,7 @@ import java.util.stream.Collectors;
  * TICKET-ADV033 — ReconciliationEngine using Streams (parallel matching)
  * TICKET-ADV037 — CompletableFuture: parallel recon by counterparty
  * TICKET-ADV047 — Edge cases: empty/single/all-mismatched inputs handled
- * TICKET-ADV084 — @Timed exports reconciliation_duration_seconds histogram
+ * TICKET-ADV084 — exports reconciliation_duration_seconds histogram
  *
  * WHAT:    Compares internal trades against external (counterparty) trades and
  *          returns a ReconResult per internal trade (MATCHED or BREAK).
@@ -42,11 +39,24 @@ import java.util.stream.Collectors;
 @Service
 public class ReconciliationEngine {
 
-    @Timed(value = "reconciliation.duration", description = "Wall time of reconcile()",
-           percentiles = {0.5, 0.95, 0.99}, histogram = true)
+    private final Timer reconciliationTimer;
+
+    public ReconciliationEngine(MeterRegistry meterRegistry) {
+        this.reconciliationTimer = Timer.builder("reconciliation_duration")
+                .description("Time spent reconciling internal and external trades")
+                .publishPercentileHistogram()
+                .register(meterRegistry);
+    }
+
     public List<ReconResult> reconcile(List<TradeType> internal,
                                        List<TradeType> external,
                                        ReconciliationRule rule) {
+        return reconciliationTimer.record(() -> reconcileBatch(internal, external, rule));
+    }
+
+    private List<ReconResult> reconcileBatch(List<TradeType> internal,
+                                             List<TradeType> external,
+                                             ReconciliationRule rule) {
         // TICKET-ADV033: build a Map<tradeRef, TradeType> from `external`
         //   (O(1) lookups beat O(n*m) nested iteration), then parallelStream
         //   over `internal` and call matchOne(in, externalByRef.get(...), rule)

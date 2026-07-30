@@ -537,7 +537,7 @@ psql -h localhost -p 5432 -U reconx_uat -d reconx_uat -c "\d trades"
 
 ---
 
-### TICKET-ADV051 — `Instrument` entity with JSONB metadata
+### TICKET-ADV051 — `Instrument` entity with JSONB metadata ✅
 
 **Goal:** Map the `Instrument` entity, including a `Map<String, Object> metadata` field that stores as JSONB on Postgres and as a CLOB on H2.
 
@@ -656,7 +656,7 @@ psql -h localhost -p 5432 -U reconx_uat -d reconx_uat -c "\d instruments"
 
 ---
 
-### TICKET-ADV052 — Hibernate Envers on the `Trade` entity
+### TICKET-ADV052 — Hibernate Envers on the `Trade` entity ✅
 
 **Goal:** Verify that Envers writes one row per committed change to `Trade` into the `trades_aud` table, and expose two query methods on a `TradeHistoryService`.
 
@@ -919,7 +919,7 @@ Records are compile-time constructs — a `./mvnw compile` is enough to prove th
 
 ---
 
-### TICKET-ADV054 — MapStruct mapper
+### TICKET-ADV054 — MapStruct mapper ✅
 
 **Goal:** Generate a Spring-managed `TradeMapper` bean that maps `Trade` to/from `TradeRequest`/`TradeResponse` at compile time.
 
@@ -1050,7 +1050,7 @@ find target/generated-sources/annotations -name "TradeMapperImpl.java"
 
 ---
 
-### TICKET-ADV055 — `TradeRepository` with `@Query`
+### TICKET-ADV055 — `TradeRepository` with `@Query` ✅
 
 **Goal:** Define a Spring Data JPA repository that exposes a `findByTradeRef` derived query and a `findByFilters` JPQL query supporting optional date range, status, and counterparty filters.
 
@@ -1161,7 +1161,7 @@ curl "http://localhost:8080/api/v1/trades?counterpartyId=1&status=PENDING"
 
 ---
 
-### TICKET-ADV056 — Specification-based dynamic queries
+### TICKET-ADV056 — Specification-based dynamic queries ✅
 
 **Goal:** Replace the `(:param IS NULL OR ...)` style with composable JPA Specifications so each filter is independently testable.
 
@@ -1535,7 +1535,7 @@ curl -s "http://localhost:8080/api/v1/api-docs/public" | jq '.info.title'
 
 ---
 
-### TICKET-ADV059 — `DatabaseHealthIndicator`
+### TICKET-ADV059 — `DatabaseHealthIndicator` ✅
 
 **Goal:** Replace Boot's default DataSource health indicator with one that owns its own SQL, its own timeout, and its own details fields.
 
@@ -1657,7 +1657,7 @@ curl -s "http://localhost:8080/api/actuator/health" | jq '.components.reconxData
 
 ---
 
-### TICKET-ADV060 — `KafkaHealthIndicator`
+### TICKET-ADV060 — `KafkaHealthIndicator` ✅
 
 **Goal:** Add a conditional health indicator for the Kafka cluster that only registers when a `spring.kafka.bootstrap-servers` property is set.
 
@@ -1787,7 +1787,7 @@ curl -s "http://localhost:8080/api/actuator/health" | jq '.components.reconxKafk
 
 ---
 
-### TICKET-ADV061 — Structured logging with MDC
+### TICKET-ADV061 — Structured logging with MDC ✅
 
 **Goal:** Emit human-readable logs in `dev` and JSON logs in `uat`/`prod`, with a per-request `correlationId` (plus optional `tradeRef`) carried across the request via SLF4J's MDC.
 
