@@ -57,6 +57,12 @@ public class TradeService {
     }
 
     public Trade create(TradeRequest req, String actor) {
+        // TICKET-ADV064: reject duplicate tradeRef via DuplicateTradeRefException,
+        //   build a new Trade with instrument + counterparty looked up from
+        //   their repos (throw TradeNotFoundException on miss), status = "PENDING",
+        //   save, then:
+        //     - metrics.incrementTradeCreated() + metrics.recordTradeValue(qty*price) — TICKET-ADV083
+        //     - events.publish(new TradeEvent(... TRADE_CREATED ... actor ...)) — TICKET-ADV129
         if (tradeRepo.findByTradeRef(req.tradeRef()).isPresent()) {
             throw new DuplicateTradeRefException(
                     "Trade with reference " + req.tradeRef() + " already exists");
