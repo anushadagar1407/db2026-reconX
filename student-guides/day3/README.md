@@ -1416,10 +1416,10 @@ void insertedTradesAreReconciledAndPersisted() {
 
 **▶ Run the project — verify TICKET-ADV045 end-to-end**
 
-Run the integration test and confirm the JDBC source ↔ domain round-trip survives the database.
+Run the integration test from `backend/` and confirm the JDBC source ↔ domain round-trip survives the database.
 
 ```bash
-./mvnw -pl backend verify
+./mvnw test -Dtest=ReconciliationIntegrationTest
 ```
 
 **Observe:**
