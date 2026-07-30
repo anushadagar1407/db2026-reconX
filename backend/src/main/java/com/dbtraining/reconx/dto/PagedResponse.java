@@ -1,12 +1,12 @@
 package com.dbtraining.reconx.dto;
 
+import java.util.List;
+import java.util.function.Function;
+
 import org.springframework.data.domain.Page;
 
-import java.util.List;
-
 /**
- * TICKET-ADV053 — Tiny wrapper that flattens Spring Data Page<T> into a
- * JSON-friendly shape. Avoids exposing Spring Data internals to clients.
+ * TICKET-ADV053 — Generic pagination wrapper.
  */
 public record PagedResponse<T>(
         List<T> items,
@@ -15,13 +15,19 @@ public record PagedResponse<T>(
         long totalElements,
         int totalPages
 ) {
-    public static <S, T> PagedResponse<T> of(Page<S> src, java.util.function.Function<S, T> mapper) {
+
+    public static <E, T> PagedResponse<T> of(
+            Page<E> page,
+            Function<E, T> mapper
+    ) {
         return new PagedResponse<>(
-                src.getContent().stream().map(mapper).toList(),
-                src.getNumber(),
-                src.getSize(),
-                src.getTotalElements(),
-                src.getTotalPages()
+                page.getContent().stream()
+                        .map(mapper)
+                        .toList(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
         );
     }
 }

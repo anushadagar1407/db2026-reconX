@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.net.URI;
@@ -132,6 +133,21 @@ public class GlobalExceptionHandler {
                 "https://reconx.dbtraining.com/errors/validation-failed",
                 "Validation failed",
                 detail);
+    }
+
+    /**
+     * Maps malformed request values, such as invalid ISO dates, to HTTP 400.
+     *
+     * @param ex Spring message-conversion failure
+     * @return ProblemDetail using the public validation error contract
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail unreadable(HttpMessageNotReadableException ex) {
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "https://reconx.dbtraining.com/errors/validation-failed",
+                "Validation failed",
+                "Request body could not be read");
     }
 
     /**

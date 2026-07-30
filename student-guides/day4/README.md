@@ -537,7 +537,7 @@ psql -h localhost -p 5432 -U reconx_uat -d reconx_uat -c "\d trades"
 
 ---
 
-### TICKET-ADV051 — `Instrument` entity with JSONB metadata
+### TICKET-ADV051 — `Instrument` entity with JSONB metadata ✅
 
 **Goal:** Map the `Instrument` entity, including a `Map<String, Object> metadata` field that stores as JSONB on Postgres and as a CLOB on H2.
 
