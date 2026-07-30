@@ -1657,7 +1657,7 @@ curl -s "http://localhost:8080/api/actuator/health" | jq '.components.reconxData
 
 ---
 
-### TICKET-ADV060 — `KafkaHealthIndicator`
+### TICKET-ADV060 — `KafkaHealthIndicator` ✅
 
 **Goal:** Add a conditional health indicator for the Kafka cluster that only registers when a `spring.kafka.bootstrap-servers` property is set.
 

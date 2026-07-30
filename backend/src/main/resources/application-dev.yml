@@ -1,5 +1,5 @@
 # =============================================================================
-# TICKET-ADV049 — dev profile: H2 in-memory + Kafka can be disabled if not running
+# TICKET-ADV049 — dev profile: H2 in-memory + Kafka is disabled by default
 # =============================================================================
 spring:
   datasource:
@@ -22,7 +22,6 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
     listener:
       missing-topics-fatal: false # don't blow up if Kafka isn't running locally
 
