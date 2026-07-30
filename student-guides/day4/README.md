@@ -1408,7 +1408,7 @@ The final block is the observability and error-contract layer. You add Swagger U
 
 ---
 
-### TICKET-ADV058 — Swagger / OpenAPI configuration
+### TICKET-ADV058 — Swagger / OpenAPI configuration ✅
 
 **Goal:** Configure springdoc-openapi so the running app exposes Swagger UI at `/api/swagger-ui.html` and groups endpoints into a `public` group and an `admin` group.
 
