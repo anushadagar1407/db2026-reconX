@@ -389,7 +389,7 @@ curl -s http://localhost:8080/actuator/prometheus | grep trade_created
 
 ---
 
-### TICKET-ADV084 — Timer: `reconciliation_duration_seconds`
+### TICKET-ADV084 — Timer: `reconciliation_duration_seconds` ✅
 
 **Goal:** Measure how long the reconciliation engine takes per batch and publish the distribution so server-side percentile queries work in PromQL.
 
@@ -1034,7 +1034,7 @@ done
 
 ---
 
-### TICKET-ADV090 — Grafana histogram panel for `reconciliation_duration_seconds`
+### TICKET-ADV090 — Grafana histogram panel for `reconciliation_duration_seconds` ✅
 
 **Goal:** Visualise the distribution of recon engine latencies as a heatmap (density over time).
 
@@ -1532,7 +1532,7 @@ ab -n 500 -c 20 http://localhost:8080/api/v1/instruments/1
 
 The closing block packages a cross-cutting concern as a starter (so future ReconX microservices get audit publishing for free), exposes a runtime-tunable knob through JMX, and finishes with a small load test that you can watch live on the dashboard you have just built.
 
-### TICKET-ADV095 — Custom Spring Boot Starter: `recon-audit-starter`
+### TICKET-ADV095 — Custom Spring Boot Starter: `recon-audit-starter` ✅
 
 **Goal:** Package an audit-event publisher as a reusable Spring Boot starter that auto-configures itself when added to a consumer's classpath.
 

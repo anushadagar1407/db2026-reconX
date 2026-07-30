@@ -2,6 +2,7 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 class ReconciliationEngineTest {
 
-    private final ReconciliationEngine engine = new ReconciliationEngine();
+    private final ReconciliationEngine engine = new ReconciliationEngine(new SimpleMeterRegistry());
 
     @Test
     @DisplayName("Reconcile exact match returns MATCHED")
@@ -59,16 +60,42 @@ class ReconciliationEngineTest {
     }
 
     @Test
+    @DisplayName("Reconcile missing counterparty trade returns BREAK with reason MISSING_EXTERNAL")
     void testReconcile_missingCounterpartyTrade_returnsBreak() {
         // TODO(TICKET-ADV042): internal trade with no external counterpart -> status BREAK,
         //                     discrepancyType = "MISSING_EXTERNAL".
-        org.junit.jupiter.api.Assertions.fail("TICKET-ADV042 not implemented yet");
+        // Given: one internal EquityTrade and an empty external list
+        EquityTrade internalTrade = equity("ABC-20260729-1234", "100.00", "10");
+        List<TradeType> internalTrades = List.of(internalTrade);
+        List<TradeType> externalTrades = List.of();
+        ReconciliationRule exactRule = ReconciliationRule.EXACT;
+
+        // When: reconcile is called
+        List<ReconResult> results = engine.reconcile(internalTrades, externalTrades, exactRule);
+
+        // Then: the result contains one BREAK ReconResult with reason MISSING_EXTERNAL
+        assertThat(results).hasSize(1);
+        ReconResult result = results.get(0);
+        assertThat(result.status()).isEqualTo(ReconResult.Status.BREAK);
+        assertThat(result.discrepancyType()).isEqualTo("MISSING_EXTERNAL");
+
+
     }
 
     @Test
     void testReconcile_emptyInternal_returnsEmpty() {
         // TODO(TICKET-ADV040): empty internal + empty external -> reconcile returns an empty list.
-        org.junit.jupiter.api.Assertions.fail("TICKET-ADV040 not implemented yet");
+        //org.junit.jupiter.api.Assertions.fail("TICKET-ADV040 not implemented yet");
+
+        List<TradeType> internalTrades = List.of();
+        List<TradeType> externalTrades = List.of();
+        ReconciliationRule exactRule = ReconciliationRule.EXACT;
+
+        // When: reconcile is called
+        List<ReconResult> results = engine.reconcile(internalTrades, externalTrades, exactRule);
+
+        // Then: the result contains no elements
+        assertThat(results).hasSize(0);
     }
 
     private EquityTrade equity(String ref, String price, String qty) {

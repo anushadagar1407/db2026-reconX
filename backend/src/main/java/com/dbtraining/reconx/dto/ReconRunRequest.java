@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.dto;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.AssertTrue;
 
 import java.time.LocalDate;
 
@@ -9,4 +10,9 @@ public record ReconRunRequest(
         @NotNull LocalDate from,
         @NotNull LocalDate to,
         Long counterpartyId
-) {}
+) {
+    @AssertTrue(message = "from must be on or before to")
+    public boolean isDateRangeValid() {
+        return from == null || to == null || !from.isAfter(to);
+    }
+}
