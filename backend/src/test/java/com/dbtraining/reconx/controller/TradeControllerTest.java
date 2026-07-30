@@ -130,6 +130,20 @@ class TradeControllerTest {
     }
 
     @Test
+    void listAcceptsExplicitSortDirection() throws Exception {
+        when(service.list(any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        mockMvc.perform(get("/v1/trades").param("sort", "tradeDate,asc"))
+                .andExpect(status().isOk());
+
+        var pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(service).list(isNull(), isNull(), isNull(), isNull(), pageable.capture());
+        assertThat(pageable.getValue().getSort().getOrderFor("tradeDate").getDirection())
+                .isEqualTo(Sort.Direction.ASC);
+    }
+
+    @Test
     void invalidDateReturnsBadRequestWithoutQueryingService() throws Exception {
         mockMvc.perform(get("/v1/trades").param("from", "not-a-date"))
                 .andExpect(status().isBadRequest())
@@ -153,16 +167,55 @@ class TradeControllerTest {
         verifyNoInteractions(service, mapper);
     }
 
+    @Test
+    void invalidPageReturnsBadRequestWithoutQueryingService() throws Exception {
+        assertInvalidParameter("page", "not-a-number");
+    }
+
+    @Test
+    void negativePageReturnsBadRequestWithoutQueryingService() throws Exception {
+        assertInvalidParameter("page", "-1");
+    }
+
+    @Test
+    void invalidSizeReturnsBadRequestWithoutQueryingService() throws Exception {
+        assertInvalidParameter("size", "not-a-number");
+    }
+
+    @Test
+    void nonPositiveSizeReturnsBadRequestWithoutQueryingService() throws Exception {
+        assertInvalidParameter("size", "0");
+    }
+
+    @Test
+    void invalidSortReturnsBadRequestWithoutQueryingService() throws Exception {
+        assertInvalidParameter("sort", "notATradeProperty,desc");
+    }
+
+    @Test
+    void invalidSortDirectionReturnsBadRequestWithoutQueryingService() throws Exception {
+        assertInvalidParameter("sort", "tradeDate,sideways");
+    }
+
+    private void assertInvalidParameter(String name, String value) throws Exception {
+        mockMvc.perform(get("/v1/trades").param(name, value))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Invalid request parameter"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Request parameter '%s' has an invalid value".formatted(name)));
+
+        verifyNoInteractions(service, mapper);
+    }
+
     private static TradeResponse response() {
         return new TradeResponse(
                 1L,
                 "TRD-2026-000001",
                 10L,
-                "AAPL",
-                20L,
                 "Acme Capital",
-                "EQUITY",
-                "BUY",
+                20L,
+                "AAPL",
                 new BigDecimal("2.0000"),
                 new BigDecimal("100.5000"),
                 LocalDate.of(2026, 5, 1),
