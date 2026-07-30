@@ -1034,7 +1034,7 @@ done
 
 ---
 
-### TICKET-ADV090 — Grafana histogram panel for `reconciliation_duration_seconds`
+### TICKET-ADV090 — Grafana histogram panel for `reconciliation_duration_seconds` ✅
 
 **Goal:** Visualise the distribution of recon engine latencies as a heatmap (density over time).
 
