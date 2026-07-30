@@ -1535,7 +1535,7 @@ curl -s "http://localhost:8080/api/v1/api-docs/public" | jq '.info.title'
 
 ---
 
-### TICKET-ADV059 — `DatabaseHealthIndicator`
+### TICKET-ADV059 — `DatabaseHealthIndicator` ✅
 
 **Goal:** Replace Boot's default DataSource health indicator with one that owns its own SQL, its own timeout, and its own details fields.
 
