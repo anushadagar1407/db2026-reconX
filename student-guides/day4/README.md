@@ -1935,7 +1935,7 @@ curl -H "X-Correlation-Id: foo-123" "http://localhost:8080/api/v1/trades?page=0&
 
 ---
 
-### TICKET-ADV062 — Global `@RestControllerAdvice` with RFC 7807
+### TICKET-ADV062 — Global `@RestControllerAdvice` with RFC 7807 ✅
 
 **Goal:** Produce `application/problem+json` responses for every domain exception, validation failure, and uncaught error, using Spring's `ProblemDetail` API.
 
