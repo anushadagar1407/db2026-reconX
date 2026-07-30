@@ -179,7 +179,7 @@ Run the engine's unit test to confirm the streamed pipeline matches correctly.
 
 ---
 
-### TICKET-ADV034 — Trade analytics with Collectors
+### TICKET-ADV034 — Trade analytics with Collectors ✅
 
 **Goal:** Compute, per counterparty, a one-pass summary of trade notionals (count, sum, min, max, average).
 

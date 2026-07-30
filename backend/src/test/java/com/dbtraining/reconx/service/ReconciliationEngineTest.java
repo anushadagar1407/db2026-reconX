@@ -2,6 +2,7 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -9,7 +10,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 /**
  * TICKET-ADV040 / ADV041 / ADV042 — TDD: write the test FIRST, then the impl.
  */
@@ -18,15 +20,42 @@ class ReconciliationEngineTest {
     private final ReconciliationEngine engine = new ReconciliationEngine();
 
     @Test
+    @DisplayName("Reconcile exact match returns MATCHED")
     void testReconcile_exactMatch_returnsMatched() {
         // TODO(TICKET-ADV040): two identical EquityTrades + EXACT rule -> one ReconResult with status MATCHED.
-    //org.junit.jupiter.api.Assertions.fail("TICKET-ADV040 not implemented yet");
+        // Given: two identical EquityTrades and an EXACT rule
+        EquityTrade internalTrade = equity("ABC-20260729-1234", "100.00", "10");
+        EquityTrade externalTrade = equity("ABC-20260729-1234", "100.00", "10");
+        ReconciliationRule exactRule = ReconciliationRule.EXACT;
+
+        // When: reconcile is called
+        List<ReconResult> results = engine.reconcile(List.of(internalTrade), List.of(externalTrade), exactRule);
+
+        // Then: the result contains one MATCHED ReconResult
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).status()).isEqualTo(ReconResult.Status.MATCHED);
+
     }
 
-    @Test
-    void testReconcile_priceTolerance_withinThreshold() {
+    @ParameterizedTest(name = "price diff {0} stays within 1% tolerance -> MATCHED")
+    @ValueSource(strings = {"0.10", "0.50", "0.99"})
+    @DisplayName("Reconcile price differences within 1% tolerance")
+    void testReconcile_priceTolerance_withinThreshold(String priceDiff) {
         // TODO(TICKET-ADV041): prices 100.00 vs 100.50 + PRICE_TOLERANCE_1PCT rule -> status MATCHED.
-       // org.junit.jupiter.api.Assertions.fail("TICKET-ADV041 not implemented yet");
+        // Given: two EquityTrades with a price difference within the 1% tolerance
+        BigDecimal diff = new BigDecimal(priceDiff);
+        BigDecimal basePrice = new BigDecimal("100.00");
+        EquityTrade internalTrade = equity("ABC-20260729-1234", String.valueOf(basePrice), "10");
+        EquityTrade externalTrade = equity("ABC-20260729-1234", String.valueOf(basePrice.add(diff)), "10");
+        ReconciliationRule toleranceRule = ReconciliationRule.PRICE_TOLERANCE_1PCT;
+
+        // When: reconcile is called
+        List<ReconResult> results = engine.reconcile(List.of(internalTrade), List.of(externalTrade), toleranceRule);
+
+        // Then: the result contains one MATCHED ReconResult
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).status()).isEqualTo(ReconResult.Status.MATCHED);
+
     }
 
     @Test
