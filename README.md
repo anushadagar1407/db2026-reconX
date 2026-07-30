@@ -159,6 +159,14 @@ live in HttpOnly cookies for 7 days.
 
 ---
 
+### API versioning and deprecation
+
+Public domain endpoints use the `/api/v1/...` prefix. Breaking changes ship
+under a new version segment such as `/api/v2/...`; the existing version keeps
+working until its announced `Sunset` date.
+
+---
+
 ## Deploy to the demo laptop (Day 10)
 
 The deploy story is **GitHub Actions builds + pushes Docker images to GHCR;

@@ -663,7 +663,7 @@ docker compose exec postgres psql -U reconx -d reconx \
 
 ---
 
-### TICKET-ADV068 — POST /api/v1/recon/run
+### TICKET-ADV068 — POST /api/v1/recon/run ✅
 
 **Goal:** Trigger a reconciliation job asynchronously and return a job handle the client can poll.
 
@@ -1112,7 +1112,7 @@ sprinkling `@PreAuthorize` annotations against.
 
 ---
 
-### TICKET-ADV072 — JWT issuance on /api/auth/login
+### TICKET-ADV072 — JWT issuance on /api/auth/login ✅
 
 **Goal:** Authenticate a user with username/password and return a signed JWT containing the user's roles.
 
@@ -1348,7 +1348,7 @@ curl -i -X POST http://localhost:8080/api/auth/login \
 
 ---
 
-### TICKET-ADV073 — JwtAuthenticationFilter
+### ✅ TICKET-ADV073 — JwtAuthenticationFilter
 
 **Goal:** Read the Bearer token off each request, validate it, and populate the Spring Security context.
 
@@ -2371,7 +2371,7 @@ Run the Liquibase migrations check against a fresh container.
 
 ---
 
-### TICKET-ADV080 — API versioning + deprecation
+### TICKET-ADV080 — API versioning + deprecation ✅
 
 **Goal:** Establish `/api/v1/...` as the contract prefix and demonstrate how to deprecate an endpoint cleanly.
 

@@ -35,8 +35,8 @@ class TradeControllerTest {
     void createReturnsCreatedTradeAndLocation() throws Exception {
         Trade saved = mock(Trade.class);
         TradeResponse response = new TradeResponse(
-                42L, "TRD-20260730-0001", 1L, "DBK",
-                2L, "Deutsche Bank", "EQUITY", "BUY",
+                42L, "TRD-20260730-0001", 2L, "Deutsche Bank",
+                1L, "DBK",
                 new BigDecimal("100.0"), new BigDecimal("245.50"),
                 LocalDate.of(2026, 7, 30), "PENDING", null, null);
         when(saved.getId()).thenReturn(42L);

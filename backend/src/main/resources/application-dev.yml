@@ -20,6 +20,8 @@ spring:
   # the JSONB GIN-index step on H2 (see 003-jsonb.xml).
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
+    properties:
+      hypersistence.utils.jackson.object.mapper: com.dbtraining.reconx.config.JsonObjectMapper
 
   kafka:
     listener:
