@@ -39,6 +39,7 @@ public class ReconController {
 
     @PostMapping("/run")
     @Operation(summary = "Trigger a reconciliation job (async)")
+    @PreAuthorize("hasAnyRole('RECON_ANALYST', 'ADMIN')")
     public ResponseEntity<ReconRunResponse> runRecon(@Valid @RequestBody ReconRunRequest req) {
         // TICKET-ADV068: generate a jobId, write a row to recon_jobs, and
         //   return 202 Accepted with {"jobId": ..., "status": "QUEUED"}. A
