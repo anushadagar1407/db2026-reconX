@@ -1,6 +1,6 @@
 # .github/CODEOWNERS
 *               @TB-DevAcc
-backend/        @TB-DevAcc @NJBodam @gb-dev04
-frontend/       @TB-DevAcc @anushadagar1407 @beydaboran
+backend/        @TB-DevAcc @NJBodam @beydaboran 
+frontend/       @TB-DevAcc @anushadagar1407 @gb-dev04
 db/             @TB-DevAcc @Aqibkhan2023 @tbgaripov
 .github/        @TB-DevAcc
