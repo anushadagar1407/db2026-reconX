@@ -1,8 +1,10 @@
 package com.dbtraining.reconx.integration;
 
+import com.dbtraining.reconx.repository.ReconResultRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -11,6 +13,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
@@ -18,7 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 class LiquibaseMigrationsIT {
 
-    private static final int MINIMUM_POSTGRES_CHANGESETS = 23;
+    private static final List<String> REQUIRED_POSTGRES_CHANGESETS = List.of(
+            "009-create-envers-revision-info",
+            "009-create-trades-aud",
+            "010-create-envers-revision-sequence",
+            "011-add-trade-deleted-at");
 
     @Container
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -38,19 +46,38 @@ class LiquibaseMigrationsIT {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @MockBean
+    private ReconResultRepository reconResultRepository;
+
     @Test
     void freshPostgresAppliesLiquibaseChangesAndSeedData() {
         assertThat(jdbc.queryForObject("SELECT version()", String.class))
                 .contains("PostgreSQL");
 
-        Integer appliedChangesets = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM databasechangelog", Integer.class);
-        assertThat(appliedChangesets).isGreaterThanOrEqualTo(MINIMUM_POSTGRES_CHANGESETS);
+        List<String> appliedRequiredChangesets = jdbc.queryForList("""
+                SELECT id
+                FROM databasechangelog
+                WHERE id IN (?, ?, ?, ?)
+                ORDER BY id
+                """, String.class, REQUIRED_POSTGRES_CHANGESETS.toArray());
+        assertThat(appliedRequiredChangesets)
+                .containsExactlyInAnyOrderElementsOf(REQUIRED_POSTGRES_CHANGESETS);
 
-        Integer softDeleteChangesets = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM databasechangelog WHERE id = ?", Integer.class,
-                "009-add-trade-deleted-at");
-        assertThat(softDeleteChangesets).isEqualTo(1);
+        List<String> enversTables = jdbc.queryForList("""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = current_schema()
+                  AND table_name IN ('revinfo', 'trades_aud')
+                """, String.class);
+        assertThat(enversTables).containsExactlyInAnyOrder("revinfo", "trades_aud");
+
+        Integer revisionSequences = jdbc.queryForObject("""
+                SELECT COUNT(*)
+                FROM information_schema.sequences
+                WHERE sequence_schema = current_schema()
+                  AND sequence_name = 'revinfo_seq'
+                """, Integer.class);
+        assertThat(revisionSequences).isEqualTo(1);
 
         Integer nonDeletedTrades = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM trades WHERE deleted_at IS NULL", Integer.class);
