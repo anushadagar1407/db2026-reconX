@@ -13,6 +13,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 class ReconciliationServiceTest {
 
@@ -20,7 +21,7 @@ class ReconciliationServiceTest {
     void testReconcile_savesResultWithMatchedStatus() {
         // GIVEN: A mocked repository, a real engine, and identical trades
         ReconResultRepository repo = mock(ReconResultRepository.class);
-        ReconciliationEngine engine = new ReconciliationEngine();
+        ReconciliationEngine engine = new ReconciliationEngine(new SimpleMeterRegistry());
         ReconciliationService service = new ReconciliationService(engine, repo);
 
         String validRefString = "EQU-20260729-0001";
