@@ -85,6 +85,16 @@ class ReconciliationEngineTest {
     void testReconcile_emptyInternal_returnsEmpty() {
         // TODO(TICKET-ADV040): empty internal + empty external -> reconcile returns an empty list.
         //org.junit.jupiter.api.Assertions.fail("TICKET-ADV040 not implemented yet");
+
+        List<TradeType> internalTrades = List.of();
+        List<TradeType> externalTrades = List.of();
+        ReconciliationRule exactRule = ReconciliationRule.EXACT;
+
+        // When: reconcile is called
+        List<ReconResult> results = engine.reconcile(internalTrades, externalTrades, exactRule);
+
+        // Then: the result contains no elements
+        assertThat(results).hasSize(0);
     }
 
     private EquityTrade equity(String ref, String price, String qty) {
