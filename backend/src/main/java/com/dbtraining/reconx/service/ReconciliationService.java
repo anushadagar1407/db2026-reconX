@@ -12,18 +12,20 @@ public class ReconciliationService {
     private final ReconciliationEngine engine;
     private final ReconResultRepository repository;
 
-    public ReconciliationService(ReconciliationEngine engine,
-                                 ReconResultRepository repository) {
+    public ReconciliationService(
+            ReconciliationEngine engine,
+            ReconResultRepository repository
+    ) {
         this.engine = engine;
         this.repository = repository;
     }
 
-    public void runRecon(List<TradeType> internal,
-                         List<TradeType> external,
-                         ReconciliationRule rule) {
-
-        List<ReconResult> results =
-                engine.reconcile(internal, external, rule);
+    public void runRecon(
+            List<TradeType> internal,
+            List<TradeType> external,
+            ReconciliationRule rule
+    ) {
+        List<ReconResult> results = engine.reconcile(internal, external, rule);
 
         results.forEach(repository::save);
     }
