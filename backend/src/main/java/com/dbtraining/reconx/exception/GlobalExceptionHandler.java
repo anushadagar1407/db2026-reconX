@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.net.URI;
 import java.time.Instant;
@@ -146,6 +147,21 @@ public class GlobalExceptionHandler {
                 "https://reconx.dbtraining.com/errors/constraint-violation",
                 "Constraint violation",
                 ex.getMessage());
+    }
+
+    /**
+     * Maps malformed typed query parameters to HTTP 400 ProblemDetail.
+     *
+     * @param ex Spring MVC conversion failure for a request parameter
+     * @return ProblemDetail identifying the invalid parameter without echoing its value
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail invalidParameter(MethodArgumentTypeMismatchException ex) {
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "https://reconx.dbtraining.com/errors/invalid-request-parameter",
+                "Invalid request parameter",
+                "Request parameter '%s' has an invalid value".formatted(ex.getName()));
     }
 
     /**

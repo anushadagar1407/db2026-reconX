@@ -1,0 +1,173 @@
+package com.dbtraining.reconx.controller;
+
+import com.dbtraining.reconx.dto.TradeMapper;
+import com.dbtraining.reconx.dto.TradeResponse;
+import com.dbtraining.reconx.exception.GlobalExceptionHandler;
+import com.dbtraining.reconx.repository.entity.Trade;
+import com.dbtraining.reconx.service.TradeService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+import static org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ExtendWith(MockitoExtension.class)
+class TradeControllerTest {
+
+    private MockMvc mockMvc;
+
+    @Mock
+    private TradeService service;
+
+    @Mock
+    private TradeMapper mapper;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(new TradeController(service, mapper))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
+                .build();
+    }
+
+    @Test
+    void listReturnsStableEnvelopeForRequestedPageSize() throws Exception {
+        Trade trade = new Trade();
+        TradeResponse response = response();
+        when(service.list(any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(trade),
+                        PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "tradeDate")),
+                        21));
+        when(mapper.toResponse(trade)).thenReturn(response);
+
+        mockMvc.perform(get("/v1/trades")
+                        .param("page", "0")
+                        .param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$", aMapWithSize(5)))
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items[0].tradeRef").value("TRD-2026-000001"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(5))
+                .andExpect(jsonPath("$.totalElements").value(21))
+                .andExpect(jsonPath("$.totalPages").value(5))
+                .andExpect(jsonPath("$.pageable").doesNotExist());
+
+        var pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(service).list(isNull(), isNull(), isNull(), isNull(), pageable.capture());
+        assertThat(pageable.getValue().getPageSize()).isEqualTo(5);
+        assertThat(pageable.getValue().getPageNumber()).isZero();
+        assertThat(pageable.getValue().getSort().getOrderFor("tradeDate").getDirection())
+                .isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    void listUsesDefaultPageSizeAndSortWhenPageableIsOmitted() throws Exception {
+        when(service.list(any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(),
+                        PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "tradeDate")),
+                        41));
+
+        mockMvc.perform(get("/v1/trades"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalElements").value(41))
+                .andExpect(jsonPath("$.totalPages").value(3));
+
+        var pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(service).list(isNull(), isNull(), isNull(), isNull(), pageable.capture());
+        assertThat(pageable.getValue().getPageSize()).isEqualTo(20);
+        assertThat(pageable.getValue().getSort().getOrderFor("tradeDate").getDirection())
+                .isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    void listForwardsDateStatusAndCounterpartyFilters() throws Exception {
+        LocalDate from = LocalDate.of(2026, 1, 1);
+        LocalDate to = LocalDate.of(2026, 6, 30);
+        when(service.list(any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        mockMvc.perform(get("/v1/trades")
+                        .param("from", from.toString())
+                        .param("to", to.toString())
+                        .param("status", "MATCHED")
+                        .param("counterpartyId", "42"))
+                .andExpect(status().isOk());
+
+        verify(service).list(eq(from), eq(to), eq("MATCHED"), eq(42L), any(Pageable.class));
+    }
+
+    @Test
+    void invalidDateReturnsBadRequestWithoutQueryingService() throws Exception {
+        mockMvc.perform(get("/v1/trades").param("from", "not-a-date"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Invalid request parameter"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Request parameter 'from' has an invalid value"));
+
+        verifyNoInteractions(service, mapper);
+    }
+
+    @Test
+    void invalidStatusReturnsBadRequestWithoutQueryingService() throws Exception {
+        mockMvc.perform(get("/v1/trades").param("status", "SETTLED"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Invalid request parameter"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Request parameter 'status' has an invalid value"));
+
+        verifyNoInteractions(service, mapper);
+    }
+
+    private static TradeResponse response() {
+        return new TradeResponse(
+                1L,
+                "TRD-2026-000001",
+                10L,
+                "AAPL",
+                20L,
+                "Acme Capital",
+                "EQUITY",
+                "BUY",
+                new BigDecimal("2.0000"),
+                new BigDecimal("100.5000"),
+                LocalDate.of(2026, 5, 1),
+                "MATCHED",
+                Instant.parse("2026-05-01T10:15:30Z"),
+                Instant.parse("2026-05-01T10:15:30Z"));
+    }
+}
