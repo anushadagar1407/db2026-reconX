@@ -118,12 +118,13 @@ ul a:hover {
   .layout__sidebar { display: none; }
   .layout__main    { 
     padding: var(--space-4); 
+    width: 100%;
     display: flex;
     flex-direction: column;
     }
   
   .stat-grid {
-    grid-template-columns: repeat(1, 1fr);
+    grid-template-columns: 1fr;
   }
 
 }
