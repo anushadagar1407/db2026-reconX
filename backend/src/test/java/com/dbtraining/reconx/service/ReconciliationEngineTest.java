@@ -59,10 +59,26 @@ class ReconciliationEngineTest {
     }
 
     @Test
+    @DisplayName("Reconcile missing counterparty trade returns BREAK with reason MISSING_EXTERNAL")
     void testReconcile_missingCounterpartyTrade_returnsBreak() {
         // TODO(TICKET-ADV042): internal trade with no external counterpart -> status BREAK,
         //                     discrepancyType = "MISSING_EXTERNAL".
-        //org.junit.jupiter.api.Assertions.fail("TICKET-ADV042 not implemented yet");
+        // Given: one internal EquityTrade and an empty external list
+        EquityTrade internalTrade = equity("ABC-20260729-1234", "100.00", "10");
+        List<TradeType> internalTrades = List.of(internalTrade);
+        List<TradeType> externalTrades = List.of();
+        ReconciliationRule exactRule = ReconciliationRule.EXACT;
+
+        // When: reconcile is called
+        List<ReconResult> results = engine.reconcile(internalTrades, externalTrades, exactRule);
+
+        // Then: the result contains one BREAK ReconResult with reason MISSING_EXTERNAL
+        assertThat(results).hasSize(1);
+        ReconResult result = results.get(0);
+        assertThat(result.status()).isEqualTo(ReconResult.Status.BREAK);
+        assertThat(result.discrepancyType()).isEqualTo("MISSING_EXTERNAL");
+
+
     }
 
     @Test
