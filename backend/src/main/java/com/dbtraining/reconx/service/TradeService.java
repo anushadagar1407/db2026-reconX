@@ -14,6 +14,7 @@ import com.dbtraining.reconx.dto.TradeEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,14 +86,17 @@ public class TradeService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Trade> list(LocalDate from, LocalDate to, String status, Long counterpartyId, Pageable pageable) {
-        TradeStatus tradeStatus = status == null || status.isBlank()
-                ? null
-                : TradeStatus.valueOf(status);
-        Specification<Trade> specification = Specification
-                .where(tradeDateBetween(from, to))
-                .and(hasStatus(tradeStatus))
-                .and(forCounterparty(counterpartyId));
-        return tradeRepo.findAll(specification, pageable);
+    public Page<Trade> list(LocalDate from, LocalDate to, TradeStatus status, Long counterpartyId, Pageable pageable) {
+//        TradeStatus tradeStatus = status == null || status.isBlank()
+//                ? null
+//                : TradeStatus.valueOf(status);
+//        Specification<Trade> specification = tradeDateBetween(from, to)
+//                .and(hasStatus(tradeStatus))
+//                .and(forCounterparty(counterpartyId));
+        if (from == null || to == null) {
+            throw new IllegalArgumentException("Both 'from' and 'to' dates must be provided.");
+        }
+
+        return tradeRepo.findByFilters(from, to, status, counterpartyId, pageable);
     }
 }

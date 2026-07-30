@@ -5,6 +5,7 @@ import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.dto.TradeResponse;
 import com.dbtraining.reconx.repository.entity.Trade;
+import com.dbtraining.reconx.repository.entity.TradeStatus;
 import com.dbtraining.reconx.service.TradeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -58,7 +59,11 @@ public class TradeController {
         //   and wrap the resulting Page<Trade> via PagedResponse.from(page, mapper::toResponse).
         //   For Day 1 return an empty PagedResponse so the React grid renders
         //   "no trades match" while the JPA + Specifications work is still pending.
-        return new PagedResponse<>(List.of(), 0, 20, 0, 0);
+
+        Page<Trade> trades = service.list(from, to, TradeStatus.valueOf(status), counterpartyId, pageable);
+
+
+        return PagedResponse.from(trades, mapper::toResponse);
     }
 
     @PostMapping

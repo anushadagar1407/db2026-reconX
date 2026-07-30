@@ -1,5 +1,7 @@
 package com.dbtraining.reconx.dto;
 
+import com.dbtraining.reconx.repository.entity.TradeStatus;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -17,7 +19,7 @@ public record TradeResponse(
         BigDecimal quantity,
         BigDecimal price,
         LocalDate tradeDate,
-        String status,
+        TradeStatus status,
         Instant createdAt,
         Instant modifiedAt
 ) {}
