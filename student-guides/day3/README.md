@@ -1544,7 +1544,7 @@ open backend/target/site/jacoco/index.html
 
 ---
 
-### TICKET-ADV047 — Refactor for edge cases
+### TICKET-ADV047 — Refactor for edge cases ✅
 
 **Goal:** Add tests for three edge cases of `reconcile` and refactor the production code so all three pass.
 
