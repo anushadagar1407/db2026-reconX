@@ -1334,7 +1334,7 @@ docker ps
 
 ---
 
-### TICKET-ADV045 — Integration test: insert → recon → verify
+### TICKET-ADV045 — Integration test: insert → recon → verify ✅
 
 **Goal:** Write an end-to-end test that inserts trades via repository beans, runs the reconciliation service, and verifies the persisted `ReconResult` rows.
 

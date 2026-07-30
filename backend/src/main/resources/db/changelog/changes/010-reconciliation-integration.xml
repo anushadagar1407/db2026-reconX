@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="010-create-recon-trade-inputs" author="trainer">
+        <createTable tableName="recon_trade_inputs">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="source" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="trade_ref" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="instrument_symbol" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity" type="NUMERIC(18,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="price" type="NUMERIC(18,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="VARCHAR(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="side" type="VARCHAR(4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="trade_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="counterparty_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="recon_trade_inputs"
+                             columnNames="source, trade_ref"
+                             constraintName="uk_recon_trade_inputs_source_ref"/>
+        <rollback>
+            <dropTable tableName="recon_trade_inputs"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="010-create-recon-results" author="trainer">
+        <createTable tableName="recon_results">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="trade_ref" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="discrepancy_type" type="VARCHAR(30)"/>
+            <column name="details" type="VARCHAR(1000)"/>
+        </createTable>
+        <rollback>
+            <dropTable tableName="recon_results"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
