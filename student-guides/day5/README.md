@@ -2371,7 +2371,7 @@ Run the Liquibase migrations check against a fresh container.
 
 ---
 
-### TICKET-ADV080 — API versioning + deprecation
+### TICKET-ADV080 — API versioning + deprecation ✅
 
 **Goal:** Establish `/api/v1/...` as the contract prefix and demonstrate how to deprecate an endpoint cleanly.
 
