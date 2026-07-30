@@ -389,7 +389,7 @@ curl -s http://localhost:8080/actuator/prometheus | grep trade_created
 
 ---
 
-### TICKET-ADV084 — Timer: `reconciliation_duration_seconds`
+### TICKET-ADV084 — Timer: `reconciliation_duration_seconds` ✅
 
 **Goal:** Measure how long the reconciliation engine takes per batch and publish the distribution so server-side percentile queries work in PromQL.
 

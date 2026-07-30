@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
  *            - DistributionSummary: histogram of magnitudes (trade values)
  *            - Gauge: instantaneous value (open recon breaks)
  *
- * The TIMER for reconciliation duration lives as @Timed on
+ * The TIMER for reconciliation duration is registered by
  * ReconciliationEngine.reconcile() (TICKET-ADV084) — not in this class.
  * ============================================================================
  *
