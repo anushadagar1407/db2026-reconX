@@ -24,14 +24,12 @@ import java.util.UUID;
 import static com.dbtraining.reconx.repository.TradeSpecifications.*;
 
 /**
- * =======================*==================================*=================
- * TICKET-ADV064*— TradeService.create (POST endpoi*t backing)
- * TICKET-ADV065 — upda*e
- * TICKET-ADV066 — updateStatus *PATCH)
- * TICKET-ADV067 — softDelete
+ * ============================================================================
+ * TICKET-ADV064 — TradeService.create (POST endpoint backing) TICKET-ADV065 —
+ * update TICKET-ADV066 — updateStatus (PATCH) TICKET-ADV067 — softDelete
  * TICKET-ADV083 — increments trade_created_total Counter on create
- * TICKET-ADV129 — publishes TradeEvent on every state change
- * TICKET-ADV056 — list() uses Specifications
+ * TICKET-ADV129 — publishes TradeEvent on every state change TICKET-ADV056 —
+ * list() uses Specifications
  * ============================================================================
  */
 @Service
@@ -45,10 +43,10 @@ public class TradeService {
     private final TradeMetrics metrics;
 
     public TradeService(TradeRepository tradeRepo,
-                        CounterpartyRepository cpRepo,
-                        InstrumentRepository instRepo,
-                        TradeEventProducer events,
-                        TradeMetrics metrics) {
+            CounterpartyRepository cpRepo,
+            InstrumentRepository instRepo,
+            TradeEventProducer events,
+            TradeMetrics metrics) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
@@ -67,20 +65,24 @@ public class TradeService {
     }
 
     public Trade update(Long id, TradeRequest req, String actor) {
+
         Trade trade = tradeRepo.findById(id)
-                .orElseThrow(() -> new TradeNotFoundException("Trade not found: id=" + id));
+                .orElseThrow(()
+                        -> new TradeNotFoundException("Trade not found: id=" + id));
 
         trade.setTradeRef(req.tradeRef());
 
         trade.setInstrument(
                 instRepo.findById(req.instrumentId())
-                        .orElseThrow(() -> new TradeNotFoundException(
+                        .orElseThrow(()
+                                -> new TradeNotFoundException(
                                 "Instrument not found: id=" + req.instrumentId()))
         );
 
         trade.setCounterparty(
                 cpRepo.findById(req.counterpartyId())
-                        .orElseThrow(() -> new TradeNotFoundException(
+                        .orElseThrow(()
+                                -> new TradeNotFoundException(
                                 "Counterparty not found: id=" + req.counterpartyId()))
         );
 
