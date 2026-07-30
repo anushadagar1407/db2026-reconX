@@ -16,7 +16,7 @@
   --color-surface: #f5f5f5;
   --color-border:  #d4d4d4;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
-  --radius:  4px;
+  --radius:  10px;
 }
 [data-theme="dark"] {
   --color-bg:      #1a1a1a;
@@ -24,9 +24,9 @@
   --color-surface: #2a2a2a;
   --color-border:  #3a3a3a;
 }
-@media (prefers-reduced-motion: reduce) {
+/* @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
-}
+} */
 
 * { box-sizing: border-box; }
 body {
@@ -78,3 +78,24 @@ body {
 
 button { padding: var(--space-1) var(--space-2); border: 1px solid var(--color-border); background: transparent; color: inherit; border-radius: var(--radius); cursor: pointer; }
 :focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }
+
+ul {
+  list-style-type: none; /* removes bullets */
+}
+
+ul a {
+  color: var(--color-text);
+  text-decoration: none;
+  display: inline-block;
+  padding:  0.5rem 1rem;
+  border: 1px solid var(--color-bg);
+  border-radius: 999px;
+  background: var(--color-bg);
+  margin-bottom: 5px;
+  transition: all 0.3s ease;
+}
+
+ul a:hover {
+  background: var(--color-surface);
+  border-color: var(--color-surface);
+}
