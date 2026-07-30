@@ -114,4 +114,4 @@ springdoc:
     tagsSorter: alpha
     operationsSorter: alpha
   api-docs:
-    path: /v3/api-docs
+    path: /v1/api-docs
