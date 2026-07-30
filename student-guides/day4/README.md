@@ -656,7 +656,7 @@ psql -h localhost -p 5432 -U reconx_uat -d reconx_uat -c "\d instruments"
 
 ---
 
-### TICKET-ADV052 — Hibernate Envers on the `Trade` entity
+### TICKET-ADV052 — Hibernate Envers on the `Trade` entity ✅
 
 **Goal:** Verify that Envers writes one row per committed change to `Trade` into the `trades_aud` table, and expose two query methods on a `TradeHistoryService`.
 
