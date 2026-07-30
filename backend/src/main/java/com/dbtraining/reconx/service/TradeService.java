@@ -1,7 +1,8 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.dto.TradeRequest;
-import com.dbtraining.reconx.exception.DuplicateTradeRefException;
+import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
@@ -10,7 +11,6 @@ import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
-import com.dbtraining.reconx.dto.TradeEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,10 +24,10 @@ import java.util.UUID;
 import static com.dbtraining.reconx.repository.TradeSpecifications.*;
 
 /**
- * ============================================================================
- * TICKET-ADV064 — TradeService.create (POST endpoint backing)
- * TICKET-ADV065 — update
- * TICKET-ADV066 — updateStatus (PATCH)
+ * =======================*==================================*=================
+ * TICKET-ADV064*— TradeService.create (POST endpoi*t backing)
+ * TICKET-ADV065 — upda*e
+ * TICKET-ADV066 — updateStatus *PATCH)
  * TICKET-ADV067 — softDelete
  * TICKET-ADV083 — increments trade_created_total Counter on create
  * TICKET-ADV129 — publishes TradeEvent on every state change
@@ -67,15 +67,78 @@ public class TradeService {
     }
 
     public Trade update(Long id, TradeRequest req, String actor) {
-        // TODO(TICKET-ADV065): load by id (throw TradeNotFoundException if missing),
-        //   copy mutable fields from req, save, publish a TRADE_UPDATED event.
-        throw new UnsupportedOperationException("TICKET-ADV065");
+        Trade trade = tradeRepo.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("Trade not found: id=" + id));
+
+        trade.setTradeRef(req.tradeRef());
+
+        trade.setInstrument(
+                instRepo.findById(req.instrumentId())
+                        .orElseThrow(() -> new TradeNotFoundException(
+                                "Instrument not found: id=" + req.instrumentId()))
+        );
+
+        trade.setCounterparty(
+                cpRepo.findById(req.counterpartyId())
+                        .orElseThrow(() -> new TradeNotFoundException(
+                                "Counterparty not found: id=" + req.counterpartyId()))
+        );
+
+        trade.setQuantity(req.quantity());
+        trade.setPrice(req.price());
+        trade.setTradeDate(req.tradeDate());
+
+        Trade saved = tradeRepo.save(trade);
+
+        events.publish(
+                new TradeEvent(
+                        UUID.randomUUID(),
+                        saved.getTradeRef(),
+                        TradeEvent.EventType.TRADE_UPDATED,
+                        Instant.now(),
+                        actor,
+                        null,
+                        saved.getStatus().name()
+                )
+        );
+
+        return saved;
     }
 
     public Trade updateStatus(Long id, String status, String actor) {
-        // TODO(TICKET-ADV066): load, setStatus(status), save, publish TRADE_UPDATED
-        //   with the new status in the "after" slot of the event.
-        throw new UnsupportedOperationException("TICKET-ADV066");
+        if (status == null || status.isBlank()) {
+            throw new InvalidTradeException("Status is required");
+        }
+
+        TradeStatus tradeStatus;
+        try {
+            tradeStatus = TradeStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidTradeException("Invalid trade status: " + status);
+        }
+
+        Trade trade = tradeRepo.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("Trade not found: id=" + id));
+
+        String beforeStatus = trade.getStatus() == null ? null : trade.getStatus().name();
+
+        trade.setStatus(tradeStatus);
+
+        Trade saved = tradeRepo.save(trade);
+
+        events.publish(
+                new TradeEvent(
+                        UUID.randomUUID(),
+                        saved.getTradeRef(),
+                        TradeEvent.EventType.TRADE_UPDATED,
+                        Instant.now(),
+                        actor,
+                        beforeStatus,
+                        saved.getStatus().name()
+                )
+        );
+
+        return saved;
     }
 
     public void softDelete(Long id, String actor) {
