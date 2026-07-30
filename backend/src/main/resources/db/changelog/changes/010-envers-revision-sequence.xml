@@ -5,12 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
-    <!--
-         Hibernate Envers validates its default revision generator as
-         revinfo_seq even though 009 creates the revision column as identity.
-         Keep the migration-owned schema compatible with that generator.
-    -->
-    <changeSet id="011-create-envers-revision-sequence" author="trainer">
+    <changeSet id="010-create-envers-revision-sequence" author="trainer">
         <preConditions onFail="MARK_RAN">
             <not><sequenceExists sequenceName="revinfo_seq"/></not>
         </preConditions>

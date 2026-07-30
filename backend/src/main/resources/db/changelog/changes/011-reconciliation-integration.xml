@@ -10,7 +10,7 @@
          source discriminator lets an identical internal/external tradeRef
          coexist without changing the canonical trades table.
     -->
-    <changeSet id="010-create-recon-trade-inputs" author="trainer">
+    <changeSet id="011-create-recon-trade-inputs" author="trainer">
         <createTable tableName="recon_trade_inputs">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true"/>
@@ -51,7 +51,7 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="010-create-recon-results" author="trainer">
+    <changeSet id="011-create-recon-results" author="trainer">
         <createTable tableName="recon_results">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true"/>
