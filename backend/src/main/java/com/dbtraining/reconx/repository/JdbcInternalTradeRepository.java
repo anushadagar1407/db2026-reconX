@@ -1,6 +1,6 @@
 package com.dbtraining.reconx.repository;
 
-import com.dbtraining.reconx.model.TradeType;
+import com.dbtraining.reconx.model.EquityTrade;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -14,12 +14,12 @@ public class JdbcInternalTradeRepository extends JdbcTradeSourceRepository imple
     }
 
     @Override
-    public void save(TradeType trade) {
+    public void save(EquityTrade trade) {
         saveTrade(trade);
     }
 
     @Override
-    public List<TradeType> findAll() {
+    public List<EquityTrade> findAll() {
         return findAllTrades();
     }
 }

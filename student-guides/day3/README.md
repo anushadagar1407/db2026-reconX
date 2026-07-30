@@ -1416,7 +1416,7 @@ void insertedTradesAreReconciledAndPersisted() {
 
 **▶ Run the project — verify TICKET-ADV045 end-to-end**
 
-Run the integration test and confirm the entity ↔ domain round-trip survives the database.
+Run the integration test and confirm the JDBC source ↔ domain round-trip survives the database.
 
 ```bash
 ./mvnw -pl backend verify
@@ -1424,8 +1424,8 @@ Run the integration test and confirm the entity ↔ domain round-trip survives t
 
 **Observe:**
 
-- A matching pair of trades inserted via the repository round-trips back through the recon service.
-- JSON serialisation/deserialisation of the persisted `ReconResult` preserves every field — no nulls after fetch.
+- A matching pair inserted through the JDBC source repositories round-trips through the PostgreSQL staging table and recon service.
+- Persisted `MATCHED` results preserve `tradeRef` and `status`; `discrepancyType` and `details` remain null because matched results carry no discrepancy data.
 - `reconResultRepo.findAll()` returns exactly one row with the right `tradeRef` and `MATCHED` status.
 
 ---

@@ -5,6 +5,11 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
+    <!--
+         ADV045 deliberately keeps the two feed sides in a staging table. The
+         source discriminator lets an identical internal/external tradeRef
+         coexist without changing the canonical trades table.
+    -->
     <changeSet id="010-create-recon-trade-inputs" author="trainer">
         <createTable tableName="recon_trade_inputs">
             <column name="id" type="BIGINT" autoIncrement="true">

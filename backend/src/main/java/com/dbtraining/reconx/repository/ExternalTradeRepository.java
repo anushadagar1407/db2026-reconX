@@ -1,11 +1,11 @@
 package com.dbtraining.reconx.repository;
 
-import com.dbtraining.reconx.model.TradeType;
+import com.dbtraining.reconx.model.EquityTrade;
 
 import java.util.List;
 
 public interface ExternalTradeRepository {
-    void save(TradeType trade);
+    void save(EquityTrade trade);
 
-    List<TradeType> findAll();
+    List<EquityTrade> findAll();
 }

@@ -3,7 +3,6 @@ package com.dbtraining.reconx.repository;
 import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.Side;
 import com.dbtraining.reconx.model.TradeRef;
-import com.dbtraining.reconx.model.TradeType;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Currency;
@@ -19,11 +18,7 @@ abstract class JdbcTradeSourceRepository {
         this.source = source;
     }
 
-    protected void saveTrade(TradeType trade) {
-        if (!(trade instanceof EquityTrade equityTrade)) {
-            throw new IllegalArgumentException("Only equity trades are supported by the reconciliation input repository");
-        }
-
+    protected void saveTrade(EquityTrade equityTrade) {
         jdbcTemplate.update("""
                 INSERT INTO recon_trade_inputs
                     (source, trade_ref, instrument_symbol, quantity, price, currency, side, trade_date, counterparty_id)
@@ -40,7 +35,7 @@ abstract class JdbcTradeSourceRepository {
                 equityTrade.counterpartyId());
     }
 
-    protected List<TradeType> findAllTrades() {
+    protected List<EquityTrade> findAllTrades() {
         return jdbcTemplate.query("""
                 SELECT trade_ref, instrument_symbol, quantity, price, currency, side, trade_date, counterparty_id
                 FROM recon_trade_inputs
