@@ -16,10 +16,7 @@ import java.sql.Timestamp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-@DataJpaTest(properties = {
-        "spring.liquibase.enabled=false",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
-})
+@DataJpaTest
 @AutoConfigureTestDatabase
 class TradeSoftDeletePersistenceTest {
 
@@ -76,7 +73,7 @@ class TradeSoftDeletePersistenceTest {
         entityManager.clear();
 
         assertThat(tradeRepository.findById(tradeId)).isEmpty();
-        assertThat(tradeRepository.findAll()).isEmpty();
+        assertThat(tradeRepository.findAll()).noneMatch(trade -> tradeId.equals(trade.getId()));
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM trades WHERE id = ?", Integer.class, tradeId)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(

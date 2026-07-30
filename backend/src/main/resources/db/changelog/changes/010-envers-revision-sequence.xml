@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="010-create-envers-revision-sequence" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><sequenceExists sequenceName="revinfo_seq"/></not>
+        </preConditions>
+        <createSequence sequenceName="revinfo_seq" startValue="1" incrementBy="50"/>
+        <sql dbms="postgresql">
+            SELECT setval('revinfo_seq', COALESCE((SELECT MAX(rev) FROM revinfo), 0) + 1, false)
+        </sql>
+        <rollback>
+            <dropSequence sequenceName="revinfo_seq"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

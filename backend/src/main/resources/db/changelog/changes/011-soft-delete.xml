@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TICKET-ADV067 — ensure the soft-delete timestamp exists on legacy schemas. -->
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="011-add-trade-deleted-at" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="trades" columnName="deleted_at"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="trades">
+            <column name="deleted_at" type="TIMESTAMP"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="trades" columnName="deleted_at"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
