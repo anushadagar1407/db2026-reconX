@@ -2,6 +2,7 @@ package com.dbtraining.reconx.controller;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.Set;
 
 import com.dbtraining.reconx.dto.PagedResponse;
 import com.dbtraining.reconx.dto.TradeMapper;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * ============================================================================
@@ -45,6 +47,23 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "trades", description = "Trade CRUD and search")
 @SecurityRequirement(name = "bearerAuth")
 public class TradeController {
+
+    private static final Set<String> SORTABLE_PROPERTIES = Set.of(
+            "id",
+            "tradeRef",
+            "instrument.id",
+            "instrument.symbol",
+            "counterparty.id",
+            "counterparty.name",
+            "assetClass",
+            "side",
+            "quantity",
+            "price",
+            "tradeDate",
+            "status",
+            "deletedAt",
+            "createdAt",
+            "modifiedAt");
 
     private final TradeService service;
     private final TradeMapper mapper;
@@ -63,7 +82,12 @@ public class TradeController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) TradeStatus status,
             @RequestParam(required = false) Long counterpartyId,
-            @PageableDefault(size = 20, sort = "tradeDate", direction = Sort.Direction.DESC) Pageable pageable) {
+            @RequestParam(name = "page", required = false) Integer requestedPage,
+            @RequestParam(name = "size", required = false) Integer requestedSize,
+            @RequestParam(name = "sort", required = false) String requestedSort,
+            @PageableDefault(size = 20, sort = "tradeDate", direction = Sort.Direction.DESC)
+            Pageable pageable) {
+        validatePageable(requestedPage, requestedSize, requestedSort);
         var page = service.list(
                 from,
                 to,
@@ -71,6 +95,33 @@ public class TradeController {
                 counterpartyId,
                 pageable);
         return PagedResponse.of(page, mapper::toResponse);
+    }
+
+    private static void validatePageable(Integer requestedPage,
+                                         Integer requestedSize,
+                                         String requestedSort) {
+        if (requestedPage != null && requestedPage < 0) {
+            throw invalidParameter("page", requestedPage);
+        }
+        if (requestedSize != null && requestedSize <= 0) {
+            throw invalidParameter("size", requestedSize);
+        }
+        if (requestedSort == null) {
+            return;
+        }
+        String[] parts = requestedSort.split(",", -1);
+        if (parts.length > 2
+                || parts[0].isBlank()
+                || !SORTABLE_PROPERTIES.contains(parts[0])
+                || (parts.length == 2
+                && !parts[1].equalsIgnoreCase("asc")
+                && !parts[1].equalsIgnoreCase("desc"))) {
+            throw invalidParameter("sort", requestedSort);
+        }
+    }
+
+    private static MethodArgumentTypeMismatchException invalidParameter(String name, Object value) {
+        return new MethodArgumentTypeMismatchException(value, String.class, name, null, null);
     }
 
     @PostMapping

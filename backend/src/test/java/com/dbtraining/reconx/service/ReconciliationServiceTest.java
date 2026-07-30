@@ -3,6 +3,7 @@ package com.dbtraining.reconx.service;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
 import com.dbtraining.reconx.repository.ReconResultRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -20,7 +21,7 @@ class ReconciliationServiceTest {
     void testReconcile_savesResultWithMatchedStatus() {
         // GIVEN: A mocked repository, a real engine, and identical trades
         ReconResultRepository repo = mock(ReconResultRepository.class);
-        ReconciliationEngine engine = new ReconciliationEngine();
+        ReconciliationEngine engine = new ReconciliationEngine(new SimpleMeterRegistry());
         ReconciliationService service = new ReconciliationService(engine, repo);
 
         String validRefString = "EQU-20260729-0001";
