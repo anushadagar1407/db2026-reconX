@@ -919,7 +919,7 @@ Records are compile-time constructs — a `./mvnw compile` is enough to prove th
 
 ---
 
-### TICKET-ADV054 — MapStruct mapper
+### TICKET-ADV054 — MapStruct mapper ✅
 
 **Goal:** Generate a Spring-managed `TradeMapper` bean that maps `Trade` to/from `TradeRequest`/`TradeResponse` at compile time.
 
