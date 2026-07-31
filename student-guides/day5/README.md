@@ -181,7 +181,7 @@ curl -s "http://localhost:8080/api/v1/trades?page=0&size=20" | jq
 
 ---
 
-### TICKET-ADV064 — POST /api/v1/trades (create + validation)
+### TICKET-ADV064 — POST /api/v1/trades (create + validation) ✅
 
 **Goal:** Create a new trade from a validated request body and return 201 with a `Location` header pointing to the new resource.
 
@@ -551,7 +551,7 @@ curl -i -X PATCH http://localhost:8080/api/v1/trades/1/status \
 
 ---
 
-### TICKET-ADV067 — DELETE /api/v1/trades/{id} (soft delete)
+### TICKET-ADV067 — DELETE /api/v1/trades/{id} (soft delete) ✅
 
 **Goal:** Logically delete a trade so it disappears from list responses while remaining in the database for audit.
 
