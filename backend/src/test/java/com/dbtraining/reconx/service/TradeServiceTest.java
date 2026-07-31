@@ -2,6 +2,7 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
+import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.repository.CounterpartyRepository;
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -59,9 +61,13 @@ class TradeServiceTest {
         assertThat(saved.getTradeRef()).isEqualTo(request.tradeRef());
         assertThat(saved.getInstrument()).isSameAs(instrument);
         assertThat(saved.getCounterparty()).isSameAs(counterparty);
+        assertThat(saved.getAssetClass()).isEqualTo(request.assetClass());
+        assertThat(saved.getSide()).isEqualTo(request.side());
         assertThat(saved.getQuantity()).isEqualByComparingTo(request.quantity());
         assertThat(saved.getPrice()).isEqualByComparingTo(request.price());
+        assertThat(saved.getTradeDate()).isEqualTo(request.tradeDate());
         assertThat(saved.getStatus()).isEqualTo(TradeStatus.PENDING);
+        verify(tradeRepository).findByTradeRef(request.tradeRef());
         verify(tradeRepository).save(saved);
     }
 
@@ -76,6 +82,36 @@ class TradeServiceTest {
                 .hasMessageContaining(request.tradeRef());
 
         verifyNoInteractions(instrumentRepository, counterpartyRepository);
+        verify(tradeRepository, never()).save(any(Trade.class));
+    }
+
+    @Test
+    void createRejectsMissingInstrumentBeforeLookingUpCounterparty() {
+        TradeRequest request = validRequest();
+        when(tradeRepository.findByTradeRef(request.tradeRef())).thenReturn(Optional.empty());
+        when(instrumentRepository.findById(request.instrumentId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(request, "trader"))
+                .isInstanceOf(TradeNotFoundException.class)
+                .hasMessageContaining("Instrument");
+
+        verifyNoInteractions(counterpartyRepository);
+        verify(tradeRepository, never()).save(any(Trade.class));
+    }
+
+    @Test
+    void createRejectsMissingCounterpartyBeforeSaving() {
+        TradeRequest request = validRequest();
+        Instrument instrument = mock(Instrument.class);
+        when(tradeRepository.findByTradeRef(request.tradeRef())).thenReturn(Optional.empty());
+        when(instrumentRepository.findById(request.instrumentId())).thenReturn(Optional.of(instrument));
+        when(counterpartyRepository.findById(request.counterpartyId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(request, "trader"))
+                .isInstanceOf(TradeNotFoundException.class)
+                .hasMessageContaining("Counterparty");
+
+        verify(tradeRepository, never()).save(any(Trade.class));
     }
 
     @Test

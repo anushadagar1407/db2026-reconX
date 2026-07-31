@@ -2,6 +2,8 @@ package com.dbtraining.reconx.controller;
 
 import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.dto.TradeResponse;
+import com.dbtraining.reconx.dto.TradeRequest;
+import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.GlobalExceptionHandler;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
@@ -28,6 +30,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -91,6 +94,14 @@ class TradeControllerTest {
                 .andExpect(header().string("Location", "/api/v1/trades/42"))
                 .andExpect(jsonPath("$.id").value(42))
                 .andExpect(jsonPath("$.tradeRef").value("TRD-20260730-0001"));
+
+        var request = ArgumentCaptor.forClass(TradeRequest.class);
+        verify(service).create(request.capture(), anyString());
+        assertThat(request.getValue()).isEqualTo(new TradeRequest(
+                "TRD-20260730-0001", 1L, 2L, "EQUITY", "BUY",
+                new BigDecimal("100.0"), new BigDecimal("245.50"),
+                LocalDate.of(2026, 7, 30)));
+        verify(mapper).toResponse(saved);
     }
 
     @Test
@@ -116,6 +127,36 @@ class TradeControllerTest {
                                 org.hamcrest.Matchers.containsString("tradeRef"),
                                 org.hamcrest.Matchers.containsString("quantity"),
                                 org.hamcrest.Matchers.containsString("tradeDate"))));
+
+        verifyNoInteractions(service, mapper);
+    }
+
+    @Test
+    void createReturnsConflictProblemDetailForDuplicateReference() throws Exception {
+        when(service.create(any(), any()))
+                .thenThrow(new DuplicateTradeRefException("Trade reference already exists"));
+
+        mockMvc.perform(post("/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tradeRef": "TRD-20260730-0001",
+                                  "instrumentId": 1,
+                                  "counterpartyId": 2,
+                                  "assetClass": "EQUITY",
+                                  "side": "BUY",
+                                  "quantity": 100.0,
+                                  "price": 245.50,
+                                  "tradeDate": "2026-07-30"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Duplicate trade reference"))
+                .andExpect(jsonPath("$.detail").value("Trade reference already exists"));
+
+        verify(service).create(any(TradeRequest.class), anyString());
+        verifyNoInteractions(mapper);
     }
 
     @Test
