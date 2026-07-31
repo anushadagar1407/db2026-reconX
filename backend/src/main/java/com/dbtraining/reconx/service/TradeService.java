@@ -10,6 +10,7 @@ import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
+import io.micrometer.core.instrument.Gauge;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -55,6 +56,26 @@ public class TradeService {
         this.instRepo = instRepo;
         this.metrics = metrics;
         this.tradeCreatedCounter = meterRegistry.counter("trade_created_total");
+
+        Gauge.builder("trade_status_count", () -> tradeRepo.countByStatus("PENDING"))
+                .tag("status", "PENDING")
+                .register(meterRegistry);
+
+        Gauge.builder("trade_status_count", () -> tradeRepo.countByStatus("MATCHED"))
+                .tag("status", "MATCHED")
+                .register(meterRegistry);
+
+        Gauge.builder("trade_status_count", () -> tradeRepo.countByStatus("UNMATCHED"))
+                .tag("status", "UNMATCHED")
+                .register(meterRegistry);
+
+        Gauge.builder("trade_status_count", () -> tradeRepo.countByStatus("DISPUTED"))
+                .tag("status", "DISPUTED")
+                .register(meterRegistry);
+
+        Gauge.builder("trade_status_count", () -> tradeRepo.countByStatus("CANCELLED"))
+                .tag("status", "CANCELLED")
+                .register(meterRegistry);
     }
 
     @Transactional(readOnly = true)
