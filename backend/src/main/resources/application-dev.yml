@@ -35,8 +35,3 @@ management:
 logging:
   level:
     com.dbtraining.reconx: DEBUG
-
-server:
-  port: 8081
-
-
