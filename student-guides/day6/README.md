@@ -136,7 +136,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/actuator/caches
 
 ---
 
-### TICKET-ADV082 — Cache eviction: TTL 5 min instruments, 1 min counterparties
+### TICKET-ADV082 — Cache eviction: TTL 5 min instruments, 1 min counterparties ✅
 
 **Goal:** Configure two separately-named Caffeine caches with different time-to-live policies and turn on the stats hooks that Micrometer needs.
 
