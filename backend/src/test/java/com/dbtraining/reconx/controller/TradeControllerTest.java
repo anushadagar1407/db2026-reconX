@@ -2,7 +2,10 @@ package com.dbtraining.reconx.controller;
 
 import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.dto.TradeResponse;
+import com.dbtraining.reconx.dto.TradeRequest;
+import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.GlobalExceptionHandler;
+import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,14 +31,19 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -56,6 +64,152 @@ class TradeControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();
+    }
+
+    @Test
+    void createReturnsCreatedTradeAndLocation() throws Exception {
+        Trade saved = mock(Trade.class);
+        TradeResponse response = new TradeResponse(
+                42L, "TRD-20260730-0001", 2L, "Deutsche Bank",
+                1L, "DBK",
+                new BigDecimal("100.0"), new BigDecimal("245.50"),
+                LocalDate.of(2026, 7, 30), "PENDING", null, null);
+        when(saved.getId()).thenReturn(42L);
+        when(service.create(any(), any())).thenReturn(saved);
+        when(mapper.toResponse(saved)).thenReturn(response);
+
+        mockMvc.perform(post("/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tradeRef": "TRD-20260730-0001",
+                                  "instrumentId": 1,
+                                  "counterpartyId": 2,
+                                  "assetClass": "EQUITY",
+                                  "side": "BUY",
+                                  "quantity": 100.0,
+                                  "price": 245.50,
+                                  "tradeDate": "2026-07-30"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "/api/v1/trades/42"))
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.tradeRef").value("TRD-20260730-0001"));
+
+        var request = ArgumentCaptor.forClass(TradeRequest.class);
+        verify(service).create(request.capture(), anyString());
+        assertThat(request.getValue()).isEqualTo(new TradeRequest(
+                "TRD-20260730-0001", 1L, 2L, "EQUITY", "BUY",
+                new BigDecimal("100.0"), new BigDecimal("245.50"),
+                LocalDate.of(2026, 7, 30)));
+        verify(mapper).toResponse(saved);
+    }
+
+    @Test
+    void createReturnsProblemDetailForInvalidRequest() throws Exception {
+        mockMvc.perform(post("/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "instrumentId": 1,
+                                  "counterpartyId": 2,
+                                  "assetClass": "EQUITY",
+                                  "side": "BUY",
+                                  "quantity": -5,
+                                  "price": 245.50,
+                                  "tradeDate": "2999-01-01"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Validation failed"))
+                .andExpect(jsonPath("$.detail").value(
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString("tradeRef"),
+                                org.hamcrest.Matchers.containsString("quantity"),
+                                org.hamcrest.Matchers.containsString("tradeDate"))));
+
+        verifyNoInteractions(service, mapper);
+    }
+
+    @Test
+    void createReturnsConflictProblemDetailForDuplicateReference() throws Exception {
+        when(service.create(any(), any()))
+                .thenThrow(new DuplicateTradeRefException("Trade reference already exists"));
+
+        mockMvc.perform(post("/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tradeRef": "TRD-20260730-0001",
+                                  "instrumentId": 1,
+                                  "counterpartyId": 2,
+                                  "assetClass": "EQUITY",
+                                  "side": "BUY",
+                                  "quantity": 100.0,
+                                  "price": 245.50,
+                                  "tradeDate": "2026-07-30"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Duplicate trade reference"))
+                .andExpect(jsonPath("$.detail").value("Trade reference already exists"));
+
+        verify(service).create(any(TradeRequest.class), anyString());
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void updateStatusReturnsMappedTradeResponse() throws Exception {
+        Trade updated = new Trade();
+        TradeResponse response = response();
+        when(service.updateStatus(eq(42L), eq("MATCHED"), anyString())).thenReturn(updated);
+        when(mapper.toResponse(updated)).thenReturn(response);
+
+        mockMvc.perform(patch("/v1/trades/42/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"MATCHED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.status").value("MATCHED"));
+
+        verify(service).updateStatus(eq(42L), eq("MATCHED"), anyString());
+        verify(mapper).toResponse(updated);
+    }
+
+    @Test
+    void updateStatusReturnsBadRequestProblemDetailForInvalidStatus() throws Exception {
+        mockMvc.perform(patch("/v1/trades/42/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"FOOBAR\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Validation failed"))
+                .andExpect(jsonPath("$.detail").value(
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString("status"),
+                                org.hamcrest.Matchers.containsString("DISPUTED"))));
+
+        verifyNoInteractions(service, mapper);
+    }
+
+    @Test
+    void updateStatusReturnsNotFoundProblemDetailForMissingTrade() throws Exception {
+        when(service.updateStatus(eq(42L), eq("MATCHED"), anyString()))
+                .thenThrow(new TradeNotFoundException("Trade not found: id=42"));
+
+        mockMvc.perform(patch("/v1/trades/42/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"MATCHED\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Trade not found"))
+                .andExpect(jsonPath("$.detail").value("Trade not found: id=42"));
+
+        verify(service).updateStatus(eq(42L), eq("MATCHED"), anyString());
+        verifyNoInteractions(mapper);
     }
 
     @Test
