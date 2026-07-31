@@ -233,6 +233,16 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            <!-- Mockito's inline mock maker must be attached at JVM startup on
+                 recent JDKs; dynamic self-attachment is no longer reliable. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Late evaluation keeps the agent options prepared by JaCoCo. -->
+                    <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
+                </configuration>
+            </plugin>
             <!-- ADV046 / ADV156 — JaCoCo coverage gate (>=85%) -->
             <plugin>
                 <groupId>org.jacoco</groupId>
