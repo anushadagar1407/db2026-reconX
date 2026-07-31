@@ -1438,7 +1438,7 @@ docker compose up -d postgres prometheus grafana
 
 ---
 
-### TICKET-ADV094 — Alert: API P95 latency > 500ms for 3 min
+### TICKET-ADV094 — Alert: API P95 latency > 500ms for 3 min - Done
 
 **Goal:** A Prometheus alert rule on P95 HTTP latency exceeding 500 ms continuously for 3 minutes.
 
