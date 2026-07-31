@@ -2,8 +2,7 @@ $kind: http-request
 url: "{{baseUrl}}/auth/login"
 method: POST
 headers:
-  - key: Content-Type
-    value: application/json
+  Content-Type: application/json
 body:
   type: json
   content: |-
@@ -12,6 +11,13 @@ body:
       "password": "{{adminPassword}}"
     }
 scripts:
+  - type: beforeRequest
+    code: |-
+      if (!pm.environment.name) {
+        throw new Error("Select a ReconX environment before logging in.");
+      }
+      pm.environment.unset("adminToken");
+    language: text/javascript
   - type: afterResponse
     code: |-
       pm.test("status is 200", () => pm.response.to.have.status(200));
@@ -23,7 +29,7 @@ scripts:
           pm.expect(body.expiresInSeconds).to.be.above(0);
           pm.expect(body.role).to.eql("ADMIN");
         });
-        pm.collectionVariables.set("adminToken", body.token);
+        pm.environment.set("adminToken", body.token);
       }
     language: text/javascript
 order: 1000

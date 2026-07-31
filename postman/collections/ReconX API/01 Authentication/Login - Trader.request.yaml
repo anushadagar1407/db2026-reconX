@@ -12,6 +12,13 @@ body:
       "password": "{{traderPassword}}"
     }
 scripts:
+  - type: beforeRequest
+    code: |-
+      if (!pm.environment.name) {
+        throw new Error("Select a ReconX environment before logging in.");
+      }
+      pm.environment.unset("traderToken");
+    language: text/javascript
   - type: afterResponse
     code: |-
       pm.test("status is 200", () => pm.response.to.have.status(200));
@@ -21,7 +28,7 @@ scripts:
           pm.expect(body.token).to.be.a("string").and.not.empty;
           pm.expect(body.role).to.eql("TRADER");
         });
-        pm.collectionVariables.set("traderToken", body.token);
+        pm.environment.set("traderToken", body.token);
       }
     language: text/javascript
 order: 2000

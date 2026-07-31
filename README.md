@@ -170,8 +170,9 @@ files, so collection changes are reviewed and shared through normal Git commits.
 After cloning, open the repository folder in the same Postman project workspace
 and switch to Local View. Select `ReconX - Local Docker` when using the Compose
 stack or `ReconX - Local H2` when running the backend with the dev profile. Run
-folder `01 Authentication` first to populate the role-specific JWT variables,
-then send individual requests or use Postman's Collection Runner.
+folder `01 Authentication` first to save the role-specific JWTs as local values
+in the selected environment, then send individual requests or use Postman's
+Collection Runner. The checked-in shared token values remain blank.
 
 Folders `00` through `07` cover the current runnable API. Folder `90` contains
 manual or destructive operations, and folder `99` records API surfaces blocked

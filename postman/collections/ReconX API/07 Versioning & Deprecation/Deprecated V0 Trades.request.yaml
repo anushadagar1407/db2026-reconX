@@ -10,6 +10,5 @@ scripts:
         pm.expect(pm.response.headers.get("Sunset")).to.be.a("string").and.not.empty;
         pm.expect(pm.response.headers.get("Link")).to.eql("</api/v1/trades>; rel=\"successor-version\"");
       });
-      ["adminToken", "traderToken", "viewerToken", "reconToken", "seedTradeId", "seedTradeRef", "testInstrumentId", "testCounterpartyId", "tradeId", "tradeRef", "tradeDate", "jobId"].forEach((key) => pm.collectionVariables.unset(key));
     language: text/javascript
 order: 1000

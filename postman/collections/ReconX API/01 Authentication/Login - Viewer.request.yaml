@@ -12,6 +12,13 @@ body:
       "password": "{{viewerPassword}}"
     }
 scripts:
+  - type: beforeRequest
+    code: |-
+      if (!pm.environment.name) {
+        throw new Error("Select a ReconX environment before logging in.");
+      }
+      pm.environment.unset("viewerToken");
+    language: text/javascript
   - type: afterResponse
     code: |-
       pm.test("status is 200", () => pm.response.to.have.status(200));
@@ -21,7 +28,7 @@ scripts:
           pm.expect(body.token).to.be.a("string").and.not.empty;
           pm.expect(body.role).to.eql("VIEWER");
         });
-        pm.collectionVariables.set("viewerToken", body.token);
+        pm.environment.set("viewerToken", body.token);
       }
     language: text/javascript
 order: 3000

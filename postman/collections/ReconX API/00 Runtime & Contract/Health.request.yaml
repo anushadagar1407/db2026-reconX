@@ -6,9 +6,6 @@ headers:
   - key: Accept
     value: application/json
 scripts:
-  - type: beforeRequest
-    code: '["adminToken", "traderToken", "viewerToken", "reconToken", "seedTradeId", "seedTradeRef", "testInstrumentId", "testCounterpartyId", "tradeId", "tradeRef", "tradeDate", "jobId"].forEach((key) => pm.collectionVariables.unset(key));'
-    language: text/javascript
   - type: afterResponse
     code: |-
       pm.test("status is 200", () => pm.response.to.have.status(200));

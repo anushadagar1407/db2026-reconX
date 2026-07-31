@@ -20,5 +20,13 @@ values:
     value: recon@db.com
   - key: reconPassword
     value: recon123
+  - key: adminToken
+    value: ''
+  - key: traderToken
+    value: ''
+  - key: viewerToken
+    value: ''
+  - key: reconToken
+    value: ''
   - key: breakId
     value: '1'
