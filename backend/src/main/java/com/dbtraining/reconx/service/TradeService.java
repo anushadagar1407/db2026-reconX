@@ -2,6 +2,7 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.dto.TradeRequest;
+import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
