@@ -2,14 +2,17 @@ package com.dbtraining.reconx.security;
 
 import com.dbtraining.reconx.controller.AuditController;
 import com.dbtraining.reconx.controller.AuthController;
+import com.dbtraining.reconx.controller.DeprecatedTradeController;
 import com.dbtraining.reconx.controller.ReconController;
 import com.dbtraining.reconx.controller.TradeController;
 import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.repository.AppUserRepository;
 import com.dbtraining.reconx.repository.AuditLogRepository;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
+import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
 import jakarta.servlet.Filter;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -18,6 +21,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -38,8 +42,15 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -78,6 +89,16 @@ class SecurityConfigTest {
     @jakarta.annotation.Resource
     private FilterChainProxy filterChainProxy;
 
+    @BeforeEach
+    void stubAllowedTradeOperations() {
+        Trade trade = mock(Trade.class);
+        when(trade.getId()).thenReturn(42L);
+        when(tradeService.list(any(), any(), any(), any(), any())).thenReturn(Page.empty());
+        when(tradeService.create(any(), anyString())).thenReturn(trade);
+        when(tradeService.update(anyLong(), any(), anyString())).thenReturn(trade);
+        when(tradeService.updateStatus(anyLong(), anyString(), anyString())).thenReturn(trade);
+    }
+
     @Test
     void loginAndHealthArePublicAndCsrfIsDisabled() throws Exception {
         mockMvc.perform(post("/api/auth/login")
@@ -89,6 +110,12 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/actuator/health").contextPath(CONTEXT_PATH))
                 .andExpect(status().isOk())
                 .andExpect(content().string("UP"));
+
+        mockMvc.perform(get("/api/v1/api-docs/public").contextPath(CONTEXT_PATH))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/auth/login").contextPath(CONTEXT_PATH))
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/security/probe")
                         .contextPath(CONTEXT_PATH)
@@ -105,6 +132,35 @@ class SecurityConfigTest {
                         .contextPath(CONTEXT_PATH)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer not.a.real.token"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void unauthenticatedStateChangingRequestsReturn401BeforeValidation() throws Exception {
+        mockMvc.perform(post("/api/v1/trades")
+                        .contextPath(CONTEXT_PATH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(put("/api/v1/recon/results/42/resolve")
+                        .contextPath(CONTEXT_PATH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(delete("/api/v1/trades/42").contextPath(CONTEXT_PATH))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deprecatedTradePathRemainsProtectedByDefault() throws Exception {
+        mockMvc.perform(get("/api/v0/trades").contextPath(CONTEXT_PATH))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v0/trades")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer("ADMIN")))
+                .andExpect(status().isGone());
     }
 
     @Test
@@ -138,6 +194,17 @@ class SecurityConfigTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"TRADER", "ADMIN"})
+    void tradingRolesCanPostTrades(String role) throws Exception {
+        mockMvc.perform(post("/api/v1/trades")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer(role))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validTradeRequest()))
+                .andExpect(status().isCreated());
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"VIEWER", "RECON_ANALYST"})
     void nonTradingRolesCannotPostTrades(String role) throws Exception {
         mockMvc.perform(post("/api/v1/trades")
@@ -148,30 +215,89 @@ class SecurityConfigTest {
                 .andExpect(status().isForbidden());
     }
 
-    @Test
-    void viewerCannotPostTrades() throws Exception {
-        mockMvc.perform(post("/api/v1/trades")
+    @ParameterizedTest
+    @ValueSource(strings = {"VIEWER", "RECON_ANALYST"})
+    void nonTradingRolesCannotPutTrades(String role) throws Exception {
+        mockMvc.perform(put("/api/v1/trades/42")
                         .contextPath(CONTEXT_PATH)
-                        .with(bearer("VIEWER"))
+                        .with(bearer(role))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validTradeRequest()))
+                .andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"TRADER", "ADMIN"})
+    void tradingRolesCanPutTrades(String role) throws Exception {
+        mockMvc.perform(put("/api/v1/trades/42")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer(role))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validTradeRequest()))
+                .andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"VIEWER", "RECON_ANALYST"})
+    void nonTradingRolesCannotPatchTradeStatus(String role) throws Exception {
+        mockMvc.perform(patch("/api/v1/trades/42/status")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer(role))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"MATCHED\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"TRADER", "ADMIN"})
+    void tradingRolesCanPatchTradeStatus(String role) throws Exception {
+        mockMvc.perform(patch("/api/v1/trades/42/status")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer(role))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"MATCHED\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"VIEWER", "TRADER", "RECON_ANALYST"})
+    void nonAdminsCannotDeleteTrades(String role) throws Exception {
+        mockMvc.perform(delete("/api/v1/trades/42")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer(role)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminCanDeleteTrades() throws Exception {
+        mockMvc.perform(delete("/api/v1/trades/42")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer("ADMIN")))
+                .andExpect(status().isNoContent());
+
+        verify(tradeService).softDelete(42L, "admin@db.com");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"RECON_ANALYST", "ADMIN"})
+    void reconRolesCanRunRecon(String role) throws Exception {
+        mockMvc.perform(post("/api/v1/recon/run")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer(role))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"from\":\"2026-07-01\",\"to\":\"2026-07-31\"}"))
+                .andExpect(status().isAccepted());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"VIEWER", "TRADER"})
+    void nonReconRolesCannotRunRecon(String role) throws Exception {
+        mockMvc.perform(post("/api/v1/recon/run")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer(role))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void traderCannotDeleteTrades() throws Exception {
-        mockMvc.perform(delete("/api/v1/trades/42")
-                        .contextPath(CONTEXT_PATH)
-                        .with(bearer("TRADER")))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void adminDeleteReachesTheScaffoldedController() {
-        assertThatThrownBy(() -> mockMvc.perform(delete("/api/v1/trades/42")
-                        .contextPath(CONTEXT_PATH)
-                        .with(bearer("ADMIN"))))
-                .hasRootCauseInstanceOf(UnsupportedOperationException.class);
     }
 
     @ParameterizedTest
@@ -191,11 +317,12 @@ class SecurityConfigTest {
                 .andExpect(status().isForbidden());
     }
 
-    @Test
-    void reconAnalystResolveReachesTheScaffoldedController() {
+    @ParameterizedTest
+    @ValueSource(strings = {"RECON_ANALYST", "ADMIN"})
+    void reconRolesCanResolveReconBreaks(String role) {
         assertThatThrownBy(() -> mockMvc.perform(put("/api/v1/recon/results/42/resolve")
                         .contextPath(CONTEXT_PATH)
-                        .with(bearer("RECON_ANALYST"))
+                        .with(bearer(role))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"note\":\"resolved\"}")))
                 .hasRootCauseInstanceOf(UnsupportedOperationException.class);
@@ -225,6 +352,23 @@ class SecurityConfigTest {
                         .contextPath(CONTEXT_PATH)
                         .with(bearer(role)))
                 .andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"VIEWER", "RECON_ANALYST", "ADMIN"})
+    void readOnlyRolesCanReadAuditEvents(String role) throws Exception {
+        mockMvc.perform(get("/api/v1/audit/trades/TRD-1/events")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer(role)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void traderCannotReadAuditEvents() throws Exception {
+        mockMvc.perform(get("/api/v1/audit/trades/TRD-1/events")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer("TRADER")))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -287,6 +431,11 @@ class SecurityConfigTest {
         }
 
         @Bean
+        DeprecatedTradeController deprecatedTradeController() {
+            return new DeprecatedTradeController();
+        }
+
+        @Bean
         JwtTokenProvider jwtTokenProvider() {
             return new JwtTokenProvider("security-chain-test-secret-32-bytes!", 60, "security-chain-test");
         }
@@ -304,6 +453,11 @@ class SecurityConfigTest {
         @Bean
         HealthProbeController healthProbeController() {
             return new HealthProbeController();
+        }
+
+        @Bean
+        DocsProbeController docsProbeController() {
+            return new DocsProbeController();
         }
     }
 
@@ -329,5 +483,22 @@ class SecurityConfigTest {
         String health() {
             return "UP";
         }
+    }
+
+    @org.springframework.web.bind.annotation.RestController
+    static class DocsProbeController {
+
+        @org.springframework.web.bind.annotation.GetMapping("/v1/api-docs/public")
+        String docs() {
+            return "{}";
+        }
+    }
+
+    private String validTradeRequest() {
+        return """
+                {"tradeRef":"TRD-20260731-0001","instrumentId":1,"counterpartyId":1,
+                 "assetClass":"EQUITY","side":"BUY","quantity":1,"price":1,
+                 "tradeDate":"2026-07-30"}
+                """;
     }
 }

@@ -80,24 +80,6 @@ public class TradeController {
     @Operation(summary = "List trades — paginated, filterable, sortable")
     @PreAuthorize("hasAnyRole('VIEWER', 'TRADER', 'RECON_ANALYST', 'ADMIN')")
     public PagedResponse<TradeResponse> list(
-            @RequestParam(required = false) LocalDate from,
-            @RequestParam(required = false) LocalDate to,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long counterpartyId,
-            @PageableDefault(size = 20, sort = "tradeDate", direction = Sort.Direction.DESC) Pageable pageable) {
-        // TODO(TICKET-ADV063): delegate to service.list(from, to, status, counterpartyId, pageable)
-        //   and wrap the resulting Page<Trade> via PagedResponse.from(page, mapper::toResponse).
-        //   For Day 1 return an empty PagedResponse so the React grid renders
-        //   "no trades match" while the JPA + Specifications work is still pending.
-        return new PagedResponse<>(List.of(), 0, 20, 0, 0);
-    }
-
-    @PostMapping
-    @Operation(summary = "Create a trade")
-    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
-    public ResponseEntity<TradeResponse> create(@Valid @RequestBody TradeRequest req,
-                                                  @AuthenticationPrincipal Object principal) {
-    public PagedResponse<TradeResponse> list(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false)
@@ -148,6 +130,7 @@ public class TradeController {
 
     @PostMapping
     @Operation(summary = "Create a trade")
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public ResponseEntity<TradeResponse> create(@Valid @RequestBody TradeRequest req,
                                                 @AuthenticationPrincipal Object principal) {
         // TICKET-ADV064: call service.create(req, actor), build a Location

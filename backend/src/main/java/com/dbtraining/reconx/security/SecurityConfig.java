@@ -39,16 +39,18 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/login",
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/actuator/info",
                                 "/actuator/prometheus",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
+                                "/v1/api-docs",
+                                "/v1/api-docs/**",
                                 "/v3/api-docs/**",
                                 "/h2/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/v1/trades/**")
                         .hasAnyRole("VIEWER", "TRADER", "RECON_ANALYST", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/v1/trades")
