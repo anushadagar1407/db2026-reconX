@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -38,7 +39,11 @@ public class ReconController {
 
     @PostMapping("/run")
     @Operation(summary = "Trigger a reconciliation job (async)")
+    @PreAuthorize("hasAnyRole('RECON_ANALYST', 'ADMIN')")
     public ResponseEntity<ReconRunResponse> runRecon(@Valid @RequestBody ReconRunRequest req) {
+        // TICKET-ADV068: generate a jobId, write a row to recon_jobs, and
+        //   return 202 Accepted with {"jobId": ..., "status": "QUEUED"}. A
+        //   worker (Day 6 / Kafka consumer) picks the job up asynchronously.
         UUID jobId = UUID.randomUUID();
         log.info("recon job dispatched: jobId={}", jobId);
 
@@ -50,6 +55,7 @@ public class ReconController {
 
     @GetMapping("/jobs/{jobId}/results")
     @Operation(summary = "Get results for a recon job")
+    @PreAuthorize("hasAnyRole('VIEWER', 'RECON_ANALYST', 'ADMIN')")
     public List<ReconBreak> results(@PathVariable String jobId) {
         // TODO(TICKET-ADV069): once recon_jobs + recon_breaks tables are wired,
         //   return breaks.findByJobId(jobId). Day-0 returns an empty list so
@@ -59,6 +65,7 @@ public class ReconController {
 
     @PutMapping("/results/{id}/resolve")
     @Operation(summary = "Mark a recon break as RESOLVED with a note")
+    @PreAuthorize("hasAnyRole('RECON_ANALYST', 'ADMIN')")
     public ResponseEntity<ReconBreak> resolve(@PathVariable Long id,
                                               @RequestBody Map<String, String> body) {
         // TODO(TICKET-ADV070): load the ReconBreak, call rb.resolve(note), save,

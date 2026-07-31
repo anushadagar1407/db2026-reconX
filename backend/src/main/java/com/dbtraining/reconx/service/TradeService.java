@@ -15,6 +15,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,11 +52,13 @@ public class TradeService {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('VIEWER', 'TRADER', 'RECON_ANALYST', 'ADMIN')")
     public Trade findById(Long id) {
         return tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException("Trade not found: id=" + id));
     }
 
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public Trade create(TradeRequest req, String actor) {
         // TICKET-ADV064: reject duplicate tradeRef via DuplicateTradeRefException,
         //   build a new Trade with instrument + counterparty looked up from
@@ -115,6 +118,7 @@ public class TradeService {
         return false;
     }
 
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public Trade update(Long id, TradeRequest req, String actor) {
 
         Trade trade = tradeRepo.findById(id)
@@ -146,6 +150,7 @@ public class TradeService {
         return tradeRepo.save(trade);
     }
 
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public Trade updateStatus(Long id, String status, String actor) {
         if (status == null || status.isBlank()) {
             throw new InvalidTradeException("Status is required");
@@ -166,6 +171,7 @@ public class TradeService {
         return tradeRepo.save(trade);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void softDelete(Long id, String actor) {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException("id=" + id));
@@ -174,6 +180,7 @@ public class TradeService {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('VIEWER', 'TRADER', 'RECON_ANALYST', 'ADMIN')")
     public Page<Trade> list(LocalDate from, LocalDate to, String status, Long counterpartyId, Pageable pageable) {
         TradeStatus tradeStatus = status == null || status.isBlank()
                 ? null

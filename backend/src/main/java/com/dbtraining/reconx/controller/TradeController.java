@@ -22,6 +22,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -77,6 +78,7 @@ public class TradeController {
 
     @GetMapping
     @Operation(summary = "List trades — paginated, filterable, sortable")
+    @PreAuthorize("hasAnyRole('VIEWER', 'TRADER', 'RECON_ANALYST', 'ADMIN')")
     public PagedResponse<TradeResponse> list(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -128,6 +130,7 @@ public class TradeController {
 
     @PostMapping
     @Operation(summary = "Create a trade")
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public ResponseEntity<TradeResponse> create(@Valid @RequestBody TradeRequest req,
                                                 @AuthenticationPrincipal Object principal) {
         // TICKET-ADV064: call service.create(req, actor), build a Location
@@ -140,12 +143,14 @@ public class TradeController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a trade")
+    @PreAuthorize("hasAnyRole('VIEWER', 'TRADER', 'RECON_ANALYST', 'ADMIN')")
     public TradeResponse getById(@PathVariable Long id) {
         return mapper.toResponse(service.findById(id));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Full update of a trade")
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public TradeResponse update(@PathVariable Long id,
                                 @Valid @RequestBody TradeRequest req,
                                 @AuthenticationPrincipal Object principal) {
@@ -156,6 +161,7 @@ public class TradeController {
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Update only the status field")
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public TradeResponse updateStatus(@PathVariable Long id,
             @Valid @RequestBody StatusUpdate request,
             @AuthenticationPrincipal Object principal) {
@@ -166,6 +172,7 @@ public class TradeController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Soft delete (sets deleted_at)")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id,
                                        @AuthenticationPrincipal Object principal) {
         service.softDelete(id, String.valueOf(principal));
