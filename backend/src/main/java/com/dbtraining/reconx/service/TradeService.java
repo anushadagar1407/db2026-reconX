@@ -22,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 
 import static com.dbtraining.reconx.repository.TradeSpecifications.*;
-
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Counter;
+import org.springframework.stereotype.Service;
 /**
  * ============================================================================
  * TICKET-ADV064 — TradeService.create (POST endpoint backing) TICKET-ADV065 —
@@ -40,15 +42,19 @@ public class TradeService {
     private final CounterpartyRepository cpRepo;
     private final InstrumentRepository instRepo;
     private final TradeMetrics metrics;
+    private final Counter tradeCreatedCounter;
+
 
     public TradeService(TradeRepository tradeRepo,
             CounterpartyRepository cpRepo,
             InstrumentRepository instRepo,
-            TradeMetrics metrics) {
+            TradeMetrics metrics,
+                        MeterRegistry meterRegistry) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
         this.metrics = metrics;
+        this.tradeCreatedCounter = meterRegistry.counter("trade_created_total");
     }
 
     @Transactional(readOnly = true)
@@ -87,7 +93,9 @@ public class TradeService {
         trade.setStatus(TradeStatus.PENDING);
 
         try {
-            return tradeRepo.save(trade);
+            Trade savedTrade = tradeRepo.save(trade);
+            tradeCreatedCounter.increment();
+            return savedTrade;
         } catch (DataIntegrityViolationException ex) {
             if (!isTradeReferenceUniqueViolation(ex)) {
                 throw ex;
