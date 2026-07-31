@@ -98,6 +98,60 @@ class ReconciliationEngineTest {
         assertThat(results).hasSize(0);
     }
 
+    @Test
+    void testReconcile_nullInternal_returnsEmpty() {
+        assertThat(engine.reconcile(null, List.of(), ReconciliationRule.EXACT)).isEmpty();
+    }
+
+    @Test
+    void testReconcile_nullExternal_returnsMissingExternalBreak() {
+        EquityTrade internalTrade = equity("EQU-20260603-0001", "100.00", "10");
+
+        List<ReconResult> results = engine.reconcile(
+                List.of(internalTrade), null, ReconciliationRule.EXACT);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).status()).isEqualTo(ReconResult.Status.BREAK);
+        assertThat(results.get(0).discrepancyType()).isEqualTo("MISSING_EXTERNAL");
+    }
+
+    @Test
+    void testReconcile_allMismatched_returnsBreakSummary() {
+        List<TradeType> internalTrades = List.of(
+                equity("EQU-20260603-0001", "100.00", "1000"),
+                equity("EQU-20260603-0002", "100.00", "1000"),
+                equity("EQU-20260603-0003", "100.00", "1000"));
+        List<TradeType> externalTrades = List.of(
+                equity("EQU-20260603-0001", "200.00", "1000"),
+                equity("EQU-20260603-0002", "200.00", "1000"),
+                equity("EQU-20260603-0003", "200.00", "1000"));
+
+        List<ReconResult> results = engine.reconcile(
+                internalTrades, externalTrades, ReconciliationRule.EXACT);
+        ReconSummary summary = results.stream().collect(new ReconSummaryCollector());
+
+        assertThat(results).hasSize(3)
+                .allSatisfy(result -> assertThat(result.status()).isEqualTo(ReconResult.Status.BREAK));
+        assertThat(summary.total()).isEqualTo(3);
+        assertThat(summary.matched()).isEqualTo(0);
+        assertThat(summary.broken()).isEqualTo(3);
+    }
+
+    @Test
+    void testReconcile_duplicateExternalRefs_keepsFirstTrade() {
+        EquityTrade internalTrade = equity("EQU-20260603-0004", "100.00", "10");
+        EquityTrade firstExternalTrade = equity("EQU-20260603-0004", "100.00", "10");
+        EquityTrade duplicateExternalTrade = equity("EQU-20260603-0004", "200.00", "10");
+
+        List<ReconResult> results = engine.reconcile(
+                List.of(internalTrade),
+                List.of(firstExternalTrade, duplicateExternalTrade),
+                ReconciliationRule.EXACT);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).status()).isEqualTo(ReconResult.Status.MATCHED);
+    }
+
     private EquityTrade equity(String ref, String price, String qty) {
         return EquityTrade.builder()
                 .tradeRef(TradeRef.of(ref))
