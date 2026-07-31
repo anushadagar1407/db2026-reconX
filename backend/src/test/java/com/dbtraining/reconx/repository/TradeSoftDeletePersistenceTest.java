@@ -45,6 +45,17 @@ class TradeSoftDeletePersistenceTest {
 
     @Test
     void hibernateReadsHideDeletedRowsButJdbcStillSeesThePhysicalRow() {
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM databasechangelog WHERE id = ? AND author = ?",
+                Integer.class, "012-add-trade-deleted-at", "trainer")).isEqualTo(1);
+        Integer reconciliationOrder = jdbcTemplate.queryForObject(
+                "SELECT orderexecuted FROM databasechangelog WHERE id = ? AND author = ?",
+                Integer.class, "011-create-recon-results", "trainer");
+        Integer softDeleteOrder = jdbcTemplate.queryForObject(
+                "SELECT orderexecuted FROM databasechangelog WHERE id = ? AND author = ?",
+                Integer.class, "012-add-trade-deleted-at", "trainer");
+        assertThat(softDeleteOrder).isGreaterThan(reconciliationOrder);
+
         jdbcTemplate.update("""
                 INSERT INTO counterparties (name, lei_code, region)
                 VALUES ('Soft Delete Counterparty', '5493001SOFTDELETE01', 'NAMR')
