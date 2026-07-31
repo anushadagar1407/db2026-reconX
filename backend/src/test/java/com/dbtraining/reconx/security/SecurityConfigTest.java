@@ -9,6 +9,7 @@ import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.repository.AppUserRepository;
 import com.dbtraining.reconx.repository.AuditLogRepository;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
+import com.dbtraining.reconx.repository.entity.ReconBreak;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
 import jakarta.servlet.Filter;
@@ -39,9 +40,9 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -90,13 +91,16 @@ class SecurityConfigTest {
     private FilterChainProxy filterChainProxy;
 
     @BeforeEach
-    void stubAllowedTradeOperations() {
+    void stubAllowedOperations() {
         Trade trade = mock(Trade.class);
+        ReconBreak reconBreak = new ReconBreak();
         when(trade.getId()).thenReturn(42L);
         when(tradeService.list(any(), any(), any(), any(), any())).thenReturn(Page.empty());
         when(tradeService.create(any(), anyString())).thenReturn(trade);
         when(tradeService.update(anyLong(), any(), anyString())).thenReturn(trade);
         when(tradeService.updateStatus(anyLong(), anyString(), anyString())).thenReturn(trade);
+        when(reconBreakRepository.findById(42L)).thenReturn(Optional.of(reconBreak));
+        when(reconBreakRepository.save(reconBreak)).thenReturn(reconBreak);
     }
 
     @Test
@@ -328,13 +332,13 @@ class SecurityConfigTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"RECON_ANALYST", "ADMIN"})
-    void authorizedReconRolesReachScaffoldedResolveHandler(String role) {
-        assertThatThrownBy(() -> mockMvc.perform(put("/api/v1/recon/results/42/resolve")
+    void authorizedReconRolesCanResolveBreak(String role) throws Exception {
+        mockMvc.perform(put("/api/v1/recon/results/42/resolve")
                         .contextPath(CONTEXT_PATH)
                         .with(bearer(role))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"note\":\"resolved\"}")))
-                .hasRootCauseInstanceOf(UnsupportedOperationException.class);
+                        .content("{\"note\":\"resolved\"}"))
+                .andExpect(status().isOk());
     }
 
     @ParameterizedTest
