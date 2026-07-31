@@ -1,7 +1,9 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
+import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
@@ -12,6 +14,8 @@ import com.dbtraining.reconx.repository.entity.Counterparty;
 import com.dbtraining.reconx.repository.entity.Instrument;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -28,8 +32,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -39,11 +45,12 @@ class TradeServiceTest {
     private final TradeRepository tradeRepository = mock(TradeRepository.class);
     private final CounterpartyRepository counterpartyRepository = mock(CounterpartyRepository.class);
     private final InstrumentRepository instrumentRepository = mock(InstrumentRepository.class);
+    private final TradeEventProducer events = mock(TradeEventProducer.class);
     private final TradeService service = new TradeService(
             tradeRepository,
             counterpartyRepository,
             instrumentRepository,
-            mock(TradeEventProducer.class),
+            events,
             mock(TradeMetrics.class));
 
     @Test
@@ -112,6 +119,65 @@ class TradeServiceTest {
                 .hasMessageContaining("Counterparty");
 
         verify(tradeRepository, never()).save(any(Trade.class));
+    }
+
+    @Test
+    void updateStatusChangesOnlyStatusAndPublishesAfterSaving() {
+        Trade trade = new Trade();
+        trade.setTradeRef("TRD-20260730-0001");
+        trade.setAssetClass("EQUITY");
+        trade.setSide("BUY");
+        trade.setQuantity(new BigDecimal("100.0000"));
+        trade.setPrice(new BigDecimal("245.5000"));
+        trade.setTradeDate(LocalDate.of(2026, 7, 30));
+        trade.setStatus(TradeStatus.PENDING);
+        when(tradeRepository.findById(42L)).thenReturn(Optional.of(trade));
+        when(tradeRepository.save(trade)).thenReturn(trade);
+
+        Trade result = service.updateStatus(42L, "MATCHED", "trader");
+
+        assertThat(result).isSameAs(trade);
+        assertThat(trade.getStatus()).isEqualTo(TradeStatus.MATCHED);
+        assertThat(trade.getTradeRef()).isEqualTo("TRD-20260730-0001");
+        assertThat(trade.getAssetClass()).isEqualTo("EQUITY");
+        assertThat(trade.getSide()).isEqualTo("BUY");
+        assertThat(trade.getQuantity()).isEqualByComparingTo("100.0000");
+        assertThat(trade.getPrice()).isEqualByComparingTo("245.5000");
+        assertThat(trade.getTradeDate()).isEqualTo(LocalDate.of(2026, 7, 30));
+
+        ArgumentCaptor<TradeEvent> event = ArgumentCaptor.forClass(TradeEvent.class);
+        InOrder order = inOrder(tradeRepository, events);
+        order.verify(tradeRepository).findById(42L);
+        order.verify(tradeRepository).save(trade);
+        order.verify(events).publish(event.capture());
+        verify(tradeRepository, times(1)).save(trade);
+        assertThat(event.getValue())
+                .extracting(TradeEvent::tradeRef, TradeEvent::eventType,
+                        TradeEvent::actor, TradeEvent::before, TradeEvent::after)
+                .containsExactly("TRD-20260730-0001", TradeEvent.EventType.TRADE_UPDATED,
+                        "trader", "PENDING", "MATCHED");
+    }
+
+    @Test
+    void updateStatusRejectsInvalidStatusBeforeLoadingTrade() {
+        assertThatThrownBy(() -> service.updateStatus(42L, "FOOBAR", "trader"))
+                .isInstanceOf(InvalidTradeException.class)
+                .hasMessage("Invalid trade status: FOOBAR");
+
+        verifyNoInteractions(tradeRepository, events);
+    }
+
+    @Test
+    void updateStatusReportsMissingTradeWithoutSavingOrPublishing() {
+        when(tradeRepository.findById(42L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateStatus(42L, "MATCHED", "trader"))
+                .isInstanceOf(TradeNotFoundException.class)
+                .hasMessage("Trade not found: id=42");
+
+        verify(tradeRepository).findById(42L);
+        verify(tradeRepository, never()).save(any(Trade.class));
+        verifyNoInteractions(events);
     }
 
     @Test

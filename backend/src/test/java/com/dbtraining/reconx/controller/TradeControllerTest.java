@@ -5,6 +5,8 @@ import com.dbtraining.reconx.dto.TradeResponse;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.GlobalExceptionHandler;
+import com.dbtraining.reconx.exception.InvalidTradeException;
+import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +41,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -156,6 +159,58 @@ class TradeControllerTest {
                 .andExpect(jsonPath("$.detail").value("Trade reference already exists"));
 
         verify(service).create(any(TradeRequest.class), anyString());
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void updateStatusReturnsMappedTradeResponse() throws Exception {
+        Trade updated = new Trade();
+        TradeResponse response = response();
+        when(service.updateStatus(eq(42L), eq("MATCHED"), anyString())).thenReturn(updated);
+        when(mapper.toResponse(updated)).thenReturn(response);
+
+        mockMvc.perform(patch("/v1/trades/42/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"MATCHED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.status").value("MATCHED"));
+
+        verify(service).updateStatus(eq(42L), eq("MATCHED"), anyString());
+        verify(mapper).toResponse(updated);
+    }
+
+    @Test
+    void updateStatusReturnsBadRequestProblemDetailForInvalidStatus() throws Exception {
+        when(service.updateStatus(eq(42L), eq("FOOBAR"), anyString()))
+                .thenThrow(new InvalidTradeException("Invalid trade status: FOOBAR"));
+
+        mockMvc.perform(patch("/v1/trades/42/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"FOOBAR\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Invalid trade"))
+                .andExpect(jsonPath("$.detail").value("Invalid trade status: FOOBAR"));
+
+        verify(service).updateStatus(eq(42L), eq("FOOBAR"), anyString());
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void updateStatusReturnsNotFoundProblemDetailForMissingTrade() throws Exception {
+        when(service.updateStatus(eq(42L), eq("MATCHED"), anyString()))
+                .thenThrow(new TradeNotFoundException("Trade not found: id=42"));
+
+        mockMvc.perform(patch("/v1/trades/42/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"MATCHED\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Trade not found"))
+                .andExpect(jsonPath("$.detail").value("Trade not found: id=42"));
+
+        verify(service).updateStatus(eq(42L), eq("MATCHED"), anyString());
         verifyNoInteractions(mapper);
     }
 
