@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.repository;
 
+import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.service.TradeService;
@@ -14,6 +15,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.sql.Timestamp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 @DataJpaTest
@@ -76,7 +78,17 @@ class TradeSoftDeletePersistenceTest {
         assertThat(tradeRepository.findAll()).noneMatch(trade -> tradeId.equals(trade.getId()));
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM trades WHERE id = ?", Integer.class, tradeId)).isEqualTo(1);
+        Timestamp deletedAt = jdbcTemplate.queryForObject(
+                "SELECT deleted_at FROM trades WHERE id = ?", Timestamp.class, tradeId);
+        assertThat(deletedAt).isNotNull();
+
+        assertThatThrownBy(() -> tradeService.softDelete(tradeId, "delete-actor"))
+                .isInstanceOf(TradeNotFoundException.class)
+                .hasMessage("id=" + tradeId);
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT deleted_at FROM trades WHERE id = ?", Timestamp.class, tradeId)).isNotNull();
+                "SELECT COUNT(*) FROM trades WHERE id = ?", Integer.class, tradeId)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT deleted_at FROM trades WHERE id = ?", Timestamp.class, tradeId))
+                .isEqualTo(deletedAt);
     }
 }
