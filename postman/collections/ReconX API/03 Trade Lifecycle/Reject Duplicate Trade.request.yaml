@@ -1,0 +1,31 @@
+$kind: http-request
+url: "{{baseUrl}}/v1/trades"
+method: POST
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "tradeRef": "{{tradeRef}}",
+      "instrumentId": {{testInstrumentId}},
+      "counterpartyId": {{testCounterpartyId}},
+      "assetClass": "EQUITY",
+      "side": "BUY",
+      "quantity": 100.0000,
+      "price": 245.5000,
+      "tradeDate": "{{tradeDate}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 409", () => pm.response.to.have.status(409));
+      pm.test("duplicate is an RFC 7807 problem", () => {
+        pm.expect(pm.response.headers.get("Content-Type")).to.include("application/problem+json");
+        const body = pm.response.json();
+        pm.expect(body.status).to.eql(409);
+        pm.expect(body.detail).to.include(pm.collectionVariables.get("tradeRef"));
+      });
+    language: text/javascript
+order: 2000

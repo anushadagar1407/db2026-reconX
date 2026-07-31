@@ -1,0 +1,19 @@
+$kind: http-request
+description: Use the full document as the local contract reference. The named public group omits auth and audit; do not regenerate this curated collection from it.
+url: "{{baseUrl}}/v1/api-docs"
+method: GET
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 200", () => pm.response.to.have.status(200));
+      pm.test("ReconX OpenAPI metadata is present", () => {
+        const body = pm.response.json();
+        pm.expect(body.openapi).to.be.a("string");
+        pm.expect(body.info.title).to.eql("ReconX API");
+        pm.expect(body.paths).to.be.an("object");
+      });
+    language: text/javascript
+order: 4000

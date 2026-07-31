@@ -1,0 +1,29 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/login"
+method: POST
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{adminEmail}}",
+      "password": "{{adminPassword}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+        const body = pm.response.json();
+        pm.test("ADMIN token response is valid", () => {
+          pm.expect(body.token).to.be.a("string").and.not.empty;
+          pm.expect(body.tokenType).to.eql("Bearer");
+          pm.expect(body.expiresInSeconds).to.be.above(0);
+          pm.expect(body.role).to.eql("ADMIN");
+        });
+        pm.collectionVariables.set("adminToken", body.token);
+      }
+    language: text/javascript
+order: 1000

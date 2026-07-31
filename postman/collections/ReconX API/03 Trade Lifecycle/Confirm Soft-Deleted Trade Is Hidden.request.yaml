@@ -1,0 +1,26 @@
+$kind: http-request
+url: "{{baseUrl}}/v1/trades/{{tradeId}}"
+method: GET
+headers:
+  - key: Accept
+    value: application/problem+json
+auth:
+  type: bearer
+  credentials:
+    token: "{{adminToken}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 404", () => pm.response.to.have.status(404));
+      if (pm.response.code === 404) {
+        const body = pm.response.json();
+        pm.test("not-found problem identifies the deleted trade", () => {
+          pm.expect(body.status).to.eql(404);
+          pm.expect(body.detail).to.include(pm.collectionVariables.get("tradeId"));
+        });
+      }
+      pm.collectionVariables.unset("tradeId");
+      pm.collectionVariables.unset("tradeRef");
+      pm.collectionVariables.unset("tradeDate");
+    language: text/javascript
+order: 8000

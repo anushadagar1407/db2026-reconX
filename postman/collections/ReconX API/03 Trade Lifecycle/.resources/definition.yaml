@@ -1,0 +1,9 @@
+$kind: collection
+description: Repeatable TRADER-to-ADMIN workflow. It creates its own schema-valid trade, verifies duplicate handling and idempotent PUT, then soft-deletes the trade. Seeded trade bodies are not reused because their references and side values do not satisfy current request validation.
+auth:
+  - id: 7d7a12a7-2fd7-462e-b419-534381d5e2e3
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{traderToken}}"
+order: 4000

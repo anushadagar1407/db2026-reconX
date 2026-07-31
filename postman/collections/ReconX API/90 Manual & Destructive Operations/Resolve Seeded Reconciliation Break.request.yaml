@@ -1,0 +1,18 @@
+$kind: http-request
+description: Destructive and not repeatably provisioned by the HTTP API. Choose an OPEN breakId before sending.
+url: "{{baseUrl}}/v1/recon/results/{{breakId}}/resolve"
+method: PUT
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "note": "Confirmed with counterparty during local testing."
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{reconToken}}"
+order: 5000

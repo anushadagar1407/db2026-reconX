@@ -1,0 +1,9 @@
+$kind: collection
+description: Safe checks for the currently implemented controller surface. A run returns a synthetic queued job and polling currently returns a list; tests intentionally do not require that list to remain empty because ADV068/ADV069 should replace the placeholder.
+auth:
+  - id: 381d9524-7212-4084-9f5f-f3b570fe83b2
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{reconToken}}"
+order: 5000

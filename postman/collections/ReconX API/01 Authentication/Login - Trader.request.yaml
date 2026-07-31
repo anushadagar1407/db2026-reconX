@@ -1,0 +1,27 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/login"
+method: POST
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{traderEmail}}",
+      "password": "{{traderPassword}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+        const body = pm.response.json();
+        pm.test("TRADER token response is valid", () => {
+          pm.expect(body.token).to.be.a("string").and.not.empty;
+          pm.expect(body.role).to.eql("TRADER");
+        });
+        pm.collectionVariables.set("traderToken", body.token);
+      }
+    language: text/javascript
+order: 2000

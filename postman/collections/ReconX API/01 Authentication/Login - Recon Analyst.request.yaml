@@ -1,0 +1,27 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/login"
+method: POST
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{reconEmail}}",
+      "password": "{{reconPassword}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+        const body = pm.response.json();
+        pm.test("RECON_ANALYST token response is valid", () => {
+          pm.expect(body.token).to.be.a("string").and.not.empty;
+          pm.expect(body.role).to.eql("RECON_ANALYST");
+        });
+        pm.collectionVariables.set("reconToken", body.token);
+      }
+    language: text/javascript
+order: 4000

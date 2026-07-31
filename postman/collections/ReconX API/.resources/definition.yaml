@@ -1,0 +1,16 @@
+$kind: collection
+name: ReconX API
+description: Local Git-backed request catalog for the ReconX API. Run folder 01 before authenticated requests to populate role tokens. Folders 00-07 cover the current API, folder 90 contains manual or destructive operations, and folder 99 records ticket-scaffolded surfaces that do not exist or are not functional yet. The checked-in credentials belong only to the public local training seed; never replace them with deployed credentials.
+variables:
+  adminToken: ""
+  traderToken: ""
+  viewerToken: ""
+  reconToken: ""
+  seedTradeId: ""
+  seedTradeRef: ""
+  testInstrumentId: ""
+  testCounterpartyId: ""
+  tradeId: ""
+  tradeRef: ""
+  tradeDate: ""
+  jobId: ""
