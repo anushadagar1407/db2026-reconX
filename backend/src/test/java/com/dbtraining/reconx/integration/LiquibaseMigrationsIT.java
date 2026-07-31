@@ -1,10 +1,8 @@
 package com.dbtraining.reconx.integration;
 
-import com.dbtraining.reconx.repository.ReconResultRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -26,7 +24,9 @@ class LiquibaseMigrationsIT {
             "009-create-envers-revision-info",
             "009-create-trades-aud",
             "010-create-envers-revision-sequence",
-            "011-add-trade-deleted-at");
+            "011-create-recon-trade-inputs",
+            "011-create-recon-results",
+            "012-add-trade-deleted-at");
 
     @Container
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -46,9 +46,6 @@ class LiquibaseMigrationsIT {
     @Autowired
     private JdbcTemplate jdbc;
 
-    @MockBean
-    private ReconResultRepository reconResultRepository;
-
     @Test
     void freshPostgresAppliesLiquibaseChangesAndSeedData() {
         assertThat(jdbc.queryForObject("SELECT version()", String.class))
@@ -57,19 +54,20 @@ class LiquibaseMigrationsIT {
         List<String> appliedRequiredChangesets = jdbc.queryForList("""
                 SELECT id
                 FROM databasechangelog
-                WHERE id IN (?, ?, ?, ?)
-                ORDER BY id
+                WHERE id IN (?, ?, ?, ?, ?, ?)
+                ORDER BY orderexecuted
                 """, String.class, REQUIRED_POSTGRES_CHANGESETS.toArray());
         assertThat(appliedRequiredChangesets)
-                .containsExactlyInAnyOrderElementsOf(REQUIRED_POSTGRES_CHANGESETS);
+                .containsExactlyElementsOf(REQUIRED_POSTGRES_CHANGESETS);
 
         List<String> enversTables = jdbc.queryForList("""
                 SELECT table_name
                 FROM information_schema.tables
                 WHERE table_schema = current_schema()
-                  AND table_name IN ('revinfo', 'trades_aud')
+                  AND table_name IN ('revinfo', 'trades_aud', 'recon_trade_inputs', 'recon_results')
                 """, String.class);
-        assertThat(enversTables).containsExactlyInAnyOrder("revinfo", "trades_aud");
+        assertThat(enversTables).containsExactlyInAnyOrder(
+                "revinfo", "trades_aud", "recon_trade_inputs", "recon_results");
 
         Integer revisionSequences = jdbc.queryForObject("""
                 SELECT COUNT(*)

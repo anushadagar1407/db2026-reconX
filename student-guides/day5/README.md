@@ -2254,18 +2254,18 @@ Run the Testcontainers-backed integration test (Docker must be running).
 **Goal:** Prove that every Liquibase changeset applies cleanly against an empty Postgres and that seed data lands.
 
 **What**
-- `LiquibaseMigrationsIT` annotated `@Testcontainers @SpringBootTest @ActiveProfiles("test")` with its own `PostgreSQLContainer` and `@Autowired JdbcTemplate`, asserting PostgreSQL, the required Envers and soft-delete changesets, their schema objects, and `SELECT COUNT(*) FROM trades WHERE deleted_at IS NULL >= 10`.
+- `LiquibaseMigrationsIT` annotated `@Testcontainers @SpringBootTest @ActiveProfiles("test")` with its own `PostgreSQLContainer` and `@Autowired JdbcTemplate`, asserting PostgreSQL, the required 009–012 changesets (including both 011 reconciliation changesets), their schema objects, and `SELECT COUNT(*) FROM trades WHERE deleted_at IS NULL >= 10`.
 
 **Why**
-- This is the safety net for the Day 1 / Day 4 / Day 5 changelog stack — if a developer forgets to commit a new changeset XML, this test fails on a fresh container before the regression reaches the Day 10 pipeline.
+- This is the safety net for the Day 1 / Day 4 / ADV045 / Day 5 changelog stack — if a developer forgets to commit a new changeset XML, this test fails on a fresh container before the regression reaches the Day 10 pipeline.
 
 **Observe**
 - `./mvnw test -Dtest=LiquibaseMigrationsIT` is green; failure with `relation "databasechangelog" does not exist` means Liquibase never ran — check `spring.liquibase.enabled` and the changelog path.
-- The test finds `009-create-envers-revision-info`, `009-create-trades-aud`, `010-create-envers-revision-sequence`, and `011-add-trade-deleted-at`, plus `revinfo`, `trades_aud`, `revinfo_seq`, and `trades.deleted_at`.
+- The test finds `009-create-envers-revision-info`, `009-create-trades-aud`, `010-create-envers-revision-sequence`, `011-create-recon-trade-inputs`, `011-create-recon-results`, and `012-add-trade-deleted-at`, plus `revinfo`, `trades_aud`, `recon_trade_inputs`, `recon_results`, `revinfo_seq`, and `trades.deleted_at` in that execution order.
 
 **Done when:**
 - A second integration test class spins up its own `PostgreSQLContainer` and asserts the required current changeset IDs are present in `databasechangelog`.
-- It asserts the Envers tables, revision sequence, and soft-delete column exist.
+- It asserts the Envers and reconciliation tables, revision sequence, and soft-delete column exist.
 - It asserts at least 10 rows in `trades` with `deleted_at IS NULL` (the seed data).
 - The test catches the case where a developer forgot to commit a new changeset XML — running on a clean container fails immediately.
 
@@ -2273,9 +2273,9 @@ Run the Testcontainers-backed integration test (Docker must be running).
 <summary>Hint 1 — gentle direction</summary>
 
 What table does Liquibase use to record which changesets have been
-applied? Which current Envers and soft-delete IDs must appear there?
-Which tables, sequence, and column do those IDs create? Plus the seed
-data — how many trades should the seed insert?
+applied? Which current Envers, reconciliation, and soft-delete IDs must
+appear there? Which tables, sequence, and column do those IDs create?
+Plus the seed data — how many trades should the seed insert?
 
 </details>
 
@@ -2294,10 +2294,12 @@ against `databasechangelog`, the migration-created objects, and
 <summary>Hint 3 — near-solution shape</summary>
 
 Assert the exact required IDs `009-create-envers-revision-info`,
-`009-create-trades-aud`, `010-create-envers-revision-sequence`, and
-`011-add-trade-deleted-at`; do not rely on a stale total row count. Also
-assert `revinfo`, `trades_aud`, `revinfo_seq`, and `trades.deleted_at`.
-Seed: at least 10 non-deleted trades.
+`009-create-trades-aud`, `010-create-envers-revision-sequence`,
+`011-create-recon-trade-inputs`, `011-create-recon-results`, and
+`012-add-trade-deleted-at` in execution order; do not rely on a stale
+total row count. Also assert `revinfo`, `trades_aud`,
+`recon_trade_inputs`, `recon_results`, `revinfo_seq`, and
+`trades.deleted_at`. Seed: at least 10 non-deleted trades.
 
 </details>
 
@@ -2309,8 +2311,8 @@ Seed: at least 10 non-deleted trades.
 1. Create `LiquibaseMigrationsIT` annotated `@Testcontainers @SpringBootTest @ActiveProfiles("test")` in `src/test/java/.../integration/`.
 2. Declare a static `PostgreSQLContainer<>("postgres:16-alpine")` marked `@Container`, and register its JDBC URL, username, password, driver, and PostgreSQL dialect with `@DynamicPropertySource` (or use `@ServiceConnection`).
 3. `@Autowire JdbcTemplate`.
-4. Inside the test method, query `databasechangelog` for the four required current IDs: `009-create-envers-revision-info`, `009-create-trades-aud`, `010-create-envers-revision-sequence`, and `011-add-trade-deleted-at`.
-5. Assert `revinfo`, `trades_aud`, `revinfo_seq`, and `trades.deleted_at` exist.
+4. Inside the test method, query `databasechangelog` for the six required current IDs in execution order: `009-create-envers-revision-info`, `009-create-trades-aud`, `010-create-envers-revision-sequence`, `011-create-recon-trade-inputs`, `011-create-recon-results`, and `012-add-trade-deleted-at`.
+5. Assert `revinfo`, `trades_aud`, `recon_trade_inputs`, `recon_results`, `revinfo_seq`, and `trades.deleted_at` exist.
 6. Count non-deleted seed trades with `SELECT COUNT(*) FROM trades WHERE deleted_at IS NULL` and assert it is `greaterThanOrEqualTo(10)`.
 7. Run with `./mvnw test`; failure on a fresh container signals a missing changeset commit.
 
@@ -2321,13 +2323,16 @@ private static final List<String> REQUIRED_POSTGRES_CHANGESETS = List.of(
         "009-create-envers-revision-info",
         "009-create-trades-aud",
         "010-create-envers-revision-sequence",
-        "011-add-trade-deleted-at");
+        "011-create-recon-trade-inputs",
+        "011-create-recon-results",
+        "012-add-trade-deleted-at");
 
 List<String> applied = jdbc.queryForList("""
         SELECT id FROM databasechangelog
-        WHERE id IN (?, ?, ?, ?)
+        WHERE id IN (?, ?, ?, ?, ?, ?)
+        ORDER BY orderexecuted
         """, String.class, REQUIRED_POSTGRES_CHANGESETS.toArray());
-assertThat(applied).containsExactlyInAnyOrderElementsOf(REQUIRED_POSTGRES_CHANGESETS);
+assertThat(applied).containsExactlyElementsOf(REQUIRED_POSTGRES_CHANGESETS);
 
 assertThat(jdbc.queryForObject("""
         SELECT COUNT(*) FROM information_schema.sequences
@@ -2353,7 +2358,7 @@ Run the Liquibase migrations check against a fresh container.
 **Observe:**
 
 - A fresh `postgres:16-alpine` container starts and Liquibase applies every changeset from an empty schema.
-- The four required current changeset IDs are present, their Envers/sequence/soft-delete objects exist, and `trades` has at least 10 non-deleted seed rows.
+- The six required current changeset IDs are present in order, their Envers/reconciliation/sequence/soft-delete objects exist, and `trades` has at least 10 non-deleted seed rows.
 - Failure with `relation "databasechangelog" does not exist` means Liquibase never ran — check `spring.liquibase.enabled` and the changelog path.
 
 ---
