@@ -2034,7 +2034,7 @@ Run the full WebMvc test class — all three role-coverage methods should be gre
 
 ---
 
-### TICKET-ADV078 — Full lifecycle integration test with Testcontainers
+### TICKET-ADV078 — Full lifecycle integration test with Testcontainers ✅
 
 **Goal:** Drive a real Postgres-backed Spring Boot through the full trade lifecycle over HTTP.
 
