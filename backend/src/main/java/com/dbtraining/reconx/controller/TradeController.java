@@ -2,10 +2,10 @@ package com.dbtraining.reconx.controller;
 
 import java.net.URI;
 import java.time.LocalDate;
-import java.util.Map;
 import java.util.Set;
 
 import com.dbtraining.reconx.dto.PagedResponse;
+import com.dbtraining.reconx.dto.StatusUpdate;
 import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.dto.TradeResponse;
@@ -151,10 +151,11 @@ public class TradeController {
     @PatchMapping("/{id}/status")
     @Operation(summary = "Update only the status field")
     public TradeResponse updateStatus(@PathVariable Long id,
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody StatusUpdate request,
             @AuthenticationPrincipal Object principal) {
-        String status = body.get("status");
-        return mapper.toResponse(service.updateStatus(id, status, String.valueOf(principal)));
+        return mapper.toResponse(
+                service.updateStatus(id, request.status(), String.valueOf(principal))
+        );
     }
 
     @DeleteMapping("/{id}")

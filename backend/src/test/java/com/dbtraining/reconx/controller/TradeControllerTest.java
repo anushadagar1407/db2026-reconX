@@ -5,7 +5,6 @@ import com.dbtraining.reconx.dto.TradeResponse;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.GlobalExceptionHandler;
-import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
@@ -182,19 +181,18 @@ class TradeControllerTest {
 
     @Test
     void updateStatusReturnsBadRequestProblemDetailForInvalidStatus() throws Exception {
-        when(service.updateStatus(eq(42L), eq("FOOBAR"), anyString()))
-                .thenThrow(new InvalidTradeException("Invalid trade status: FOOBAR"));
-
         mockMvc.perform(patch("/v1/trades/42/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"FOOBAR\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.title").value("Invalid trade"))
-                .andExpect(jsonPath("$.detail").value("Invalid trade status: FOOBAR"));
+                .andExpect(jsonPath("$.title").value("Validation failed"))
+                .andExpect(jsonPath("$.detail").value(
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString("status"),
+                                org.hamcrest.Matchers.containsString("DISPUTED"))));
 
-        verify(service).updateStatus(eq(42L), eq("FOOBAR"), anyString());
-        verifyNoInteractions(mapper);
+        verifyNoInteractions(service, mapper);
     }
 
     @Test
