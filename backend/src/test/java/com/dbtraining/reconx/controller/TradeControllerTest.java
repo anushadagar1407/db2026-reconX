@@ -5,6 +5,7 @@ import com.dbtraining.reconx.dto.TradeResponse;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.GlobalExceptionHandler;
+import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +63,37 @@ class TradeControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();
+    }
+
+    @Test
+    void getByIdReturnsMappedTrade() throws Exception {
+        Trade trade = mock(Trade.class);
+        TradeResponse response = response();
+        when(service.findById(42L)).thenReturn(trade);
+        when(mapper.toResponse(trade)).thenReturn(response);
+
+        mockMvc.perform(get("/v1/trades/42"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.tradeRef").value("TRD-2026-000001"));
+
+        verify(service).findById(42L);
+        verify(mapper).toResponse(trade);
+    }
+
+    @Test
+    void getByIdReturnsNotFoundProblemDetailForMissingTrade() throws Exception {
+        when(service.findById(404L))
+                .thenThrow(new TradeNotFoundException("Trade not found: id=404"));
+
+        mockMvc.perform(get("/v1/trades/404"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Trade not found"))
+                .andExpect(jsonPath("$.detail").value("Trade not found: id=404"));
+
+        verify(service).findById(404L);
+        verifyNoInteractions(mapper);
     }
 
     @Test
