@@ -42,6 +42,7 @@ import static org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -64,6 +65,69 @@ class TradeControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();
+    }
+
+    @Test
+    void getByIdReturnsMappedTrade() throws Exception {
+        Trade trade = mock(Trade.class);
+        TradeResponse response = response();
+        when(service.findById(42L)).thenReturn(trade);
+        when(mapper.toResponse(trade)).thenReturn(response);
+
+        mockMvc.perform(get("/v1/trades/42"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.tradeRef").value("TRD-2026-000001"));
+
+        verify(service).findById(42L);
+        verify(mapper).toResponse(trade);
+    }
+
+    @Test
+    void getByIdReturnsNotFoundProblemDetailForMissingTrade() throws Exception {
+        when(service.findById(404L))
+                .thenThrow(new TradeNotFoundException("Trade not found: id=404"));
+
+        mockMvc.perform(get("/v1/trades/404"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Trade not found"))
+                .andExpect(jsonPath("$.detail").value("Trade not found: id=404"));
+
+        verify(service).findById(404L);
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void updateReturnsMappedTradeResponseWithEveryMutableField() throws Exception {
+        Trade updated = new Trade();
+        TradeResponse response = response();
+        when(service.update(eq(42L), any(TradeRequest.class), anyString())).thenReturn(updated);
+        when(mapper.toResponse(updated)).thenReturn(response);
+
+        mockMvc.perform(put("/v1/trades/42")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tradeRef": "TRD-20260730-0002",
+                                  "instrumentId": 2,
+                                  "counterpartyId": 3,
+                                  "assetClass": "BOND",
+                                  "side": "SELL",
+                                  "quantity": 150.0,
+                                  "price": 300.25,
+                                  "tradeDate": "2026-07-30"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tradeRef").value("TRD-2026-000001"))
+                .andExpect(jsonPath("$.status").value("MATCHED"));
+
+        var request = ArgumentCaptor.forClass(TradeRequest.class);
+        verify(service).update(eq(42L), request.capture(), anyString());
+        assertThat(request.getValue().assetClass()).isEqualTo("BOND");
+        assertThat(request.getValue().side()).isEqualTo("SELL");
+        verify(mapper).toResponse(updated);
     }
 
     @Test
