@@ -1,11 +1,9 @@
 package com.dbtraining.reconx.service;
 
-import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
-import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.repository.CounterpartyRepository;
 import com.dbtraining.reconx.repository.InstrumentRepository;
@@ -20,9 +18,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.util.UUID;
 
 import static com.dbtraining.reconx.repository.TradeSpecifications.*;
 
@@ -42,18 +38,15 @@ public class TradeService {
     private final TradeRepository tradeRepo;
     private final CounterpartyRepository cpRepo;
     private final InstrumentRepository instRepo;
-    private final TradeEventProducer events;
     private final TradeMetrics metrics;
 
     public TradeService(TradeRepository tradeRepo,
             CounterpartyRepository cpRepo,
             InstrumentRepository instRepo,
-            TradeEventProducer events,
             TradeMetrics metrics) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
-        this.events = events;
         this.metrics = metrics;
     }
 
@@ -148,21 +141,7 @@ public class TradeService {
         trade.setPrice(req.price());
         trade.setTradeDate(req.tradeDate());
 
-        Trade saved = tradeRepo.save(trade);
-
-        events.publish(
-                new TradeEvent(
-                        UUID.randomUUID(),
-                        saved.getTradeRef(),
-                        TradeEvent.EventType.TRADE_UPDATED,
-                        Instant.now(),
-                        actor,
-                        null,
-                        saved.getStatus().name()
-                )
-        );
-
-        return saved;
+        return tradeRepo.save(trade);
     }
 
     public Trade updateStatus(Long id, String status, String actor) {
@@ -180,25 +159,9 @@ public class TradeService {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException("Trade not found: id=" + id));
 
-        String beforeStatus = trade.getStatus() == null ? null : trade.getStatus().name();
-
         trade.setStatus(tradeStatus);
 
-        Trade saved = tradeRepo.save(trade);
-
-        events.publish(
-                new TradeEvent(
-                        UUID.randomUUID(),
-                        saved.getTradeRef(),
-                        TradeEvent.EventType.TRADE_UPDATED,
-                        Instant.now(),
-                        actor,
-                        beforeStatus,
-                        saved.getStatus().name()
-                )
-        );
-
-        return saved;
+        return tradeRepo.save(trade);
     }
 
     public void softDelete(Long id, String actor) {
