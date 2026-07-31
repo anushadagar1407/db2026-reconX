@@ -181,7 +181,7 @@ curl -s "http://localhost:8080/api/v1/trades?page=0&size=20" | jq
 
 ---
 
-### TICKET-ADV064 — POST /api/v1/trades (create + validation)
+### TICKET-ADV064 — POST /api/v1/trades (create + validation) ✅
 
 **Goal:** Create a new trade from a validated request body and return 201 with a `Location` header pointing to the new resource.
 
