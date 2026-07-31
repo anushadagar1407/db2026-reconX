@@ -4,6 +4,7 @@ import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,10 @@ import java.util.Optional;
  */
 public interface TradeRepository
         extends JpaRepository<Trade, Long>, JpaSpecificationExecutor<Trade> {
+
+    @Override
+    @EntityGraph(attributePaths = {"instrument", "counterparty"})
+    Optional<Trade> findById(Long id);
 
     Optional<Trade> findByTradeRef(String tradeRef);
 

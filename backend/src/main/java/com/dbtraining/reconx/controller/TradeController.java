@@ -141,6 +141,13 @@ public class TradeController {
         return ResponseEntity.created(location).body(mapper.toResponse(saved));
     }
 
+    @GetMapping("/{id}")
+    @Operation(summary = "Get a trade")
+    @PreAuthorize("hasAnyRole('VIEWER', 'TRADER', 'RECON_ANALYST', 'ADMIN')")
+    public TradeResponse getById(@PathVariable Long id) {
+        return mapper.toResponse(service.findById(id));
+    }
+
     @PutMapping("/{id}")
     @Operation(summary = "Full update of a trade")
     @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")

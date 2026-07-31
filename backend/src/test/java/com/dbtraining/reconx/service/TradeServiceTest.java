@@ -1,11 +1,9 @@
 package com.dbtraining.reconx.service;
 
-import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
-import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.repository.CounterpartyRepository;
 import com.dbtraining.reconx.repository.InstrumentRepository;
@@ -14,9 +12,8 @@ import com.dbtraining.reconx.repository.entity.Counterparty;
 import com.dbtraining.reconx.repository.entity.Instrument;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -32,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -45,13 +41,32 @@ class TradeServiceTest {
     private final TradeRepository tradeRepository = mock(TradeRepository.class);
     private final CounterpartyRepository counterpartyRepository = mock(CounterpartyRepository.class);
     private final InstrumentRepository instrumentRepository = mock(InstrumentRepository.class);
-    private final TradeEventProducer events = mock(TradeEventProducer.class);
     private final TradeService service = new TradeService(
             tradeRepository,
             counterpartyRepository,
             instrumentRepository,
-            events,
             mock(TradeMetrics.class));
+
+    @Test
+    void findByIdReturnsTrade() {
+        Trade expected = new Trade();
+        when(tradeRepository.findById(42L)).thenReturn(Optional.of(expected));
+
+        assertThat(service.findById(42L)).isSameAs(expected);
+
+        verify(tradeRepository).findById(42L);
+    }
+
+    @Test
+    void findByIdRejectsMissingTrade() {
+        when(tradeRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findById(404L))
+                .isInstanceOf(TradeNotFoundException.class)
+                .hasMessage("Trade not found: id=404");
+
+        verify(tradeRepository).findById(404L);
+    }
 
     @Test
     void createBuildsAndSavesPendingTrade() {
@@ -122,7 +137,57 @@ class TradeServiceTest {
     }
 
     @Test
-    void updateStatusChangesOnlyStatusAndPublishesAfterSaving() {
+    void updateReplacesAllMutableFields() {
+        Trade trade = new Trade();
+        trade.setTradeRef("TRD-20260729-0001");
+        trade.setAssetClass("EQUITY");
+        trade.setSide("BUY");
+        trade.setQuantity(new BigDecimal("100.0000"));
+        trade.setPrice(new BigDecimal("245.5000"));
+        trade.setTradeDate(LocalDate.of(2026, 7, 29));
+        trade.setStatus(TradeStatus.MATCHED);
+        Instrument instrument = mock(Instrument.class);
+        Counterparty counterparty = mock(Counterparty.class);
+        TradeRequest request = new TradeRequest(
+                "TRD-20260730-0002", 2L, 3L, "BOND", "SELL",
+                new BigDecimal("150.0000"), new BigDecimal("300.2500"),
+                LocalDate.of(2026, 7, 30));
+        when(tradeRepository.findById(42L)).thenReturn(Optional.of(trade));
+        when(instrumentRepository.findById(request.instrumentId())).thenReturn(Optional.of(instrument));
+        when(counterpartyRepository.findById(request.counterpartyId())).thenReturn(Optional.of(counterparty));
+        when(tradeRepository.save(trade)).thenReturn(trade);
+
+        Trade result = service.update(42L, request, "trader");
+
+        assertThat(result).isSameAs(trade);
+        assertThat(trade.getTradeRef()).isEqualTo(request.tradeRef());
+        assertThat(trade.getInstrument()).isSameAs(instrument);
+        assertThat(trade.getCounterparty()).isSameAs(counterparty);
+        assertThat(trade.getAssetClass()).isEqualTo("BOND");
+        assertThat(trade.getSide()).isEqualTo("SELL");
+        assertThat(trade.getQuantity()).isEqualByComparingTo("150.0000");
+        assertThat(trade.getPrice()).isEqualByComparingTo("300.2500");
+        assertThat(trade.getTradeDate()).isEqualTo(LocalDate.of(2026, 7, 30));
+        assertThat(trade.getStatus()).isEqualTo(TradeStatus.MATCHED);
+        verify(tradeRepository).findById(42L);
+        verify(tradeRepository, times(1)).save(trade);
+    }
+
+    @Test
+    void updateReportsMissingTradeWithoutSaving() {
+        when(tradeRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(404L, validRequest(), "trader"))
+                .isInstanceOf(TradeNotFoundException.class)
+                .hasMessage("Trade not found: id=404");
+
+        verify(tradeRepository).findById(404L);
+        verify(tradeRepository, never()).save(any(Trade.class));
+        verifyNoInteractions(instrumentRepository, counterpartyRepository);
+    }
+
+    @Test
+    void updateStatusChangesOnlyStatusAndPersistsOnce() {
         Trade trade = new Trade();
         trade.setTradeRef("TRD-20260730-0001");
         trade.setAssetClass("EQUITY");
@@ -145,17 +210,7 @@ class TradeServiceTest {
         assertThat(trade.getPrice()).isEqualByComparingTo("245.5000");
         assertThat(trade.getTradeDate()).isEqualTo(LocalDate.of(2026, 7, 30));
 
-        ArgumentCaptor<TradeEvent> event = ArgumentCaptor.forClass(TradeEvent.class);
-        InOrder order = inOrder(tradeRepository, events);
-        order.verify(tradeRepository).findById(42L);
-        order.verify(tradeRepository).save(trade);
-        order.verify(events).publish(event.capture());
         verify(tradeRepository, times(1)).save(trade);
-        assertThat(event.getValue())
-                .extracting(TradeEvent::tradeRef, TradeEvent::eventType,
-                        TradeEvent::actor, TradeEvent::before, TradeEvent::after)
-                .containsExactly("TRD-20260730-0001", TradeEvent.EventType.TRADE_UPDATED,
-                        "trader", "PENDING", "MATCHED");
     }
 
     @Test
@@ -164,11 +219,11 @@ class TradeServiceTest {
                 .isInstanceOf(InvalidTradeException.class)
                 .hasMessage("Invalid trade status: FOOBAR");
 
-        verifyNoInteractions(tradeRepository, events);
+        verifyNoInteractions(tradeRepository);
     }
 
     @Test
-    void updateStatusReportsMissingTradeWithoutSavingOrPublishing() {
+    void updateStatusReportsMissingTradeWithoutSaving() {
         when(tradeRepository.findById(42L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.updateStatus(42L, "MATCHED", "trader"))
@@ -177,7 +232,40 @@ class TradeServiceTest {
 
         verify(tradeRepository).findById(42L);
         verify(tradeRepository, never()).save(any(Trade.class));
-        verifyNoInteractions(events);
+    }
+
+    @Test
+    void createTranslatesTradeReferenceUniqueConstraintRace() {
+        TradeRequest request = validRequest();
+        Instrument instrument = mock(Instrument.class);
+        Counterparty counterparty = mock(Counterparty.class);
+        when(tradeRepository.findByTradeRef(request.tradeRef())).thenReturn(Optional.empty());
+        when(instrumentRepository.findById(request.instrumentId())).thenReturn(Optional.of(instrument));
+        when(counterpartyRepository.findById(request.counterpartyId())).thenReturn(Optional.of(counterparty));
+        DataIntegrityViolationException failure = new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint uk_trades_trade_ref for trade_ref");
+        when(tradeRepository.save(any(Trade.class))).thenThrow(failure);
+
+        assertThatThrownBy(() -> service.create(request, "trader"))
+                .isInstanceOf(DuplicateTradeRefException.class)
+                .hasMessageContaining(request.tradeRef())
+                .hasCause(failure);
+    }
+
+    @Test
+    void createRethrowsUnrelatedIntegrityViolation() {
+        TradeRequest request = validRequest();
+        Instrument instrument = mock(Instrument.class);
+        Counterparty counterparty = mock(Counterparty.class);
+        when(tradeRepository.findByTradeRef(request.tradeRef())).thenReturn(Optional.empty());
+        when(instrumentRepository.findById(request.instrumentId())).thenReturn(Optional.of(instrument));
+        when(counterpartyRepository.findById(request.counterpartyId())).thenReturn(Optional.of(counterparty));
+        DataIntegrityViolationException failure = new DataIntegrityViolationException(
+                "foreign key constraint violation for counterparty_id");
+        when(tradeRepository.save(any(Trade.class))).thenThrow(failure);
+
+        assertThatThrownBy(() -> service.create(request, "trader"))
+                .isSameAs(failure);
     }
 
     @Test

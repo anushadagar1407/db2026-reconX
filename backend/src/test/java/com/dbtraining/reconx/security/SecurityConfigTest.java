@@ -194,6 +194,15 @@ class SecurityConfigTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"VIEWER", "TRADER", "RECON_ANALYST", "ADMIN"})
+    void everyRoleCanReadTradeById(String role) throws Exception {
+        mockMvc.perform(get("/api/v1/trades/42")
+                        .contextPath(CONTEXT_PATH)
+                        .with(bearer(role)))
+                .andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"TRADER", "ADMIN"})
     void tradingRolesCanPostTrades(String role) throws Exception {
         mockMvc.perform(post("/api/v1/trades")
@@ -319,7 +328,7 @@ class SecurityConfigTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"RECON_ANALYST", "ADMIN"})
-    void reconRolesCanResolveReconBreaks(String role) {
+    void authorizedReconRolesReachScaffoldedResolveHandler(String role) {
         assertThatThrownBy(() -> mockMvc.perform(put("/api/v1/recon/results/42/resolve")
                         .contextPath(CONTEXT_PATH)
                         .with(bearer(role))
