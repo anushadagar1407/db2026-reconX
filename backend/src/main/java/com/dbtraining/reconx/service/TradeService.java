@@ -12,6 +12,8 @@ import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -55,6 +57,12 @@ public class TradeService {
         this.metrics = metrics;
     }
 
+    @Transactional(readOnly = true)
+    public Trade findById(Long id) {
+        return tradeRepo.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("Trade not found: id=" + id));
+    }
+
     public Trade create(TradeRequest req, String actor) {
         // TICKET-ADV064: reject duplicate tradeRef via DuplicateTradeRefException,
         //   build a new Trade with instrument + counterparty looked up from
@@ -82,7 +90,36 @@ public class TradeService {
         trade.setTradeDate(req.tradeDate());
         trade.setStatus(TradeStatus.PENDING);
 
-        return tradeRepo.save(trade);
+        try {
+            return tradeRepo.save(trade);
+        } catch (DataIntegrityViolationException ex) {
+            if (!isTradeReferenceUniqueViolation(ex)) {
+                throw ex;
+            }
+            throw new DuplicateTradeRefException(
+                    "Trade with reference " + req.tradeRef() + " already exists", ex);
+        }
+    }
+
+    private static boolean isTradeReferenceUniqueViolation(DataIntegrityViolationException exception) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException violation) {
+                String constraintName = violation.getConstraintName();
+                if (constraintName != null
+                        && constraintName.toLowerCase(java.util.Locale.ROOT).contains("trade_ref")) {
+                    return true;
+                }
+            }
+            String message = cause.getMessage();
+            if (message != null) {
+                String normalized = message.toLowerCase(java.util.Locale.ROOT);
+                if (normalized.contains("trade_ref")
+                        && (normalized.contains("unique") || normalized.contains("duplicate"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public Trade update(Long id, TradeRequest req, String actor) {
@@ -104,7 +141,7 @@ public class TradeService {
                 cpRepo.findById(req.counterpartyId())
                         .orElseThrow(()
                                 -> new TradeNotFoundException(
-                                "Counterparty not found: id=" + req.counterpartyId()))
+                                 "Counterparty not found: id=" + req.counterpartyId()))
         );
 
         trade.setQuantity(req.quantity());
