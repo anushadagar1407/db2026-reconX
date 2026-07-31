@@ -2,6 +2,8 @@ package com.dbtraining.reconx.controller;
 
 import com.dbtraining.reconx.dto.ReconRunRequest;
 import com.dbtraining.reconx.dto.ReconRunResponse;
+import com.dbtraining.reconx.dto.ResolutionRequest;
+import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
 import com.dbtraining.reconx.repository.entity.ReconBreak;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -68,13 +69,13 @@ public class ReconController {
     @PutMapping("/results/{id}/resolve")
     @Operation(summary = "Mark a recon break as RESOLVED with a note")
     public ResponseEntity<ReconBreak> resolve(@PathVariable Long id,
-                                              @RequestBody Map<String, String> body) {
-        // TODO(TICKET-ADV070): load the ReconBreak, call rb.resolve(note), save,
+                                              @Valid @RequestBody ResolutionRequest request) {
+        // TICKET-ADV070: load the ReconBreak, call rb.resolve(note), save,
         //   and return 200 with the updated entity. Throw TradeNotFoundException
         //   when the id is unknown.
         ReconBreak rb = breaks.findById(id)
-                .orElseThrow(() -> new RuntimeException("recon_break" + id + " not found"));
-        rb.resolve(body.getOrDefault("note", "manually resolved"));
+                .orElseThrow(() -> new TradeNotFoundException("recon_break " + id));
+        rb.resolve(request.note());
         return ResponseEntity.ok(breaks.save(rb));
     }
 }
