@@ -1683,7 +1683,7 @@ migration sanity check and an API-versioning exercise.
 
 ---
 
-### TICKET-ADV075 — MockMvc: authenticated create returns 201
+### TICKET-ADV075 — MockMvc: authenticated create returns 201 ✅
 
 **Goal:** Write a `@WebMvcTest` that posts a valid trade as a TRADER and asserts the 201 response with a `Location` header.
 
