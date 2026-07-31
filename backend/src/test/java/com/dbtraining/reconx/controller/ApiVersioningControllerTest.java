@@ -11,6 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +26,8 @@ import java.time.format.DateTimeFormatter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -86,6 +91,10 @@ class ApiVersioningControllerTest {
 
     @Test
     void currentDomainControllersUseV1WithinApiContext() throws Exception {
+        when(tradeService.list(any(), any(), any(), any(), any()))
+                .thenReturn(Page.empty(PageRequest.of(0, 20,
+                        Sort.by(Sort.Direction.DESC, "tradeDate"))));
+
         mockMvc.perform(get("/api/v1/trades").contextPath("/api"))
                 .andExpect(status().isOk())
                 .andExpect(result -> {
