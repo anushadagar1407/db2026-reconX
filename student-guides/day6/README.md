@@ -1341,7 +1341,7 @@ curl -s http://localhost:8080/actuator/prometheus | grep trades_by_status
 
 ---
 
-### TICKET-ADV093 — Alert: `recon_break_count > 50` for 5 min
+### TICKET-ADV093 — Alert: `recon_break_count > 50` for 5 min - Done
 
 **Goal:** A Prometheus alert rule that fires when there have been more than 50 open breaks continuously for 5 minutes.
 
