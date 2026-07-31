@@ -30,7 +30,7 @@ public class AuditController {
         // TODO(TICKET-ADV071): return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef).
         //   Day-0 returns an empty list so the React audit-trail panel renders
         //   "no history yet" instead of erroring.
-        return Collections.emptyList();
+        return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef);
     }
 
     @GetMapping("/trades/{tradeRef}/events")
