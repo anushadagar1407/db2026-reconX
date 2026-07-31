@@ -1334,7 +1334,7 @@ docker ps
 
 ---
 
-### TICKET-ADV045 — Integration test: insert → recon → verify
+### TICKET-ADV045 — Integration test: insert → recon → verify ✅
 
 **Goal:** Write an end-to-end test that inserts trades via repository beans, runs the reconciliation service, and verifies the persisted `ReconResult` rows.
 
@@ -1416,16 +1416,16 @@ void insertedTradesAreReconciledAndPersisted() {
 
 **▶ Run the project — verify TICKET-ADV045 end-to-end**
 
-Run the integration test and confirm the entity ↔ domain round-trip survives the database.
+Run the integration test from `backend/` and confirm the JDBC source ↔ domain round-trip survives the database.
 
 ```bash
-./mvnw -pl backend verify
+./mvnw test -Dtest=ReconciliationIntegrationTest
 ```
 
 **Observe:**
 
-- A matching pair of trades inserted via the repository round-trips back through the recon service.
-- JSON serialisation/deserialisation of the persisted `ReconResult` preserves every field — no nulls after fetch.
+- A matching pair inserted through the JDBC source repositories round-trips through the PostgreSQL staging table and recon service.
+- Persisted `MATCHED` results preserve `tradeRef` and `status`; `discrepancyType` and `details` remain null because matched results carry no discrepancy data.
 - `reconResultRepo.findAll()` returns exactly one row with the right `tradeRef` and `MATCHED` status.
 
 ---
@@ -1544,22 +1544,22 @@ open backend/target/site/jacoco/index.html
 
 ---
 
-### TICKET-ADV047 — Refactor for edge cases
+### TICKET-ADV047 — Refactor for edge cases ✅
 
 **Goal:** Add tests for three edge cases of `reconcile` and refactor the production code so all three pass.
 
 **What**
-- Three new `@Test` methods on `ReconciliationEngineTest` cover empty-internal (returns `Map.of()`), single-internal-no-external (one `BREAK` with reason `MISSING_EXTERNAL`), and all-mismatched (three `BREAK`s, `ReconSummary` reports `matched == 0`, `broken == 3`); the engine carries null/empty guards and a `(a, b) -> a` merge function in its `toMap` call.
+- Three new `@Test` methods on `ReconciliationEngineTest` cover empty-internal (returns `List.of()`), single-internal-no-external (one `BREAK` with reason `MISSING_EXTERNAL`), and all-mismatched (three `BREAK`s, `ReconSummary` reports `matched == 0`, `broken == 3`); the engine carries null/empty guards and a `(a, b) -> a` merge function in its `toMap` call.
 
 **Why**
 - These edge cases are the boundary contract Day 4's REST layer, Day 7's Kafka retry handler, and Day 9's chaos-test scenarios all assume — the engine never throws `NullPointerException` or `IllegalStateException` on duplicate refs.
 
 **Observe**
-- `./mvnw -pl backend test -Dtest=ReconciliationEngineTest` is green across all three new tests; the JaCoCo report from ADV046 shows the guard lines covered, not red.
+- From `backend/`, `./mvnw test -Dtest=ReconciliationEngineTest` is green across all three new tests; the JaCoCo report from ADV046 shows the guard lines covered, not red.
 
 **Done when:**
-- A test exists for an empty internal list — the engine returns an empty result map without throwing.
-- A test exists for a single internal trade with no external feed — the result is a single `BREAK` with reason `MISSING_COUNTERPARTY_TRADE`.
+- A test exists for an empty internal list — the engine returns an empty result list without throwing.
+- A test exists for a single internal trade with no external feed — the result is a single `BREAK` with reason `MISSING_EXTERNAL`.
 - A test exists for all-mismatched trades — every result is a `BREAK`, and a `ReconSummary` over those results has `total == broken` and `matched == 0`.
 - The production `reconcile` method handles `null` and empty inputs explicitly and never throws an NPE on the boundary.
 
@@ -1573,7 +1573,7 @@ Edge cases are where production code dies at 02:00. Three scenarios stand out: n
 <details>
 <summary>Hint 2 — concrete pointer</summary>
 
-In the engine, guard the start of `reconcile` against `null` or empty `internal` (return `Map.of()`); coerce `null` external into `List.of()` before indexing. When you build the external index with `toMap`, supply a merge function so duplicate refs in the input do not throw `IllegalStateException`. Use `LinkedHashMap` as the supplier for the result if you want stable ordering.
+In the engine, guard the start of `reconcile` against `null` or empty `internal` (return `List.of()`); coerce `null` external into `List.of()` before indexing. When you build the external index with `toMap`, supply a merge function so duplicate refs in the input do not throw `IllegalStateException`.
 
 </details>
 
@@ -1594,7 +1594,7 @@ Three new tests in `ReconciliationEngineTest`, each named after its scenario. Th
 3. Single-trade-no-external test: one internal, `List.of()` external, assert size 1, `BREAK`, reason `MISSING_EXTERNAL`.
 4. All-mismatched test: three internals at price 100, three externals at price 200 (different prices); reconcile, then `results.stream().collect(new ReconSummaryCollector())` and assert `matched() == 0`, `broken() == 3`, `total() == 3`.
 5. In the engine, confirm the `internal == null || internal.isEmpty()` guard, the `external == null ? List.of() : external` coercion, and the `(a, b) -> a` merge function are all in place — nothing else.
-6. Run `./mvnw -Dtest=ReconciliationEngineTest test` and confirm green.
+6. From `backend/`, run `./mvnw test -Dtest=ReconciliationEngineTest` and confirm green.
 
 **Reference solution** — the trainer ships **one** edge-case test in `ReconciliationEngineTest.java` (the empty-internal one) plus the production guards in `ReconciliationEngine.reconcile(...)`. The other two scenarios (single-trade-no-external and all-mismatched-summary) are spec-only — write them yourself following the shape below.
 
@@ -1665,10 +1665,10 @@ void testReconcile_allMismatched_summaryShowsZeroMatched() {
 
 **▶ Run the project — verify TICKET-ADV047 end-to-end**
 
-Run the edge-case suite and confirm all three scenarios pass.
+Run the edge-case suite from `backend/` and confirm all three scenarios pass.
 
 ```bash
-./mvnw -pl backend test -Dtest=ReconciliationEngineEdgeCasesTest
+./mvnw test -Dtest=ReconciliationEngineTest
 ```
 
 **Observe:**

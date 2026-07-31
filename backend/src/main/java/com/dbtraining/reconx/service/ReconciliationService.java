@@ -5,7 +5,9 @@ import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.TradeType;
 import com.dbtraining.reconx.repository.ReconResultRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -19,8 +21,14 @@ public class ReconciliationService {
         this.repository = repository;
     }
 
-    public void runRecon(List<TradeType> internalTrades, List<TradeType> externalTrades, ReconciliationRule rule) {
-        List<ReconResult> results = engine.reconcile(internalTrades, externalTrades, rule);
+    @Transactional
+    public void runRecon(List<? extends TradeType> internalTrades,
+                         List<? extends TradeType> externalTrades,
+                         ReconciliationRule rule) {
+        List<ReconResult> results = engine.reconcile(
+                internalTrades == null ? null : new ArrayList<>(internalTrades),
+                externalTrades == null ? null : new ArrayList<>(externalTrades),
+                rule);
         for (ReconResult result : results) {
             repository.save(result);
         }
