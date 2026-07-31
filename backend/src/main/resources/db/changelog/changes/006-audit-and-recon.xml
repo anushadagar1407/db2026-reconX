@@ -44,6 +44,42 @@
         </rollback>
     </changeSet>
 
+    <!-- Hibernate maps columnDefinition=TEXT to VARCHAR on H2, whereas
+         Liquibase's generic CLOB maps to a JDBC CLOB. Align the dev schema
+         with the entity mapping before Hibernate validates it. -->
+    <changeSet id="006-h2-audit-state-text-columns" author="trainer" dbms="h2">
+        <modifyDataType tableName="audit_log"
+                        columnName="before_state"
+                        newDataType="VARCHAR(1000000)"/>
+        <modifyDataType tableName="audit_log"
+                        columnName="after_state"
+                        newDataType="VARCHAR(1000000)"/>
+        <rollback>
+            <modifyDataType tableName="audit_log"
+                            columnName="before_state"
+                            newDataType="CLOB"/>
+            <modifyDataType tableName="audit_log"
+                            columnName="after_state"
+                            newDataType="CLOB"/>
+        </rollback>
+    </changeSet>
+
+    <!--
+      PostgreSQL's partitioned trades table already has the composite primary
+      key (id, trade_date). The non-partitioned H2 fallback keeps id as its
+      primary key, so H2 needs an explicit composite unique key before the
+      shared recon_breaks foreign key can reference both columns.
+    -->
+    <changeSet id="006-h2-trades-composite-key" author="trainer" dbms="h2">
+        <addUniqueConstraint tableName="trades"
+                             columnNames="id, trade_date"
+                             constraintName="uk_trades_id_trade_date"/>
+        <rollback>
+            <dropUniqueConstraint tableName="trades"
+                                  constraintName="uk_trades_id_trade_date"/>
+        </rollback>
+    </changeSet>
+
     <changeSet id="006-create-recon-breaks" author="trainer">
 
         <preConditions onFail="MARK_RAN">

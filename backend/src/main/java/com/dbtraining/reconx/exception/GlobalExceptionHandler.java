@@ -1,12 +1,21 @@
 package com.dbtraining.reconx.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.net.URI;
+import java.time.Instant;
 import java.util.stream.Collectors;
 
 /**
@@ -18,11 +27,13 @@ import java.util.stream.Collectors;
  * HOW:     {@link RestControllerAdvice} with one {@link ExceptionHandler} per exception type.
  * WHY:     Clients should not parse free-text stack messages; structured status + detail
  *          keeps error handling consistent across controllers.
- * OBSERVE: Individual handlers are scaffolded under TICKET-ADV062 until wired.
+ * OBSERVE: Every mapped response is rendered as an RFC 7807 problem document.
  * ============================================================================
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /** Default Spring-managed advice constructor. */
     public GlobalExceptionHandler() {}
@@ -35,8 +46,11 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(TradeNotFoundException.class)
     public ProblemDetail notFound(TradeNotFoundException ex) {
-        // TODO(TICKET-ADV062): return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-        throw new UnsupportedOperationException("TICKET-ADV062");
+        return problem(
+                HttpStatus.NOT_FOUND,
+                "https://reconx.dbtraining.com/errors/trade-not-found",
+                "Trade not found",
+                ex.getMessage());
     }
 
     /**
@@ -47,8 +61,11 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(DuplicateTradeRefException.class)
     public ProblemDetail duplicate(DuplicateTradeRefException ex) {
-        // TODO(TICKET-ADV062): map DuplicateTradeRefException -> HttpStatus.CONFLICT (409).
-        throw new UnsupportedOperationException("TICKET-ADV062");
+        return problem(
+                HttpStatus.CONFLICT,
+                "https://reconx.dbtraining.com/errors/duplicate-trade-ref",
+                "Duplicate trade reference",
+                ex.getMessage());
     }
 
     /**
@@ -59,8 +76,11 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(InvalidTradeException.class)
     public ProblemDetail invalid(InvalidTradeException ex) {
-        // TODO(TICKET-ADV062): map InvalidTradeException -> HttpStatus.BAD_REQUEST (400).
-        throw new UnsupportedOperationException("TICKET-ADV062");
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "https://reconx.dbtraining.com/errors/invalid-trade",
+                "Invalid trade",
+                ex.getMessage());
     }
 
     /**
@@ -71,8 +91,30 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ReconciliationMismatchException.class)
     public ProblemDetail mismatch(ReconciliationMismatchException ex) {
-        // TODO(TICKET-ADV062): map ReconciliationMismatchException -> HttpStatus.UNPROCESSABLE_ENTITY (422).
-        throw new UnsupportedOperationException("TICKET-ADV062");
+        ProblemDetail problem = problem(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "https://reconx.dbtraining.com/errors/recon-failure",
+                "Reconciliation failure",
+                ex.getMessage());
+        problem.setProperty("reconBreakId", ex.getReconBreakId());
+        return problem;
+    }
+
+    /**
+     * Maps an otherwise unclassified domain exception to HTTP 422.
+     *
+     * @param ex domain exception without a more specific HTTP mapping
+     * @return ProblemDetail with {@link HttpStatus#UNPROCESSABLE_ENTITY}
+     */
+    @ExceptionHandler(ReconException.class)
+    public ProblemDetail recon(ReconException ex) {
+        ProblemDetail problem = problem(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "https://reconx.dbtraining.com/errors/recon-failure",
+                "Reconciliation failure",
+                ex.getMessage());
+        problem.setProperty("reconBreakId", null);
+        return problem;
     }
 
     /**
@@ -83,9 +125,29 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail validation(MethodArgumentNotValidException ex) {
-        // TODO(TICKET-ADV062): join field errors ("field: message; ...") and return BAD_REQUEST ProblemDetail.
-        //   Hint: ex.getBindingResult().getFieldErrors().stream().map(...).collect(Collectors.joining("; "))
-        throw new UnsupportedOperationException("TICKET-ADV062");
+        String detail = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "https://reconx.dbtraining.com/errors/validation-failed",
+                "Validation failed",
+                detail);
+    }
+
+    /**
+     * Maps malformed request values, such as invalid ISO dates, to HTTP 400.
+     *
+     * @param ex Spring message-conversion failure
+     * @return ProblemDetail using the public validation error contract
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail unreadable(HttpMessageNotReadableException ex) {
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "https://reconx.dbtraining.com/errors/validation-failed",
+                "Validation failed",
+                "Request body could not be read");
     }
 
     /**
@@ -96,7 +158,54 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public ProblemDetail constraint(ConstraintViolationException ex) {
-        // TODO(TICKET-ADV062): map ConstraintViolationException -> HttpStatus.BAD_REQUEST (400).
-        throw new UnsupportedOperationException("TICKET-ADV062");
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "https://reconx.dbtraining.com/errors/constraint-violation",
+                "Constraint violation",
+                ex.getMessage());
+    }
+
+    /**
+     * Maps malformed typed query parameters to HTTP 400 ProblemDetail.
+     *
+     * @param ex Spring MVC conversion failure for a request parameter
+     * @return ProblemDetail identifying the invalid parameter without echoing its value
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail invalidParameter(MethodArgumentTypeMismatchException ex) {
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "https://reconx.dbtraining.com/errors/invalid-request-parameter",
+                "Invalid request parameter",
+                "Request parameter '%s' has an invalid value".formatted(ex.getName()));
+    }
+
+    /**
+     * Keeps implementation details out of responses for errors that are not part
+     * of the public domain error contract.
+     *
+     * @param ex uncaught application exception
+     * @return safe HTTP 500 ProblemDetail
+     */
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail generic(Exception ex) {
+        log.error("Unhandled exception", ex);
+        return problem(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "https://reconx.dbtraining.com/errors/internal-server-error",
+                "Internal server error",
+                "An unexpected error occurred — please contact support with the correlationId");
+    }
+
+    private static ProblemDetail problem(HttpStatus status, String type, String title, String detail) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setType(URI.create(type));
+        problem.setTitle(title);
+        problem.setProperty("timestamp", Instant.now());
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes instanceof ServletRequestAttributes servletRequestAttributes) {
+            problem.setInstance(URI.create(servletRequestAttributes.getRequest().getRequestURI()));
+        }
+        return problem;
     }
 }

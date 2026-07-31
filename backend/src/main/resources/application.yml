@@ -16,6 +16,10 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
+  sql:
+    init:
+      mode: never
+
   # ADV012 — Liquibase classpath wiring (the classic starter bug is missing the
   # `classpath:` prefix here, which causes a silent skip on JAR builds).
   liquibase:
@@ -36,10 +40,9 @@ spring:
     caffeine:
       spec: maximumSize=500,expireAfterWrite=5m
 
-  # ADV128 — Kafka producer/consumer defaults. Topics are created at startup
-  # by KafkaTopicsConfig (see com.dbtraining.reconx.kafka.KafkaTopicsConfig).
+  # ADV128 — Kafka producer/consumer defaults. Environments that run Kafka set
+  # bootstrap-servers in their profile; dev intentionally leaves it absent.
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -79,7 +82,6 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
-        reconciliation.duration: true
       percentiles:
         http.server.requests: 0.5, 0.95, 0.99
     tags:
@@ -111,4 +113,4 @@ springdoc:
     tagsSorter: alpha
     operationsSorter: alpha
   api-docs:
-    path: /v3/api-docs
+    path: /v1/api-docs
