@@ -1,7 +1,10 @@
 package com.dbtraining.reconx.repository.entity;
 
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
+
+import java.util.HashMap;
 import java.util.Map;
 import org.hibernate.annotations.Type;
 
@@ -31,12 +34,12 @@ public class Instrument {
     @Column(nullable = false, length = 3)
     private String currency;
 
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
-    Map<String, Object> metadata;
-
     @Column(length = 12)
     private String isin;
+
+    @Type(JsonType.class)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    private Map<String, Object> metadata = new HashMap<>();
 
     public Instrument() {}
 
@@ -48,6 +51,7 @@ public class Instrument {
     public String getIsin()     { return isin; }
     public Map<String, Object> getMetadata() { return metadata; }
 
+    public void setIsin(String isin) { this.isin = isin; }
     public void setSymbol(String symbol) { this.symbol = symbol; }
     public void setName(String name) { this.name = name; }
     public void setAssetClass(AssetClass assetClass) { this.assetClass = assetClass; }
