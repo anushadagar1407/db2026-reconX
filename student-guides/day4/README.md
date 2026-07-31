@@ -1281,7 +1281,7 @@ curl "http://localhost:8080/api/v1/trades?from=2026-01-01&to=2026-12-31&status=S
 
 ---
 
-### TICKET-ADV057 — Pagination on the list endpoint
+### TICKET-ADV057 — Pagination on the list endpoint ✅
 
 **Goal:** Expose `GET /v1/trades` with optional filters and Spring's `Pageable` support, capped to a sane default page size.
 
@@ -1408,7 +1408,7 @@ The final block is the observability and error-contract layer. You add Swagger U
 
 ---
 
-### TICKET-ADV058 — Swagger / OpenAPI configuration
+### TICKET-ADV058 — Swagger / OpenAPI configuration ✅
 
 **Goal:** Configure springdoc-openapi so the running app exposes Swagger UI at `/api/swagger-ui.html` and groups endpoints into a `public` group and an `admin` group.
 
