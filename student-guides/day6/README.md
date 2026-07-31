@@ -26,7 +26,7 @@ Before you start, confirm Prometheus is reachable at `http://localhost:9090`, Gr
 
 This block adds an in-process cache to one hot read path and gives the cache realistic, per-cache eviction policies. The pattern you learn here is what you would also apply to counterparty lookup, security master joins, and any other read-mostly reference data.
 
-### TICKET-ADV081 — `@Cacheable` on `InstrumentService.findBySymbol()`
+### TICKET-ADV081 — `@Cacheable` on `InstrumentService.findBySymbol()` ✅
 
 **Goal:** Wrap the symbol lookup so a second call for the same symbol hits memory, not the database.
 
