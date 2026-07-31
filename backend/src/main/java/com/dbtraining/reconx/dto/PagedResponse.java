@@ -6,8 +6,7 @@ import java.util.function.Function;
 import org.springframework.data.domain.Page;
 
 /**
- *  * TICKET-ADV053 — Generic pagination wrapper.
- *
+ * TICKET-ADV053 — Generic pagination wrapper.
  */
 public record PagedResponse<T>(
         List<T> items,
@@ -15,7 +14,7 @@ public record PagedResponse<T>(
         int size,
         long totalElements,
         int totalPages
-        ) {
+) {
 
     public static <E, T> PagedResponse<T> of(
             Page<E> page,
