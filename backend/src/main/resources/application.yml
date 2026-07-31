@@ -114,3 +114,4 @@ springdoc:
     operationsSorter: alpha
   api-docs:
     path: /v1/api-docs
+

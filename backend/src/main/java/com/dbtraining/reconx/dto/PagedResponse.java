@@ -13,7 +13,8 @@ public record PagedResponse<T>(
         int page,
         int size,
         long totalElements,
-        int totalPages
+        int totalPages,
+        boolean last
 ) {
 
     public static <E, T> PagedResponse<T> of(
@@ -27,7 +28,8 @@ public record PagedResponse<T>(
                 page.getNumber(),
                 page.getSize(),
                 page.getTotalElements(),
-                page.getTotalPages()
+                page.getTotalPages(),
+                page.isLast()
         );
     }
 }
