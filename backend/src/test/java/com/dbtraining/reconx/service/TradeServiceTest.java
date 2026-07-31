@@ -137,6 +137,56 @@ class TradeServiceTest {
     }
 
     @Test
+    void updateReplacesAllMutableFields() {
+        Trade trade = new Trade();
+        trade.setTradeRef("TRD-20260729-0001");
+        trade.setAssetClass("EQUITY");
+        trade.setSide("BUY");
+        trade.setQuantity(new BigDecimal("100.0000"));
+        trade.setPrice(new BigDecimal("245.5000"));
+        trade.setTradeDate(LocalDate.of(2026, 7, 29));
+        trade.setStatus(TradeStatus.MATCHED);
+        Instrument instrument = mock(Instrument.class);
+        Counterparty counterparty = mock(Counterparty.class);
+        TradeRequest request = new TradeRequest(
+                "TRD-20260730-0002", 2L, 3L, "BOND", "SELL",
+                new BigDecimal("150.0000"), new BigDecimal("300.2500"),
+                LocalDate.of(2026, 7, 30));
+        when(tradeRepository.findById(42L)).thenReturn(Optional.of(trade));
+        when(instrumentRepository.findById(request.instrumentId())).thenReturn(Optional.of(instrument));
+        when(counterpartyRepository.findById(request.counterpartyId())).thenReturn(Optional.of(counterparty));
+        when(tradeRepository.save(trade)).thenReturn(trade);
+
+        Trade result = service.update(42L, request, "trader");
+
+        assertThat(result).isSameAs(trade);
+        assertThat(trade.getTradeRef()).isEqualTo(request.tradeRef());
+        assertThat(trade.getInstrument()).isSameAs(instrument);
+        assertThat(trade.getCounterparty()).isSameAs(counterparty);
+        assertThat(trade.getAssetClass()).isEqualTo("BOND");
+        assertThat(trade.getSide()).isEqualTo("SELL");
+        assertThat(trade.getQuantity()).isEqualByComparingTo("150.0000");
+        assertThat(trade.getPrice()).isEqualByComparingTo("300.2500");
+        assertThat(trade.getTradeDate()).isEqualTo(LocalDate.of(2026, 7, 30));
+        assertThat(trade.getStatus()).isEqualTo(TradeStatus.MATCHED);
+        verify(tradeRepository).findById(42L);
+        verify(tradeRepository, times(1)).save(trade);
+    }
+
+    @Test
+    void updateReportsMissingTradeWithoutSaving() {
+        when(tradeRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(404L, validRequest(), "trader"))
+                .isInstanceOf(TradeNotFoundException.class)
+                .hasMessage("Trade not found: id=404");
+
+        verify(tradeRepository).findById(404L);
+        verify(tradeRepository, never()).save(any(Trade.class));
+        verifyNoInteractions(instrumentRepository, counterpartyRepository);
+    }
+
+    @Test
     void updateStatusChangesOnlyStatusAndPersistsOnce() {
         Trade trade = new Trade();
         trade.setTradeRef("TRD-20260730-0001");

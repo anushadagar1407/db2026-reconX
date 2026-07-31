@@ -137,6 +137,8 @@ public class TradeService {
                                  "Counterparty not found: id=" + req.counterpartyId()))
         );
 
+        trade.setAssetClass(req.assetClass());
+        trade.setSide(req.side());
         trade.setQuantity(req.quantity());
         trade.setPrice(req.price());
         trade.setTradeDate(req.tradeDate());
