@@ -57,6 +57,14 @@ public class ReconController {
         return Collections.emptyList();
     }
 
+    @GetMapping("/results/{id}")
+    @Operation(summary = "Get a single recon break by id")
+    public ResponseEntity<ReconBreak> getById(@PathVariable Long id) {
+        ReconBreak rb = breaks.findById(id)
+                .orElseThrow(() -> new RuntimeException("recon_break" + id + " not found"));
+        return ResponseEntity.ok(rb);
+    }
+
     @PutMapping("/results/{id}/resolve")
     @Operation(summary = "Mark a recon break as RESOLVED with a note")
     public ResponseEntity<ReconBreak> resolve(@PathVariable Long id,
@@ -64,6 +72,9 @@ public class ReconController {
         // TODO(TICKET-ADV070): load the ReconBreak, call rb.resolve(note), save,
         //   and return 200 with the updated entity. Throw TradeNotFoundException
         //   when the id is unknown.
-        throw new UnsupportedOperationException("TICKET-ADV070");
+        ReconBreak rb = breaks.findById(id)
+                .orElseThrow(() -> new RuntimeException("recon_break" + id + " not found"));
+        rb.resolve(body.getOrDefault("note", "manually resolved"));
+        return ResponseEntity.ok(breaks.save(rb));
     }
 }
