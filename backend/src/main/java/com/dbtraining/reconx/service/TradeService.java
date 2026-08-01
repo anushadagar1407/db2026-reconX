@@ -56,26 +56,6 @@ public class TradeService {
         this.instRepo = instRepo;
         this.metrics = metrics;
         this.tradeCreatedCounter = meterRegistry.counter("trade_created_total");
-
-        Gauge.builder("trade_status_count", () -> tradeRepo.countByStatus("PENDING"))
-                .tag("status", "PENDING")
-                .register(meterRegistry);
-
-        Gauge.builder("trade_status_count", () -> tradeRepo.countByStatus("MATCHED"))
-                .tag("status", "MATCHED")
-                .register(meterRegistry);
-
-        Gauge.builder("trade_status_count", () -> tradeRepo.countByStatus("UNMATCHED"))
-                .tag("status", "UNMATCHED")
-                .register(meterRegistry);
-
-        Gauge.builder("trade_status_count", () -> tradeRepo.countByStatus("DISPUTED"))
-                .tag("status", "DISPUTED")
-                .register(meterRegistry);
-
-        Gauge.builder("trade_status_count", () -> tradeRepo.countByStatus("CANCELLED"))
-                .tag("status", "CANCELLED")
-                .register(meterRegistry);
     }
 
     @Transactional(readOnly = true)
