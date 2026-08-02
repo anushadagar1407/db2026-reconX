@@ -132,20 +132,29 @@ describe('useTradeStream', () => {
   });
 
   it('ignores events after unmount', () => {
-    const { result, unmount } = renderHook(() => useTradeStream('/stream'));
+    const { unmount } = renderHook(() => useTradeStream('/stream'));
     const source = FakeEventSource.instances[0];
+    const staleMessageHandler = source.onmessage;
 
     act(() => source.open());
     unmount();
 
+    let dataReads = 0;
+    const staleEvent = {};
+    Object.defineProperty(staleEvent, 'data', {
+      get() {
+        dataReads += 1;
+        throw new Error('stale event data should not be read');
+      },
+    });
+
     act(() => {
       source.open();
-      source.message('{"id":"stale"}');
+      staleMessageHandler?.(staleEvent);
       source.error();
     });
 
     expect(source.closeCalls).toBe(1);
-    expect(result.current.trades).toEqual([]);
-    expect(result.current.isConnected).toBe(true);
+    expect(dataReads).toBe(0);
   });
 });
