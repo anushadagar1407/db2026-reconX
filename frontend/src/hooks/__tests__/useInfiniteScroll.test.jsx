@@ -59,13 +59,18 @@ describe('useInfiniteScroll', () => {
     const firstLoadMore = vi.fn();
     const latestLoadMore = vi.fn();
     const { rerender } = render(<Sentinel loadMore={firstLoadMore} />);
+    const observer = FakeIntersectionObserver.instances[0];
+
+    observer.trigger({ isIntersecting: true });
+    expect(firstLoadMore).toHaveBeenCalledTimes(1);
 
     rerender(<Sentinel loadMore={latestLoadMore} />);
 
+    // RTL's rerender commits the update and flushes the hook's callback effect.
     expect(FakeIntersectionObserver.instances).toHaveLength(1);
-    FakeIntersectionObserver.instances[0].trigger({ isIntersecting: true });
+    observer.trigger({ isIntersecting: true });
 
-    expect(firstLoadMore).not.toHaveBeenCalled();
+    expect(firstLoadMore).toHaveBeenCalledTimes(1);
     expect(latestLoadMore).toHaveBeenCalledTimes(1);
   });
 

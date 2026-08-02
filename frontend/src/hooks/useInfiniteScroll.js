@@ -10,7 +10,9 @@ export function useInfiniteScroll(
   const observerRef = useRef(null);
   const observedNodeRef = useRef(null);
 
-  loadMoreRef.current = loadMore;
+  useEffect(() => {
+    loadMoreRef.current = loadMore;
+  }, [loadMore]);
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
