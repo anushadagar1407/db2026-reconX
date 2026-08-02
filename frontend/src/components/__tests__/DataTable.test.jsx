@@ -50,6 +50,14 @@ describe('<DataTable>', () => {
     });
   });
 
+  it('rejects native tr output because rows use the ARIA div contract', () => {
+    expect(() => render(
+      <DataTable data={[{ id: 1 }]}>
+        <DataTable.Body renderRow={() => <tr><td>native row</td></tr>} />
+      </DataTable>
+    )).toThrow(/native <tr>.*ARIA div row contract/i);
+  });
+
   it('toggles ascending and descending sort state with accessible aria-sort', async () => {
     const user = userEvent.setup();
     renderRows([

@@ -243,10 +243,17 @@ DataTable.Body = function Body({ renderRow, render }) {
     <div className="data-table__body" role="rowgroup">
       {rowEntries.map(({ row, rowId }) => {
         const renderedRow = renderItem(row);
+        const isNativeTableRow = React.isValidElement(renderedRow) && renderedRow.type === 'tr';
+
+        if (isNativeTableRow) {
+          throw new Error(
+            'DataTable.Body renderRow cannot return a native <tr>; DataTable uses an ARIA div row contract. Return a <div role="row"> or TradeRow instead.'
+          );
+        }
+
         const isRowElement = React.isValidElement(renderedRow)
           && (
-            renderedRow.type === 'tr'
-            || renderedRow.props.role === 'row'
+            renderedRow.props.role === 'row'
             || renderedRow.type?.dataTableRow === true
           );
 
