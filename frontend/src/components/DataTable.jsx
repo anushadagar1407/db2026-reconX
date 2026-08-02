@@ -17,6 +17,7 @@ const stringCollator = new Intl.Collator(undefined, {
   sensitivity: 'base',
 });
 const DataTableContext = createContext(null);
+const ROW_CONTRACT_ERROR = 'DataTable.Body renderRow must return the trusted TradeRow or a direct <div role="row"> with direct host children role="cell". DataTable uses a closed ARIA div row contract; native <tr>, Fragments, unmarked components, and arbitrary content are rejected.';
 
 function normalizePageSize(pageSize) {
   const normalized = Number(pageSize);
@@ -97,6 +98,23 @@ function defaultRowId(row) {
     if (row.tradeRef !== null && row.tradeRef !== undefined) return row.tradeRef;
   }
   return null;
+}
+
+function hasDirectAriaCells(row) {
+  if (!React.isValidElement(row) || row.type !== 'div' || row.props.role !== 'row') {
+    return false;
+  }
+
+  const directChildren = [];
+  React.Children.forEach(row.props.children, (child) => {
+    directChildren.push(child);
+  });
+
+  return directChildren.length > 0 && directChildren.every((child) => (
+    React.isValidElement(child)
+    && typeof child.type === 'string'
+    && child.props.role === 'cell'
+  ));
 }
 
 export default function DataTable({
@@ -243,29 +261,24 @@ DataTable.Body = function Body({ renderRow, render }) {
     <div className="data-table__body" role="rowgroup">
       {rowEntries.map(({ row, rowId }) => {
         const renderedRow = renderItem(row);
-        const isNativeTableRow = React.isValidElement(renderedRow) && renderedRow.type === 'tr';
+        const isTrustedRow = React.isValidElement(renderedRow)
+          && renderedRow.type?.dataTableRow === true;
 
-        if (isNativeTableRow) {
-          throw new Error(
-            'DataTable.Body renderRow cannot return a native <tr>; DataTable uses an ARIA div row contract. Return a <div role="row"> or TradeRow instead.'
-          );
-        }
-
-        const isRowElement = React.isValidElement(renderedRow)
-          && (
-            renderedRow.props.role === 'row'
-            || renderedRow.type?.dataTableRow === true
-          );
-
-        if (isRowElement) {
+        if (isTrustedRow) {
           return React.cloneElement(renderedRow, { key: rowId });
         }
 
-        return (
-          <div key={rowId} className="data-table__row" role="row" data-row-id={rowId}>
-            {renderedRow}
-          </div>
-        );
+        if (React.isValidElement(renderedRow) && renderedRow.type === 'tr') {
+          throw new Error(
+            `Native <tr> output is not supported. ${ROW_CONTRACT_ERROR}`
+          );
+        }
+
+        if (!hasDirectAriaCells(renderedRow)) {
+          throw new Error(ROW_CONTRACT_ERROR);
+        }
+
+        return React.cloneElement(renderedRow, { key: rowId });
       })}
     </div>
   );

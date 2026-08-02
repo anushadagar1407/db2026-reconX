@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import DataTable from '../DataTable.jsx';
+import { TradeRow } from '../TradeRow.jsx';
 
 const columns = [
   { key: 'name', label: 'Name' },
@@ -13,7 +14,11 @@ function renderRows(data, pageSize = 10, includePagination = false) {
   return render(
     <DataTable data={data} pageSize={pageSize}>
       <DataTable.Header columns={columns} />
-      <DataTable.Body renderRow={(row) => <span data-testid={`row-${row.id}`}>{row.name}</span>} />
+      <DataTable.Body renderRow={(row) => (
+        <div role="row">
+          <span role="cell" data-testid={`row-${row.id}`}>{row.name}</span>
+        </div>
+      )} />
       {includePagination && <DataTable.Pagination />}
     </DataTable>
   );
@@ -50,12 +55,73 @@ describe('<DataTable>', () => {
     });
   });
 
-  it('rejects native tr output because rows use the ARIA div contract', () => {
+  function expectInvalidRow(renderRow, error = /closed ARIA div row contract/i) {
     expect(() => render(
       <DataTable data={[{ id: 1 }]}>
-        <DataTable.Body renderRow={() => <tr><td>native row</td></tr>} />
+        <DataTable.Body renderRow={renderRow} />
       </DataTable>
-    )).toThrow(/native <tr>.*ARIA div row contract/i);
+    )).toThrow(error);
+  }
+
+  it('rejects direct native tr output', () => {
+    expectInvalidRow(() => <tr><td>native row</td></tr>, /native <tr>.*closed ARIA div row contract/i);
+  });
+
+  it('rejects fragment-wrapped native tr output', () => {
+    expectInvalidRow(() => <><tr><td>native row</td></tr></>, /direct <div role="row">/i);
+  });
+
+  it('rejects an unmarked component that returns a native tr', () => {
+    function UnmarkedRow() {
+      return <tr><td>native row</td></tr>;
+    }
+
+    expectInvalidRow(() => <UnmarkedRow />, /direct <div role="row">/i);
+  });
+
+  it('rejects arbitrary non-row content', () => {
+    expectInvalidRow(() => <span>arbitrary content</span>, /direct <div role="row">/i);
+  });
+
+  it('rejects a row whose direct children are not ARIA cells', () => {
+    expectInvalidRow(
+      () => <div role="row"><span>missing cell role</span></div>,
+      /direct host children role="cell"/i
+    );
+  });
+
+  it('accepts a direct ARIA row with direct host cell children', () => {
+    render(
+      <DataTable data={[{ id: 1 }]}>
+        <DataTable.Body renderRow={() => (
+          <div role="row">
+            <span role="cell" data-testid="valid-cell">valid row</span>
+          </div>
+        )} />
+      </DataTable>
+    );
+
+    expect(screen.getByTestId('valid-cell')).toHaveTextContent('valid row');
+  });
+
+  it('accepts the trusted TradeRow with direct ARIA cell children', () => {
+    const trade = {
+      id: 7,
+      tradeRef: 'TRD-7',
+      instrumentSymbol: 'SAP.DE',
+      quantity: 10,
+      price: 125.5,
+      status: 'MATCHED',
+    };
+
+    render(
+      <DataTable data={[trade]}>
+        <DataTable.Body renderRow={(row) => <TradeRow trade={row} />} />
+      </DataTable>
+    );
+
+    expect(screen.getByRole('cell', { name: 'Trade reference' })).toHaveTextContent('TRD-7');
+    expect(screen.getByRole('cell', { name: 'Instrument symbol' })).toHaveTextContent('SAP.DE');
   });
 
   it('toggles ascending and descending sort state with accessible aria-sort', async () => {
@@ -93,7 +159,11 @@ describe('<DataTable>', () => {
           { key: 'score', label: 'Score', type: 'number' },
           { key: 'tradeDate', label: 'Trade date', type: 'date' },
         ]} />
-        <DataTable.Body renderRow={(row) => <span data-testid={`row-${row.id}`}>{row.id}</span>} />
+        <DataTable.Body renderRow={(row) => (
+          <div role="row">
+            <span role="cell" data-testid={`row-${row.id}`}>{row.id}</span>
+          </div>
+        )} />
       </DataTable>
     );
 
@@ -182,7 +252,11 @@ describe('<DataTable>', () => {
     rerender(
       <DataTable data={data.slice(0, 1)} pageSize={3}>
         <DataTable.Header columns={columns} />
-        <DataTable.Body renderRow={(row) => <span data-testid={`row-${row.id}`}>{row.name}</span>} />
+        <DataTable.Body renderRow={(row) => (
+          <div role="row">
+            <span role="cell" data-testid={`row-${row.id}`}>{row.name}</span>
+          </div>
+        )} />
         <DataTable.Pagination />
       </DataTable>
     );
@@ -192,7 +266,11 @@ describe('<DataTable>', () => {
     rerender(
       <DataTable data={data} pageSize={4}>
         <DataTable.Header columns={columns} />
-        <DataTable.Body renderRow={(row) => <span data-testid={`row-${row.id}`}>{row.name}</span>} />
+        <DataTable.Body renderRow={(row) => (
+          <div role="row">
+            <span role="cell" data-testid={`row-${row.id}`}>{row.name}</span>
+          </div>
+        )} />
         <DataTable.Pagination />
       </DataTable>
     );
