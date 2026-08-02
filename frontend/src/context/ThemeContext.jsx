@@ -1,20 +1,51 @@
 // TICKET-ADV124 — ThemeProvider: context flips data-theme; CSS owns colours.
-import React, { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
-const ThemeContext = createContext({ theme: 'light', toggle: () => {} });
+const STORAGE_KEY = 'reconx-theme';
+const DARK_MODE_QUERY = '(prefers-color-scheme: dark)';
+const ThemeContext = createContext(null);
+
+function isTheme(value) {
+  return value === 'light' || value === 'dark';
+}
+
+function getInitialTheme() {
+  if (typeof window === 'undefined') return 'light';
+
+  try {
+    const storedTheme = window.localStorage?.getItem(STORAGE_KEY);
+    if (isTheme(storedTheme)) return storedTheme;
+  } catch {
+    // Continue with the system preference when storage is unavailable.
+  }
+
+  try {
+    return typeof window.matchMedia === 'function' && window.matchMedia(DARK_MODE_QUERY).matches
+      ? 'dark'
+      : 'light';
+  } catch {
+    return 'light';
+  }
+}
 
 export function ThemeProvider({ children }) {
-  // TODO(TICKET-ADV124): lazy-init from localStorage('reconx-theme') — fall back
-  //                     to 'light' if nothing is stored.
-  const [theme /*, setTheme */] = useState('light');
+  const [theme, setTheme] = useState(getInitialTheme);
 
-  // TODO(TICKET-ADV124): useEffect that:
-  //                     1. sets document.documentElement.dataset.theme = theme
-  //                     2. persists `theme` to localStorage on every change.
+  useEffect(() => {
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.dataset.theme = theme;
+    }
 
-  const toggle = () => {
-    // TODO(TICKET-ADV124): flip 'light' <-> 'dark' via setTheme(prev => ...).
-  };
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage?.setItem(STORAGE_KEY, theme);
+      } catch {
+        // A blocked store must not prevent the theme from applying.
+      }
+    }
+  }, [theme]);
+
+  const toggle = () => setTheme((currentTheme) => (currentTheme === 'light' ? 'dark' : 'light'));
 
   return (
     <ThemeContext.Provider value={{ theme, toggle }}>
@@ -23,4 +54,12 @@ export function ThemeProvider({ children }) {
   );
 }
 
-export const useTheme = () => useContext(ThemeContext);
+export function useTheme() {
+  const context = useContext(ThemeContext);
+
+  if (context === null) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+
+  return context;
+}
