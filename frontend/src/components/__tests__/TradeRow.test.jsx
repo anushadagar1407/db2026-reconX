@@ -39,18 +39,37 @@ describe('<TradeRow>', () => {
     expect(onClick).toHaveBeenCalledWith(42);
   });
 
-  it('skips rendering when all consumed props are unchanged', () => {
+  it('skips render work when all consumed props are semantically unchanged', () => {
+    const fields = ['id', 'tradeRef', 'instrumentSymbol', 'quantity', 'price', 'status'];
+    const reads = Object.fromEntries(fields.map((field) => [field, 0]));
+    const trackedTrade = {};
+
+    fields.forEach((field) => {
+      Object.defineProperty(trackedTrade, field, {
+        configurable: true,
+        enumerable: true,
+        get: () => {
+          reads[field] += 1;
+          return baseTrade[field];
+        },
+      });
+    });
+
     const onClick = vi.fn();
     const { rerender } = render(
-      <TradeRow trade={{ ...baseTrade }} onClick={onClick} />
+      <TradeRow trade={trackedTrade} onClick={onClick} />
     );
-    const firstRow = screen.getByRole('row');
+    const readsAfterMount = { ...reads };
 
     rerender(
-      <TradeRow trade={{ ...baseTrade }} onClick={onClick} />
+      <TradeRow trade={trackedTrade} onClick={onClick} />
     );
 
-    expect(screen.getByRole('row')).toBe(firstRow);
+    fields.forEach((field) => {
+      // Two reads per field are the previous/next comparator reads. A body
+      // rerender would add that field's render-time reads to this delta.
+      expect(reads[field] - readsAfterMount[field]).toBe(2);
+    });
   });
 
   it.each([
