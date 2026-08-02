@@ -51,6 +51,25 @@ describe('api service', () => {
     });
   });
 
+  it('keeps login unauthenticated when a stale token exists', async () => {
+    const response = {
+      token: 'replacement-token',
+      tokenType: 'Bearer',
+      expiresInSeconds: 3600,
+      role: 'TRADER',
+    };
+    sessionStorage.setItem('reconx-token', 'stale-token');
+    fetchMock.mockResolvedValue(jsonResponse(response));
+
+    await expect(api.login('trader@db.com', 'trader123')).resolves.toEqual(response);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'trader@db.com', password: 'trader123' }),
+    });
+  });
+
   it('attaches a stored Bearer token and normalizes query strings', async () => {
     const response = { items: [], page: 0, size: 5, totalElements: 0, totalPages: 0, last: true };
     sessionStorage.setItem('reconx-token', 'stored-token');

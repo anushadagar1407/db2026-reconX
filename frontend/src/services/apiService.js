@@ -66,8 +66,11 @@ function errorDetail(body, statusText) {
   return statusText || 'Request failed';
 }
 
-async function request(method, path, body) {
-  const headers = { 'Content-Type': 'application/json', ...authHeaders() };
+async function request(method, path, body, { authenticated = true } = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(authenticated ? authHeaders() : {}),
+  };
   const options = { method, headers };
 
   if (body !== undefined) {
@@ -93,7 +96,12 @@ async function request(method, path, body) {
 }
 
 export const api = {
-  login: (email, password) => request('POST', '/auth/login', { email, password }),
+  login: (email, password) => request(
+    'POST',
+    '/auth/login',
+    { email, password },
+    { authenticated: false }
+  ),
   listTrades: (params = '') => request('GET', withQuery('/v1/trades', params)),
   createTrade: (req) => request('POST', '/v1/trades', req),
   updateStatus: (id, status) => request('PATCH', `/v1/trades/${encodeURIComponent(id)}/status`, { status }),
