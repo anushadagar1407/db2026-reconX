@@ -8,7 +8,7 @@ export function withAuth(Component) {
     const location = useLocation();
 
     if (isLoading) {
-      return <div>Loading...</div>;
+      return <div role="status">Loading...</div>;
     }
 
     if (!user) {
