@@ -96,7 +96,7 @@ reconx-studentCopy/
 │   ├── prometheus/prometheus.yml
 │   └── grafana/provisioning/
 │
-├── .github/workflows/ci.yml       ← Day 10: GitHub Actions pipeline
+├── .github/workflows/build.yml    ← Day 10: GitHub Actions pipeline
 ├── docker-compose.yml             ← Day 10: 7-service stack
 ├── .env.example                   ← Sample environment variables
 └── student-guides/                ← What you read each day
@@ -156,6 +156,81 @@ npm run dev
 
 JWT issued from `POST /api/auth/login` is valid for 60 minutes. Refresh tokens
 live in HttpOnly cookies for 7 days.
+
+---
+
+## Containerized verification
+
+Docker Compose is the standard verification path; the wrappers do not require
+host Java, Maven, Node, or npm. Run these commands from the repository root:
+
+```bash
+./scripts/verify              # backend and frontend (also: ./scripts/verify all)
+./scripts/verify backend
+./scripts/verify frontend
+```
+
+On Windows PowerShell, use the equivalent `.\scripts\verify.ps1`,
+`.\scripts\verify.ps1 backend`, or `.\scripts\verify.ps1 frontend`.
+The `all` mode runs both suites even if the first fails, labels each Compose
+log section, preserves the exit status, copies reports, and removes only the
+test service containers. It never runs `docker compose down`.
+
+The raw Compose alternatives target the profiled one-shot services explicitly:
+
+```bash
+mkdir -p .verification-reports/backend/target
+docker compose up --build --force-recreate --abort-on-container-exit --exit-code-from test-backend test-backend
+docker compose cp test-backend:/workspace/backend/target/. .verification-reports/backend/target/
+docker compose rm --force --stop test-backend test-postgres
+
+mkdir -p .verification-reports/frontend/test-results
+docker compose up --build --force-recreate --abort-on-container-exit --exit-code-from test-frontend test-frontend
+docker compose cp test-frontend:/app/test-results/. .verification-reports/frontend/test-results/
+docker compose rm --force --stop test-frontend
+```
+
+The raw `all` equivalent is the two target sequences above, run in order with
+each `docker compose up` status saved before its copy and cleanup commands.
+Preserve each `docker compose up` exit code before copying and cleaning when
+using the raw commands. Explicitly naming `test-backend` or `test-frontend`
+auto-enables its Compose profile and leaves the stopped container available for
+`docker compose cp`; `docker compose run --rm` would remove it too early.
+
+The wrapper currently expects backend reports at
+`/workspace/backend/target` and the Vitest report at
+`/app/test-results/vitest-junit.xml`. If the backend test image later uses an
+`/app` path, adjust `RECONX_BACKEND_REPORTS_PATH` (and the matching CI job env)
+before running verification. Reports are copied to the ignored
+`.verification-reports/` directory.
+
+### Native fallbacks and test phases
+
+The workflow uses the container jobs by default. `workflow_dispatch` exposes
+separate backend/frontend runner inputs for the manual native fallbacks: Java
+25 plus Testcontainers for the backend, and Node 22 for the frontend. Those
+fallbacks use the host runtime; the local equivalents are `cd backend &&
+./mvnw verify` and `cd frontend && npm ci && npm run verify`.
+
+Maven Surefire runs the ordinary `*Test` classes during `test`. Maven Failsafe
+uses the `*IT` convention for integration tests and is reached by `verify`,
+so `mvn test` alone does not run `*IT`; `verify` also produces the JaCoCo
+report/check. The Compose backend uses its
+external `test-postgres` dependency; the native fallback instead relies on
+tests' Testcontainers setup and still needs a working Docker daemon. Do not
+point either path at a developer database.
+
+CI uploads raw Surefire/Failsafe XML, the Vitest JUnit XML, and JaCoCo HTML as
+artifacts. The pinned JUnit reporter adds readable checks and job summaries;
+when fork permissions prevent check publication, reporting remains non-blocking
+and the raw artifacts are still available. Console output remains in the job
+log. Frontend verification runs lint, Vitest, and the production build even if
+an earlier phase fails, then returns one aggregate status.
+
+Pull requests targeting `develop` retain the existing build-only behavior;
+pull requests targeting `main` run full containerized verification alongside
+the production image builds. Manual dispatch can select `verify` or `build`
+independently of the selected runner.
 
 ---
 

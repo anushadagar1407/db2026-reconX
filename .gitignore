@@ -14,6 +14,7 @@ node_modules/
 dist/
 build/
 .next/
+test-results/
 
 # ==========================
 # IDE
@@ -32,6 +33,11 @@ Thumbs.db
 # Logs
 # ==========================
 *.log
+
+# ==========================
+# Containerized verification
+# ==========================
+.verification-reports/
 
 # ==========================
 # Environment files

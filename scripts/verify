@@ -1,0 +1,164 @@
+#!/bin/sh
+
+set -u
+
+usage() {
+  printf '%s\n' "Usage: scripts/verify [all|backend|frontend]" >&2
+}
+
+if [ "$#" -gt 1 ]; then
+  usage
+  exit 2
+fi
+
+mode=${1:-all}
+case "$mode" in
+  all|backend|frontend)
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
+
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repo_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
+if ! cd "$repo_root"; then
+  printf 'Unable to change to repository root: %s\n' "$repo_root" >&2
+  exit 1
+fi
+
+if [ -n "${RECONX_VERIFY_REPORT_DIR:-}" ]; then
+  report_root=$RECONX_VERIFY_REPORT_DIR
+else
+  report_root=$repo_root/.verification-reports
+fi
+
+backend_reports_path=${RECONX_BACKEND_REPORTS_PATH:-/workspace/backend/target}
+frontend_reports_path=${RECONX_FRONTEND_REPORTS_PATH:-/app/test-results}
+
+if ! mkdir -p "$report_root"; then
+  printf 'Unable to create report directory: %s\n' "$report_root" >&2
+  exit 1
+fi
+report_root=$(CDPATH='' cd -- "$report_root" && pwd -P)
+
+case "$repo_root/" in
+  "$report_root/"*)
+    printf 'Refusing report directory that contains the repository: %s\n' "$report_root" >&2
+    exit 2
+    ;;
+esac
+
+rm -rf "$report_root/backend" "$report_root/frontend"
+
+active_cleanup_required=0
+cleanup_on_exit() {
+  status=$?
+  trap - EXIT
+  if [ "$active_cleanup_required" -eq 1 ]; then
+    docker compose rm --force --stop test-backend test-frontend test-postgres >/dev/null 2>&1 || true
+  fi
+  exit "$status"
+}
+trap cleanup_on_exit EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+copy_reports() {
+  service=$1
+  source_path=$2
+  destination=$3
+
+  if ! mkdir -p "$destination"; then
+    printf 'Unable to create report destination: %s\n' "$destination" >&2
+    return 1
+  fi
+
+  if docker compose cp "$service:$source_path/." "$destination"; then
+    printf '%s reports copied to %s\n' "$service" "$destination"
+  else
+    printf 'No reports copied from %s:%s (the test may have failed before producing them)\n' \
+      "$service" "$source_path" >&2
+    return 1
+  fi
+}
+
+cleanup_test_services() {
+  if docker compose rm --force --stop "$@"; then
+    printf 'Removed test service containers: %s\n' "$*"
+  else
+    printf 'Unable to remove one or more test service containers: %s\n' "$*" >&2
+    return 1
+  fi
+}
+
+run_test_service() {
+  service=$1
+  source_path=$2
+  destination=$3
+  shift 3
+  active_cleanup_required=1
+
+  printf '\n==> Running %s\n' "$service"
+  test_status=0
+  docker compose up --build --force-recreate --abort-on-container-exit --exit-code-from "$service" "$service" || test_status=$?
+
+  # `up` is deliberately not given `--rm`: the stopped one-shot container is
+  # needed by `cp` below. Cleanup is limited to the named test services.
+  printf '\n==> Preserving %s reports\n' "$service"
+  copy_status=0
+  copy_reports "$service" "$source_path" "$destination" || copy_status=$?
+  cleanup_status=0
+  cleanup_test_services "$@" || cleanup_status=$?
+  active_cleanup_required=0
+
+  if [ "$test_status" -ne 0 ]; then
+    return "$test_status"
+  fi
+  if [ "$copy_status" -ne 0 ]; then
+    return "$copy_status"
+  fi
+  return "$cleanup_status"
+}
+
+run_backend() {
+  run_test_service \
+    test-backend \
+    "$backend_reports_path" \
+    "$report_root/backend/target" \
+    test-backend test-postgres
+}
+
+run_frontend() {
+  run_test_service \
+    test-frontend \
+    "$frontend_reports_path" \
+    "$report_root/frontend/test-results" \
+    test-frontend
+}
+
+backend_status=0
+frontend_status=0
+
+case "$mode" in
+  all)
+    run_backend || backend_status=$?
+    run_frontend || frontend_status=$?
+    ;;
+  backend)
+    run_backend || backend_status=$?
+    ;;
+  frontend)
+    run_frontend || frontend_status=$?
+    ;;
+esac
+
+if [ "$backend_status" -ne 0 ] || [ "$frontend_status" -ne 0 ]; then
+  printf '\nContainer verification failed (backend=%s, frontend=%s).\n' \
+    "$backend_status" "$frontend_status" >&2
+  exit 1
+fi
+
+printf '\nContainer verification passed. Reports: %s\n' "$report_root"
