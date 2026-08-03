@@ -1,0 +1,24 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/login"
+method: POST
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "not-an-email",
+      "password": ""
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 400", () => pm.response.to.have.status(400));
+      pm.test("validation problem is returned", () => {
+        const body = pm.response.json();
+        pm.expect(body.status).to.eql(400);
+        pm.expect(body.detail).to.be.a("string").and.not.empty;
+      });
+    language: text/javascript
+order: 6000

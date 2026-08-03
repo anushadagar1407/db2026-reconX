@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.repository;
 
 import com.dbtraining.reconx.repository.entity.Trade;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -101,5 +102,15 @@ class TradeSpecificationsTest {
         Page<Trade> page = tradeRepository.findAll(noFilters, PageRequest.of(0, 1000));
 
         assertThat(page.getTotalElements()).isEqualTo(totalTrades);
+    }
+
+    @Test
+    void specificationPageFetchesAssociationsNeededByTheResponseMapper() {
+        Page<Trade> page = tradeRepository.findAll(
+                tradeDateBetween(null, null), PageRequest.of(0, 1));
+
+        Trade trade = page.getContent().getFirst();
+        assertThat(Hibernate.isInitialized(trade.getInstrument())).isTrue();
+        assertThat(Hibernate.isInitialized(trade.getCounterparty())).isTrue();
     }
 }

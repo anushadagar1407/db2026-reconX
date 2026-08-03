@@ -1,0 +1,9 @@
+$kind: collection
+description: Adversarial checks for authentication, authorization, validation, invalid query parameters, and missing resources. Spring Security 401/403 responses are intentionally status-only; application errors use RFC 7807.
+auth:
+  - id: 67b58ae2-a797-4bfe-8c0a-68e21e193eb8
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{viewerToken}}"
+order: 7000

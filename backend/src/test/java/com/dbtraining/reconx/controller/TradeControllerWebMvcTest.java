@@ -15,6 +15,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.context.annotation.Import;
+import com.dbtraining.reconx.security.SecurityConfig;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -32,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TradeController.class)
+@Import(SecurityConfig.class)
 class TradeControllerWebMvcTest {
 
     @Autowired
@@ -88,6 +91,14 @@ class TradeControllerWebMvcTest {
                 .andExpect(jsonPath("$.id").value(42))
                 .andExpect(jsonPath("$.tradeRef").value("TRD-20260731-9999"));
     }
+
+    @Test
+void testCreateTrade_unauthenticated_returns401() throws Exception {
+    mockMvc.perform(post("/api/v1/trades")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(validRequest())))
+            .andExpect(status().isUnauthorized());
+}
 
     private TradeRequest validRequest() {
         return new TradeRequest(

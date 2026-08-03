@@ -1,0 +1,9 @@
+$kind: collection
+description: Read-only audit endpoints. History queries stored rows; Kafka-sourced events still return a placeholder list. Tests assert only the stable list shape, not placeholder emptiness.
+auth:
+  - id: dd3b8f69-f584-48b5-9b5c-e69e67b32f53
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{viewerToken}}"
+order: 6000

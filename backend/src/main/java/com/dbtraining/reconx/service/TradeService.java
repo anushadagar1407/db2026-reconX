@@ -10,6 +10,7 @@ import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
+import io.micrometer.core.instrument.Gauge;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -22,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 
 import static com.dbtraining.reconx.repository.TradeSpecifications.*;
-
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Counter;
+import org.springframework.stereotype.Service;
 /**
  * ============================================================================
  * TICKET-ADV064 — TradeService.create (POST endpoint backing) TICKET-ADV065 —
@@ -40,15 +43,19 @@ public class TradeService {
     private final CounterpartyRepository cpRepo;
     private final InstrumentRepository instRepo;
     private final TradeMetrics metrics;
+    private final Counter tradeCreatedCounter;
+
 
     public TradeService(TradeRepository tradeRepo,
             CounterpartyRepository cpRepo,
             InstrumentRepository instRepo,
-            TradeMetrics metrics) {
+            TradeMetrics metrics,
+                        MeterRegistry meterRegistry) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
         this.metrics = metrics;
+        this.tradeCreatedCounter = meterRegistry.counter("trade_created_total");
     }
 
     @Transactional(readOnly = true)
@@ -72,6 +79,7 @@ public class TradeService {
         }
 
         Trade trade = new Trade();
+        
         trade.setTradeRef(req.tradeRef());
         trade.setInstrument(instRepo.findById(req.instrumentId())
                 .orElseThrow(() -> new TradeNotFoundException(
@@ -86,8 +94,13 @@ public class TradeService {
         trade.setTradeDate(req.tradeDate());
         trade.setStatus(TradeStatus.PENDING);
 
+        
         try {
-            return tradeRepo.save(trade);
+            Trade saved = tradeRepo.save(trade);
+            tradeCreatedCounter.increment();
+            metrics.incrementTradeCreated();
+            metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
+            return saved;
         } catch (DataIntegrityViolationException ex) {
             if (!isTradeReferenceUniqueViolation(ex)) {
                 throw ex;
