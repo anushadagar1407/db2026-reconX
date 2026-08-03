@@ -801,7 +801,7 @@ cd static-dashboard && python3 -m http.server 5500
 
 ---
 
-### TICKET-ADV105 — SSE handler with prepend-and-animate
+### TICKET-ADV105 — SSE handler with prepend-and-animate ✅
 
 **Goal:** Render each incoming SSE trade as a `.trade-card` at the **top** of the feed, replaying the TICKET-ADV101 slide-in animation on insert, and cap the feed at 50 entries so the DOM stays bounded.
 
