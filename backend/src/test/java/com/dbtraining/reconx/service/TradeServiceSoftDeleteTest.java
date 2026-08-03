@@ -7,6 +7,8 @@ import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import io.micrometer.core.instrument.MeterRegistry;
+import com.dbtraining.reconx.kafka.TradeEventProducer;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -21,12 +23,14 @@ import static org.mockito.Mockito.when;
 class TradeServiceSoftDeleteTest {
 
     private final TradeRepository tradeRepository = mock(TradeRepository.class);
+
     private final TradeService service = new TradeService(
             tradeRepository,
             mock(CounterpartyRepository.class),
             mock(InstrumentRepository.class),
             mock(TradeMetrics.class),
-            mock(MeterRegistry.class));
+            mock(MeterRegistry.class),
+            mock(TradeEventProducer.class));
 
     @Test
     void softDeleteMarksAndSavesTheLoadedTrade() {

@@ -3,6 +3,8 @@ package com.dbtraining.reconx.repository;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.service.TradeService;
+import com.dbtraining.reconx.kafka.TradeEventProducer;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -40,7 +42,8 @@ class TradeSoftDeletePersistenceTest {
                 mock(CounterpartyRepository.class),
                 mock(InstrumentRepository.class),
                 mock(TradeMetrics.class),
-                mock(MeterRegistry.class));
+                mock(MeterRegistry.class),
+                mock(TradeEventProducer.class));
     }
 
     @Test
