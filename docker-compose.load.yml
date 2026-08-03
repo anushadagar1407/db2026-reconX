@@ -1,0 +1,120 @@
+services:
+  load-postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: reconx_load
+      POSTGRES_USER: reconx_load
+      POSTGRES_PASSWORD: reconx_load
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reconx_load -d reconx_load"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  load-zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  load-kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      load-zookeeper:
+        condition: service_started
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: load-zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://load-kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  load-backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: production
+    image: reconx-adv097-backend:local
+    depends_on:
+      load-postgres:
+        condition: service_healthy
+      load-kafka:
+        condition: service_healthy
+    ports:
+      - "${RECONX_LOAD_BACKEND_PORT:-0}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      POSTGRES_HOST: load-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: reconx_load
+      POSTGRES_USER: reconx_load
+      POSTGRES_PASSWORD: reconx_load
+      KAFKA_BOOTSTRAP: load-kafka:29092
+      JWT_SECRET: ${RECONX_LOAD_JWT_SECRET:-adv097-local-only-secret-change-me-32-bytes}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/api/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  load-prometheus:
+    image: prom/prometheus:v2.54.1
+    depends_on:
+      load-backend:
+        condition: service_healthy
+    ports:
+      - "${RECONX_LOAD_PROMETHEUS_PORT:-0}:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus-load.yml:/etc/prometheus/prometheus.yml:ro
+
+  load-grafana:
+    image: grafana/grafana:11.2.0
+    depends_on:
+      load-prometheus:
+        condition: service_started
+    ports:
+      - "${RECONX_LOAD_GRAFANA_PORT:-0}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    tmpfs:
+      - /var/lib/grafana
+    volumes:
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/provisioning/datasources/prometheus-load.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+
+  load-k6:
+    image: grafana/k6:0.55.2
+    profiles: ["load"]
+    depends_on:
+      load-backend:
+        condition: service_healthy
+    environment:
+      BASE_URL: http://load-backend:8080
+    volumes:
+      - ./scripts/load:/scripts:ro
+      - ${RECONX_LOAD_ARTIFACT_DIR:-.verification-reports/load}:/results
+    command: ["run", "--summary-export", "/results/k6-raw-summary.json", "/scripts/adv097.js"]
+
+  load-query:
+    image: python:3.13.1-alpine
+    profiles: ["load"]
+    depends_on:
+      load-prometheus:
+        condition: service_started
+    environment:
+      PROMETHEUS_URL: http://load-prometheus:9090
+    volumes:
+      - ./scripts/load:/scripts:ro
+      - ${RECONX_LOAD_ARTIFACT_DIR:-.verification-reports/load}:/results
+    command: ["python", "/scripts/query-prometheus.py"]

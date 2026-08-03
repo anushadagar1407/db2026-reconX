@@ -54,7 +54,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    image: ghcr.io/sidoncode/reconx-backend:latest
+    image: reconx-backend:local
     container_name: reconx-backend
     depends_on:
       postgres: {condition: service_healthy}
@@ -78,7 +78,7 @@ services:
 
   frontend:
     build: ./frontend
-    image: ghcr.io/sidoncode/reconx-frontend:latest
+    image: reconx-frontend:local
     container_name: reconx-frontend
     depends_on:
       backend: {condition: service_healthy}

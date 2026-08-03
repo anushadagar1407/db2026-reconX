@@ -4,7 +4,7 @@ param(
 )
 
 function Show-Usage {
-    [Console]::Error.WriteLine("Usage: scripts/verify.ps1 [all|backend|frontend]")
+    [Console]::Error.WriteLine("Usage: scripts/verify.ps1 [all|backend|frontend|load]")
 }
 
 if ($args.Count -gt 0) {
@@ -13,7 +13,7 @@ if ($args.Count -gt 0) {
 }
 
 $Mode = $Mode.ToLowerInvariant()
-if ($Mode -notin @("all", "backend", "frontend")) {
+if ($Mode -notin @("all", "backend", "frontend", "load")) {
     Show-Usage
     exit 2
 }
@@ -136,8 +136,108 @@ function Invoke-TestService {
     return $CleanupStatus
 }
 
+function Invoke-Load {
+    $ProjectName = "reconx-adv097-{0}-{1}" -f [DateTimeOffset]::UtcNow.ToString("yyyyMMddHHmmss"), $PID
+    $ComposeFile = Join-Path $RepoRoot "docker-compose.load.yml"
+    $LoadArtifactDir = $env:RECONX_LOAD_ARTIFACT_DIR
+    if ([string]::IsNullOrWhiteSpace($LoadArtifactDir)) {
+        $LoadArtifactDir = Join-Path $RepoRoot ".verification-reports/load"
+    }
+
+    try {
+        New-Item -ItemType Directory -Path $LoadArtifactDir -Force -ErrorAction Stop | Out-Null
+        $LoadArtifactDir = (Resolve-Path -LiteralPath $LoadArtifactDir -ErrorAction Stop).Path
+    } catch {
+        Write-Error "Unable to create load artifact directory '$LoadArtifactDir': $($_.Exception.Message)"
+        return 1
+    }
+
+    $RepoPrefix = $RepoRoot.TrimEnd($TrimChars) + $Separator
+    $LoadPrefix = $LoadArtifactDir.TrimEnd($TrimChars) + $Separator
+    if ($RepoPrefix.StartsWith($LoadPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Write-Error "Refusing load artifact directory that contains the repository: $LoadArtifactDir"
+        return 2
+    }
+
+    $env:RECONX_LOAD_ARTIFACT_DIR = $LoadArtifactDir
+    @(
+        "k6-summary.json",
+        "k6-raw-summary.json",
+        "prometheus-query-evidence.json",
+        "load-run-metadata.json",
+        "compose.log"
+    ) | ForEach-Object {
+        Remove-Item -LiteralPath (Join-Path $LoadArtifactDir $_) -Force -ErrorAction SilentlyContinue
+    }
+
+    $ComposeArguments = @("-f", $ComposeFile, "-p", $ProjectName)
+    $LoadStatus = 0
+    $CleanupStatus = 0
+    try {
+        Write-Host ""
+        Write-Host "==> Starting isolated ADV097 Compose project $ProjectName"
+        $LoadStatus = Invoke-Compose -Arguments ($ComposeArguments + @(
+            "up", "--build", "--force-recreate", "--detach",
+            "load-postgres", "load-zookeeper", "load-kafka", "load-backend", "load-prometheus", "load-grafana"
+        ))
+
+        $GrafanaUrl = ""
+        $PrometheusUrl = ""
+        if ($LoadStatus -eq 0) {
+            $GrafanaPort = (& docker compose @ComposeArguments port load-grafana 3000 2>$null | Select-Object -First 1)
+            $PrometheusPort = (& docker compose @ComposeArguments port load-prometheus 9090 2>$null | Select-Object -First 1)
+            if (-not [string]::IsNullOrWhiteSpace($GrafanaPort)) {
+                $GrafanaUrl = "http://127.0.0.1:{0}" -f (($GrafanaPort -split ":")[-1]).Trim()
+            }
+            if (-not [string]::IsNullOrWhiteSpace($PrometheusPort)) {
+                $PrometheusUrl = "http://127.0.0.1:{0}" -f (($PrometheusPort -split ":")[-1]).Trim()
+            }
+            [ordered]@{
+                ticket = "TICKET-ADV097"
+                composeProject = $ProjectName
+                grafanaUrl = $GrafanaUrl
+                prometheusUrl = $PrometheusUrl
+                cleanupCommand = "docker compose -f docker-compose.load.yml -p $ProjectName down --volumes --remove-orphans"
+            } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $LoadArtifactDir "load-run-metadata.json")
+            Write-Host "Grafana observation URL: $GrafanaUrl"
+
+            Write-Host ""
+            Write-Host "==> Running pinned Grafana k6 load generator"
+            $LoadStatus = Invoke-Compose -Arguments ($ComposeArguments + @("run", "--rm", "load-k6"))
+        }
+
+        if ($LoadStatus -eq 0) {
+            Write-Host ""
+            Write-Host "==> Capturing Prometheus panel-query evidence"
+            $LoadStatus = Invoke-Compose -Arguments ($ComposeArguments + @("run", "--rm", "load-query"))
+        }
+
+        (& docker compose @ComposeArguments logs --no-color load-backend load-prometheus load-grafana 2>&1) |
+            Set-Content -LiteralPath (Join-Path $LoadArtifactDir "compose.log")
+    } finally {
+        if ($env:RECONX_LOAD_KEEP_STACK -eq "1") {
+            Write-Host ""
+            Write-Host "Keeping isolated Compose project $ProjectName for Grafana observation."
+        } else {
+            $CleanupStatus = Invoke-Compose -Arguments ($ComposeArguments + @("down", "--volumes", "--remove-orphans"))
+        }
+    }
+
+    if ($LoadStatus -ne 0) {
+        Write-Error "ADV097 load verification failed (status=$LoadStatus). Artifacts: $LoadArtifactDir"
+        return 1
+    }
+    if ($CleanupStatus -ne 0) {
+        Write-Error "ADV097 cleanup failed (status=$CleanupStatus). Project: $ProjectName"
+        return 1
+    }
+    Write-Host "ADV097 load verification passed. Artifacts: $LoadArtifactDir"
+    return 0
+}
+
 $BackendStatus = 0
 $FrontendStatus = 0
+$LoadStatus = 0
 
 switch ($Mode) {
     "all" {
@@ -166,10 +266,13 @@ switch ($Mode) {
             -Destination (Join-Path $ReportRoot "frontend/test-results") `
             -CleanupServices @("test-frontend")
     }
+    "load" {
+        $LoadStatus = Invoke-Load
+    }
 }
 
-if ($BackendStatus -ne 0 -or $FrontendStatus -ne 0) {
-    Write-Error "Container verification failed (backend=$BackendStatus, frontend=$FrontendStatus)."
+if ($BackendStatus -ne 0 -or $FrontendStatus -ne 0 -or $LoadStatus -ne 0) {
+    Write-Error "Container verification failed (backend=$BackendStatus, frontend=$FrontendStatus, load=$LoadStatus)."
     exit 1
 }
 

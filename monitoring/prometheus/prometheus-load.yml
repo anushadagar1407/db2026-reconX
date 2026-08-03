@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: reconx-load-backend
+    metrics_path: /api/actuator/prometheus
+    static_configs:
+      - targets: [load-backend:8080]

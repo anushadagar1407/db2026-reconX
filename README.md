@@ -190,10 +190,12 @@ host Java, Maven, Node, or npm. Run these commands from the repository root:
 ./scripts/verify              # backend and frontend (also: ./scripts/verify all)
 ./scripts/verify backend
 ./scripts/verify frontend
+./scripts/verify load         # explicit TICKET-ADV097 k6 + Prometheus evidence
 ```
 
 On Windows PowerShell, use the equivalent `.\scripts\verify.ps1`,
-`.\scripts\verify.ps1 backend`, or `.\scripts\verify.ps1 frontend`.
+`.\scripts\verify.ps1 backend`, `.\scripts\verify.ps1 frontend`, or
+`.\scripts\verify.ps1 load`.
 The `all` mode runs both suites even if the first fails, labels each Compose
 log section, preserves the exit status, copies reports, and removes only the
 test service containers. It never runs `docker compose down`.
@@ -249,10 +251,27 @@ and the raw artifacts are still available. Console output remains in the job
 log. Frontend verification runs lint, Vitest, and the production build even if
 an earlier phase fails, then returns one aggregate status.
 
+The explicit `load` mode starts a separate Compose project with ephemeral
+PostgreSQL data, pinned k6/Python images, and the API, Prometheus, and Grafana
+services on dynamically assigned host ports. It authenticates once through
+`POST /api/auth/login`, then drives exactly 100 unique trade creations with 10
+k6 VUs. The ignored `.verification-reports/load/` directory receives the k6
+summary, raw Prometheus panel queries, and the Grafana observation URL. Set
+`RECONX_LOAD_KEEP_STACK=1` to leave that isolated project running for manual
+dashboard observation; otherwise the wrapper removes only that project and its
+ephemeral volumes.
+
+The ADV097 workflow is an explicit `workflow_dispatch` load option rather than
+a default pull-request job because it starts Kafka, PostgreSQL, Prometheus, and
+Grafana and is intentionally a runtime evidence run, not a flaky universal
+performance gate. The job uploads the tool and panel-query artifacts whenever
+the option is selected.
+
 Pull requests targeting `develop` retain the existing build-only behavior;
 pull requests targeting `main` run full containerized verification alongside
 the production image builds. Manual dispatch can select `verify` or `build`
-independently of the selected runner.
+independently of the selected runner and can opt into the separate ADV097 load
+job.
 
 ---
 
