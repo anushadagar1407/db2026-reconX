@@ -13,6 +13,11 @@ target/
 node_modules/
 dist/
 build/
+
+# Postman local collection-run artifacts
+postman-cli-reports/
+*.collection-run-summary.yaml
+*.collection-run-executions.yaml
 .next/
 
 # ==========================
