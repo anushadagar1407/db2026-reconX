@@ -34,6 +34,12 @@ else
   report_root=$repo_root/.verification-reports
 fi
 
+case "/$report_root/" in
+  */../*|*/./*)
+    printf 'Refusing aliased report directory: %s\n' "$report_root" >&2
+    exit 2
+    ;;
+esac
 if [ -L "$report_root" ]; then
   printf 'Refusing symbolic-link report directory: %s\n' "$report_root" >&2
   exit 2
@@ -64,11 +70,24 @@ prepare_owned_directory() {
   expected_path=$2
   marker_name=$3
   marker_path=$owned_path/$marker_name
+  marker_value="reconx-owned-v1
+path=$owned_path
+kind=$marker_name"
 
   if [ "$owned_path" != "$expected_path" ]; then
     printf 'Refusing cleanup path outside its ownership invariant: %s\n' "$owned_path" >&2
     return 2
   fi
+  if [ "$owned_path" = / ] || [ "$owned_path" = "$repo_root" ] || [ "$owned_path" = "$report_root" ]; then
+    printf 'Refusing non-leaf cleanup path: %s\n' "$owned_path" >&2
+    return 2
+  fi
+  case "$repo_root/" in
+    "$owned_path/"*)
+      printf 'Refusing cleanup path that contains the repository: %s\n' "$owned_path" >&2
+      return 2
+      ;;
+  esac
   if [ -L "$owned_path" ]; then
     printf 'Refusing symbolic-link cleanup path: %s\n' "$owned_path" >&2
     return 2
@@ -76,6 +95,11 @@ prepare_owned_directory() {
   if [ -e "$owned_path" ]; then
     if [ ! -d "$owned_path" ] || [ ! -f "$marker_path" ] || [ -L "$marker_path" ]; then
       printf 'Refusing cleanup without wrapper ownership marker: %s\n' "$owned_path" >&2
+      return 2
+    fi
+    actual_marker=$(cat "$marker_path") || return 1
+    if [ "$actual_marker" != "$marker_value" ]; then
+      printf 'Refusing cleanup with stale or forged ownership marker: %s\n' "$owned_path" >&2
       return 2
     fi
     if ! rm -rf "$owned_path"; then
@@ -87,7 +111,7 @@ prepare_owned_directory() {
     printf 'Unable to create wrapper-owned directory: %s\n' "$owned_path" >&2
     return 1
   fi
-  if ! printf '%s\n' "$marker_name" > "$marker_path"; then
+  if ! printf '%s\n' "$marker_value" > "$marker_path"; then
     printf 'Unable to create ownership marker: %s\n' "$marker_path" >&2
     return 1
   fi
@@ -122,7 +146,7 @@ cleanup_on_exit() {
     docker compose rm --force --stop test-backend test-frontend test-postgres >/dev/null 2>&1 || true
   fi
   if [ "$load_cleanup_required" -eq 1 ]; then
-    load_compose down --volumes --remove-orphans >/dev/null 2>&1 || true
+    load_compose --profile load down --volumes --remove-orphans >/dev/null 2>&1 || true
   fi
   exit "$status"
 }
@@ -238,18 +262,34 @@ require_load_artifacts() {
 run_load() {
   load_project_name="reconx-adv097-$(date -u +%Y%m%d%H%M%S)-$$"
   load_compose_file="$repo_root/docker-compose.load.yml"
-  load_artifact_dir=${RECONX_LOAD_ARTIFACT_DIR:-$repo_root/.verification-reports/load}
+  load_artifact_input=${RECONX_LOAD_ARTIFACT_DIR:-$repo_root/.verification-reports/load}
   load_keep_stack=${RECONX_LOAD_KEEP_STACK:-0}
 
+  case "/$load_artifact_input/" in
+    */../*|*/./*)
+      printf 'Refusing aliased load artifact directory: %s\n' "$load_artifact_input" >&2
+      return 2
+      ;;
+  esac
+  load_artifact_name=$(basename -- "$load_artifact_input")
+  load_artifact_parent=$(dirname -- "$load_artifact_input")
+  if [ -z "$load_artifact_name" ] || [ "$load_artifact_name" = / ] || \
+     [ "$load_artifact_name" = . ] || [ "$load_artifact_name" = .. ]; then
+    printf 'Refusing load artifact path without a unique directory name: %s\n' \
+      "$load_artifact_input" >&2
+    return 2
+  fi
+  if ! mkdir -p "$load_artifact_parent"; then
+    printf 'Unable to create load artifact parent directory: %s\n' \
+      "$load_artifact_parent" >&2
+    return 1
+  fi
+  load_artifact_parent=$(CDPATH='' cd -- "$load_artifact_parent" && pwd -P)
+  load_artifact_dir="$load_artifact_parent/$load_artifact_name"
   if [ -L "$load_artifact_dir" ]; then
     printf 'Refusing symbolic-link load artifact directory: %s\n' "$load_artifact_dir" >&2
     return 2
   fi
-  if ! mkdir -p "$load_artifact_dir"; then
-    printf 'Unable to create load artifact directory: %s\n' "$load_artifact_dir" >&2
-    return 1
-  fi
-  load_artifact_dir=$(CDPATH='' cd -- "$load_artifact_dir" && pwd -P)
   case "$repo_root/" in
     "$load_artifact_dir/"*)
       printf 'Refusing load artifact directory that contains the repository: %s\n' \
@@ -268,6 +308,8 @@ run_load() {
     "$load_marker_name" || return $?
 
   export RECONX_LOAD_ARTIFACT_DIR="$load_artifact_dir"
+  RECONX_LOAD_EXPORT_USER="$(id -u):$(id -g)"
+  export RECONX_LOAD_EXPORT_USER
   load_cleanup_required=1
   load_status=0
   cleanup_status=0
@@ -290,7 +332,7 @@ run_load() {
     if [ -n "$prometheus_port" ]; then
       prometheus_url="http://127.0.0.1:${prometheus_port##*:}"
     fi
-    printf '{\n  "ticket": "TICKET-ADV097",\n  "composeProject": "%s",\n  "grafanaUrl": "%s",\n  "prometheusUrl": "%s",\n  "cleanupCommand": "docker compose -f docker-compose.load.yml -p %s down --volumes --remove-orphans"\n}\n' \
+    printf '{\n  "ticket": "TICKET-ADV097",\n  "composeProject": "%s",\n  "grafanaUrl": "%s",\n  "prometheusUrl": "%s",\n  "cleanupCommand": "docker compose -f docker-compose.load.yml -p %s --profile load down --volumes --remove-orphans"\n}\n' \
       "$load_project_name" "$grafana_url" "$prometheus_url" \
       "$load_project_name" > "$load_artifact_dir/load-run-metadata.json"
     printf 'Grafana observation URL: %s\n' "${grafana_url:-unavailable}"
@@ -339,7 +381,7 @@ run_load() {
     load_cleanup_required=0
     printf '\nKeeping isolated Compose project %s for Grafana observation.\n' "$load_project_name"
   else
-    load_compose down --volumes --remove-orphans || cleanup_status=$?
+    load_compose --profile load down --volumes --remove-orphans || cleanup_status=$?
     load_cleanup_required=0
   fi
 

@@ -339,12 +339,16 @@ jobs:
           persist-credentials: false
 
       - name: Validate ADV097 wiring
-        run: node scripts/load/validate.mjs
+        run: |
+          set -o pipefail
+          node scripts/load/validate.mjs 2>&1 | tee "${RUNNER_TEMP}/adv097-static-validation.log"
 
       - name: Set up Docker Buildx
+        if: ${{ always() }}
         uses: docker/setup-buildx-action@v3
 
       - name: Run ADV097 containerized load
+        if: ${{ always() }}
         env:
           RECONX_LOAD_ARTIFACT_DIR: ${{ runner.temp }}/reconx-adv097
         run: ./scripts/verify load
@@ -354,6 +358,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: adv097-load-evidence
-          path: ${{ runner.temp }}/reconx-adv097/
+          path: |
+            ${{ runner.temp }}/reconx-adv097/
+            ${{ runner.temp }}/adv097-static-validation.log
           if-no-files-found: error
           retention-days: 14

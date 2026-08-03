@@ -245,11 +245,10 @@ tests' Testcontainers setup and still needs a working Docker daemon. Do not
 point either path at a developer database.
 
 CI uploads raw Surefire/Failsafe XML, the Vitest JUnit XML, and JaCoCo HTML as
-artifacts. The pinned JUnit reporter adds readable checks and job summaries;
-when fork permissions prevent check publication, reporting remains non-blocking
-and the raw artifacts are still available. Console output remains in the job
-log. Frontend verification runs lint, Vitest, and the production build even if
-an earlier phase fails, then returns one aggregate status.
+artifacts. The pinned JUnit reporter adds readable checks and job summaries and
+fails closed on missing, malformed, or failing reports. Console output remains
+in the job log. Frontend verification runs lint, Vitest, and the production
+build even if an earlier phase fails, then returns one aggregate status.
 
 The explicit `load` mode starts a separate Compose project with ephemeral
 PostgreSQL data, pinned k6/Python images, and the API, Prometheus, and Grafana
@@ -261,17 +260,29 @@ summary, raw Prometheus panel queries, and the Grafana observation URL. Set
 dashboard observation; otherwise the wrapper removes only that project and its
 ephemeral volumes.
 
+The load evidence uses a 60-second paced run interval for both k6 and the
+Prometheus queries. The wrapper fails unless their trade throughput values are
+within 20%, both client-side k6 and server-side histogram P95 values are finite
+and non-zero, and pre/post Prometheus deltas prove exactly 100 HTTP 201
+responses and exactly 100 `trade_created_total` increments. Client P95 includes
+network/client timing; server P95 is the endpoint-wide Micrometer HTTP
+histogram, so the two values are recorded with separate labels and units rather
+than presented as identical measurements. Both k6 JSON summaries are exported
+from a project-scoped named volume, parsed and cross-checked, stripped of setup
+credentials, and written as host-user-writable files.
+
 The ADV097 workflow is an explicit `workflow_dispatch` load option rather than
 a default pull-request job because it starts Kafka, PostgreSQL, Prometheus, and
 Grafana and is intentionally a runtime evidence run, not a flaky universal
 performance gate. The job uploads the tool and panel-query artifacts whenever
 the option is selected.
 
-Pull requests targeting `develop` retain the existing build-only behavior;
-pull requests targeting `main` run full containerized verification alongside
-the production image builds. Manual dispatch can select `verify` or `build`
+Pull requests targeting either `develop` or `main` run full containerized
+backend and frontend verification alongside the production image builds.
+Manual dispatch can select `verify` or explicit image-build-only behavior
 independently of the selected runner and can opt into the separate ADV097 load
-job.
+job. A selected load job runs and uploads its static-validation log and all
+available runtime evidence even when either validation phase fails.
 
 ---
 

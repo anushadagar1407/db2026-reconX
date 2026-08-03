@@ -30,6 +30,10 @@ $ReportRoot = $env:RECONX_VERIFY_REPORT_DIR
 if ([string]::IsNullOrWhiteSpace($ReportRoot)) {
     $ReportRoot = Join-Path $RepoRoot ".verification-reports"
 }
+if ($ReportRoot -match '(^|[\\/])\.\.?(?:[\\/]|$)') {
+    Write-Error "Refusing aliased report directory: $ReportRoot"
+    exit 2
+}
 if (Test-Path -LiteralPath $ReportRoot) {
     $ReportRootItem = Get-Item -LiteralPath $ReportRoot -Force
     if ($ReportRootItem.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
@@ -75,7 +79,18 @@ function Prepare-OwnedDirectory {
         return $false
     }
 
+    if ($Path -eq [System.IO.Path]::GetPathRoot($Path) -or $Path -eq $RepoRoot -or $Path -eq $ReportRoot) {
+        Write-Error "Refusing non-leaf cleanup path: $Path"
+        return $false
+    }
+    $OwnedPrefix = $Path.TrimEnd($TrimChars) + $Separator
+    if ($RepoPrefix.StartsWith($OwnedPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Write-Error "Refusing cleanup path that contains the repository: $Path"
+        return $false
+    }
+
     $MarkerPath = Join-Path $Path $MarkerName
+    $MarkerValue = "reconx-owned-v1`npath=$Path`nkind=$MarkerName"
     if (Test-Path -LiteralPath $Path) {
         $Item = Get-Item -LiteralPath $Path -Force
         if (-not $Item.PSIsContainer -or $Item.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
@@ -91,6 +106,11 @@ function Prepare-OwnedDirectory {
             Write-Error "Refusing symbolic-link ownership marker: $MarkerPath"
             return $false
         }
+        $ActualMarker = Get-Content -LiteralPath $MarkerPath -Raw -ErrorAction Stop
+        if ($ActualMarker.TrimEnd("`r", "`n") -cne $MarkerValue) {
+            Write-Error "Refusing cleanup with stale or forged ownership marker: $Path"
+            return $false
+        }
         try {
             Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
         } catch {
@@ -101,7 +121,7 @@ function Prepare-OwnedDirectory {
 
     try {
         New-Item -ItemType Directory -Path $Path -Force -ErrorAction Stop | Out-Null
-        Set-Content -LiteralPath $MarkerPath -Value $MarkerName -NoNewline -ErrorAction Stop
+        Set-Content -LiteralPath $MarkerPath -Value $MarkerValue -NoNewline -ErrorAction Stop
     } catch {
         Write-Error "Unable to create wrapper-owned directory '$Path': $($_.Exception.Message)"
         return $false
@@ -245,9 +265,27 @@ function Require-LoadArtifacts {
 function Invoke-Load {
     $ProjectName = "reconx-adv097-{0}-{1}" -f [DateTimeOffset]::UtcNow.ToString("yyyyMMddHHmmss"), $PID
     $ComposeFile = Join-Path $RepoRoot "docker-compose.load.yml"
-    $LoadArtifactDir = $env:RECONX_LOAD_ARTIFACT_DIR
-    if ([string]::IsNullOrWhiteSpace($LoadArtifactDir)) {
-        $LoadArtifactDir = Join-Path $RepoRoot ".verification-reports/load"
+    $LoadArtifactInput = $env:RECONX_LOAD_ARTIFACT_DIR
+    if ([string]::IsNullOrWhiteSpace($LoadArtifactInput)) {
+        $LoadArtifactInput = Join-Path $RepoRoot ".verification-reports/load"
+    }
+    if ($LoadArtifactInput -match '(^|[\\/])\.\.?(?:[\\/]|$)') {
+        Write-Error "Refusing aliased load artifact directory: $LoadArtifactInput"
+        return 2
+    }
+    $LoadArtifactName = Split-Path -Leaf $LoadArtifactInput
+    $LoadArtifactParent = Split-Path -Parent $LoadArtifactInput
+    if ([string]::IsNullOrWhiteSpace($LoadArtifactName) -or $LoadArtifactName -in @(".", "..")) {
+        Write-Error "Refusing load artifact path without a unique directory name: $LoadArtifactInput"
+        return 2
+    }
+    try {
+        New-Item -ItemType Directory -Path $LoadArtifactParent -Force -ErrorAction Stop | Out-Null
+        $LoadArtifactParent = (Resolve-Path -LiteralPath $LoadArtifactParent -ErrorAction Stop).Path
+        $LoadArtifactDir = Join-Path $LoadArtifactParent $LoadArtifactName
+    } catch {
+        Write-Error "Unable to create load artifact parent directory '$LoadArtifactParent': $($_.Exception.Message)"
+        return 1
     }
     if (Test-Path -LiteralPath $LoadArtifactDir) {
         $LoadItem = Get-Item -LiteralPath $LoadArtifactDir -Force
@@ -255,14 +293,6 @@ function Invoke-Load {
             Write-Error "Refusing symbolic-link load artifact directory: $LoadArtifactDir"
             return 2
         }
-    }
-
-    try {
-        New-Item -ItemType Directory -Path $LoadArtifactDir -Force -ErrorAction Stop | Out-Null
-        $LoadArtifactDir = (Resolve-Path -LiteralPath $LoadArtifactDir -ErrorAction Stop).Path
-    } catch {
-        Write-Error "Unable to create load artifact directory '$LoadArtifactDir': $($_.Exception.Message)"
-        return 1
     }
 
     $RepoPrefix = $RepoRoot.TrimEnd($TrimChars) + $Separator
@@ -284,6 +314,13 @@ function Invoke-Load {
 
     $script:LoadArtifactDir = $LoadArtifactDir
     $env:RECONX_LOAD_ARTIFACT_DIR = $LoadArtifactDir
+    if ($IsLinux -or $IsMacOS) {
+        $LoadUid = (& id -u).Trim()
+        $LoadGid = (& id -g).Trim()
+        $env:RECONX_LOAD_EXPORT_USER = "$LoadUid`:$LoadGid"
+    } else {
+        $env:RECONX_LOAD_EXPORT_USER = "0:0"
+    }
     $script:ComposeArguments = @("-f", $ComposeFile, "-p", $ProjectName)
     $LoadStatus = 0
     $CleanupStatus = 0
@@ -311,7 +348,7 @@ function Invoke-Load {
                 composeProject = $ProjectName
                 grafanaUrl = $GrafanaUrl
                 prometheusUrl = $PrometheusUrl
-                cleanupCommand = "docker compose -f docker-compose.load.yml -p $ProjectName down --volumes --remove-orphans"
+                cleanupCommand = "docker compose -f docker-compose.load.yml -p $ProjectName --profile load down --volumes --remove-orphans"
             } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $LoadArtifactDir "load-run-metadata.json")
             Write-Host "Grafana observation URL: $GrafanaUrl"
 
@@ -359,7 +396,7 @@ function Invoke-Load {
             Write-Host ""
             Write-Host "Keeping isolated Compose project $ProjectName for Grafana observation."
         } else {
-            $CleanupStatus = Invoke-Compose -Arguments ($script:ComposeArguments + @("down", "--volumes", "--remove-orphans"))
+            $CleanupStatus = Invoke-Compose -Arguments ($script:ComposeArguments + @("--profile", "load", "down", "--volumes", "--remove-orphans"))
         }
     }
 
