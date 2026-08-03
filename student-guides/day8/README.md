@@ -1808,7 +1808,7 @@ Tests and profiling close the day. Two short RTL tests prove the app
 keeps working when you refactor; one Profiler trace turns
 "the dashboard feels slow" into a specific named culprit and a fix.
 
-### TICKET-ADV125 — RTL test: dashboard summary cards
+### TICKET-ADV125 — RTL test: dashboard summary cards - In Progress
 
 **Goal:** Render `<Dashboard />` with seeded trade data inside the
 required providers and assert each summary card is present.
