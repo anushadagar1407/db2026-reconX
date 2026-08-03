@@ -1,0 +1,53 @@
+$kind: http-request
+url: "{{baseUrl}}/v1/trades"
+method: POST
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "tradeRef": "{{tradeRef}}",
+      "instrumentId": {{testInstrumentId}},
+      "counterpartyId": {{testCounterpartyId}},
+      "assetClass": "EQUITY",
+      "side": "BUY",
+      "quantity": 100.0000,
+      "price": 245.5000,
+      "tradeDate": "{{tradeDate}}"
+    }
+scripts:
+  - type: beforeRequest
+    code: |-
+      const nowMillis = Date.now();
+      const now = new Date(nowMillis);
+      const tradeDate = now.toISOString().slice(0, 10);
+      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      let prefixValue = Math.floor(nowMillis / 10000) % (26 ** 3);
+      let prefix = "";
+      for (let index = 0; index < 3; index += 1) {
+        prefix = alphabet[prefixValue % 26] + prefix;
+        prefixValue = Math.floor(prefixValue / 26);
+      }
+      const suffix = String(nowMillis % 10000).padStart(4, "0");
+      pm.collectionVariables.set("tradeDate", tradeDate);
+      pm.collectionVariables.set("tradeRef", `${prefix}-${tradeDate.replace(/-/g, "")}-${suffix}`);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test("status is 201", () => pm.response.to.have.status(201));
+      if (pm.response.code === 201) {
+        const body = pm.response.json();
+        pm.test("created trade matches the request", () => {
+          pm.expect(body.id).to.be.a("number");
+          pm.expect(body.tradeRef).to.eql(pm.collectionVariables.get("tradeRef"));
+          pm.expect(String(body.instrumentId)).to.eql(pm.collectionVariables.get("testInstrumentId"));
+          pm.expect(String(body.counterpartyId)).to.eql(pm.collectionVariables.get("testCounterpartyId"));
+          pm.expect(body.status).to.eql("PENDING");
+          pm.expect(pm.response.headers.get("Location")).to.eql(`/api/v1/trades/${body.id}`);
+        });
+        pm.collectionVariables.set("tradeId", String(body.id));
+      }
+    language: text/javascript
+order: 1000

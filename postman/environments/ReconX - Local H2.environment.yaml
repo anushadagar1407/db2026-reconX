@@ -1,0 +1,32 @@
+name: ReconX - Local H2
+values:
+  - key: baseUrl
+    value: 'http://localhost:8080/api'
+  - key: runtimeProfile
+    value: dev
+  - key: adminEmail
+    value: admin@db.com
+  - key: adminPassword
+    value: admin123
+  - key: traderEmail
+    value: trader@db.com
+  - key: traderPassword
+    value: trader123
+  - key: viewerEmail
+    value: viewer@db.com
+  - key: viewerPassword
+    value: viewer123
+  - key: reconEmail
+    value: recon@db.com
+  - key: reconPassword
+    value: recon123
+  - key: adminToken
+    value: ''
+  - key: traderToken
+    value: ''
+  - key: viewerToken
+    value: ''
+  - key: reconToken
+    value: ''
+  - key: breakId
+    value: '1'

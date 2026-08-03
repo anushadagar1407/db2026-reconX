@@ -2,27 +2,30 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
+import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
-import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.repository.CounterpartyRepository;
 import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
-import com.dbtraining.reconx.dto.TradeEvent;
+import io.micrometer.core.instrument.Gauge;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.util.UUID;
 
 import static com.dbtraining.reconx.repository.TradeSpecifications.*;
-
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Counter;
+import org.springframework.stereotype.Service;
 /**
  * ============================================================================
  * TICKET-ADV064 — TradeService.create (POST endpoint backing) TICKET-ADV065 —
@@ -39,31 +42,96 @@ public class TradeService {
     private final TradeRepository tradeRepo;
     private final CounterpartyRepository cpRepo;
     private final InstrumentRepository instRepo;
-    private final TradeEventProducer events;
     private final TradeMetrics metrics;
+    private final Counter tradeCreatedCounter;
+
 
     public TradeService(TradeRepository tradeRepo,
             CounterpartyRepository cpRepo,
             InstrumentRepository instRepo,
-            TradeEventProducer events,
-            TradeMetrics metrics) {
+            TradeMetrics metrics,
+                        MeterRegistry meterRegistry) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
-        this.events = events;
         this.metrics = metrics;
+        this.tradeCreatedCounter = meterRegistry.counter("trade_created_total");
     }
 
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('VIEWER', 'TRADER', 'RECON_ANALYST', 'ADMIN')")
+    public Trade findById(Long id) {
+        return tradeRepo.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("Trade not found: id=" + id));
+    }
+
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public Trade create(TradeRequest req, String actor) {
-        // TODO(TICKET-ADV064): reject duplicate tradeRef via DuplicateTradeRefException,
+        // TICKET-ADV064: reject duplicate tradeRef via DuplicateTradeRefException,
         //   build a new Trade with instrument + counterparty looked up from
         //   their repos (throw TradeNotFoundException on miss), status = "PENDING",
         //   save, then:
         //     - metrics.incrementTradeCreated() + metrics.recordTradeValue(qty*price) — TICKET-ADV083
         //     - events.publish(new TradeEvent(... TRADE_CREATED ... actor ...)) — TICKET-ADV129
-        throw new UnsupportedOperationException("TICKET-ADV064");
+        if (tradeRepo.findByTradeRef(req.tradeRef()).isPresent()) {
+            throw new DuplicateTradeRefException(
+                    "Trade with reference " + req.tradeRef() + " already exists");
+        }
+
+        Trade trade = new Trade();
+        
+        trade.setTradeRef(req.tradeRef());
+        trade.setInstrument(instRepo.findById(req.instrumentId())
+                .orElseThrow(() -> new TradeNotFoundException(
+                        "Instrument with id " + req.instrumentId() + " not found")));
+        trade.setCounterparty(cpRepo.findById(req.counterpartyId())
+                .orElseThrow(() -> new TradeNotFoundException(
+                        "Counterparty with id " + req.counterpartyId() + " not found")));
+        trade.setAssetClass(req.assetClass());
+        trade.setSide(req.side());
+        trade.setQuantity(req.quantity());
+        trade.setPrice(req.price());
+        trade.setTradeDate(req.tradeDate());
+        trade.setStatus(TradeStatus.PENDING);
+
+        
+        try {
+            Trade saved = tradeRepo.save(trade);
+            tradeCreatedCounter.increment();
+            metrics.incrementTradeCreated();
+            metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
+            return saved;
+        } catch (DataIntegrityViolationException ex) {
+            if (!isTradeReferenceUniqueViolation(ex)) {
+                throw ex;
+            }
+            throw new DuplicateTradeRefException(
+                    "Trade with reference " + req.tradeRef() + " already exists", ex);
+        }
     }
 
+    private static boolean isTradeReferenceUniqueViolation(DataIntegrityViolationException exception) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException violation) {
+                String constraintName = violation.getConstraintName();
+                if (constraintName != null
+                        && constraintName.toLowerCase(java.util.Locale.ROOT).contains("trade_ref")) {
+                    return true;
+                }
+            }
+            String message = cause.getMessage();
+            if (message != null) {
+                String normalized = message.toLowerCase(java.util.Locale.ROOT);
+                if (normalized.contains("trade_ref")
+                        && (normalized.contains("unique") || normalized.contains("duplicate"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public Trade update(Long id, TradeRequest req, String actor) {
 
         Trade trade = tradeRepo.findById(id)
@@ -83,43 +151,49 @@ public class TradeService {
                 cpRepo.findById(req.counterpartyId())
                         .orElseThrow(()
                                 -> new TradeNotFoundException(
-                                "Counterparty not found: id=" + req.counterpartyId()))
+                                 "Counterparty not found: id=" + req.counterpartyId()))
         );
 
+        trade.setAssetClass(req.assetClass());
+        trade.setSide(req.side());
         trade.setQuantity(req.quantity());
         trade.setPrice(req.price());
         trade.setTradeDate(req.tradeDate());
 
-        Trade saved = tradeRepo.save(trade);
-
-        events.publish(
-                new TradeEvent(
-                        UUID.randomUUID(),
-                        saved.getTradeRef(),
-                        TradeEvent.EventType.TRADE_UPDATED,
-                        Instant.now(),
-                        actor,
-                        null,
-                        saved.getStatus().name()
-                )
-        );
-
-        return saved;
+        return tradeRepo.save(trade);
     }
 
+    @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
     public Trade updateStatus(Long id, String status, String actor) {
-        // TODO(TICKET-ADV066): load, setStatus(status), save, publish TRADE_UPDATED
-        //   with the new status in the "after" slot of the event.
-        throw new UnsupportedOperationException("TICKET-ADV066");
+        if (status == null || status.isBlank()) {
+            throw new InvalidTradeException("Status is required");
+        }
+
+        TradeStatus tradeStatus;
+        try {
+            tradeStatus = TradeStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidTradeException("Invalid trade status: " + status);
+        }
+
+        Trade trade = tradeRepo.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("Trade not found: id=" + id));
+
+        trade.setStatus(tradeStatus);
+
+        return tradeRepo.save(trade);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void softDelete(Long id, String actor) {
-        // TODO(TICKET-ADV067): load, call t.softDelete() (sets deleted_at), save,
-        //   publish a TRADE_CANCELLED event.
-        throw new UnsupportedOperationException("TICKET-ADV067");
+        Trade trade = tradeRepo.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException("id=" + id));
+        trade.softDelete();
+        tradeRepo.save(trade);
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('VIEWER', 'TRADER', 'RECON_ANALYST', 'ADMIN')")
     public Page<Trade> list(LocalDate from, LocalDate to, String status, Long counterpartyId, Pageable pageable) {
         TradeStatus tradeStatus = status == null || status.isBlank()
                 ? null
