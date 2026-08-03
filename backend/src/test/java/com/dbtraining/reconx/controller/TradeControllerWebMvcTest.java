@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -93,12 +94,24 @@ class TradeControllerWebMvcTest {
     }
 
     @Test
-void testCreateTrade_unauthenticated_returns401() throws Exception {
-    mockMvc.perform(post("/api/v1/trades")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(validRequest())))
-            .andExpect(status().isUnauthorized());
-}
+    @WithMockUser(username = "viewer", roles = "VIEWER")
+    void testCreateTrade_viewerRole_returns403() throws Exception {
+        mockMvc.perform(post("/v1/trades")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest())))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(tradeService);
+    }
+
+    @Test
+    void testCreateTrade_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(post("/api/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest())))
+                .andExpect(status().isUnauthorized());
+    }
 
     private TradeRequest validRequest() {
         return new TradeRequest(
