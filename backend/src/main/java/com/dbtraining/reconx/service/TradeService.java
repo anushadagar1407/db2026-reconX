@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
+import com.dbtraining.reconx.dto.TradeEvent;
 
 
 import java.time.LocalDate;
@@ -98,7 +99,7 @@ public class TradeService {
         
         try {
             Trade saved = tradeRepo.save(trade);
-            events.publish();
+            events.publish(TradeEvent.created(saved.getTradeRef()));
             metrics.incrementTradeCreated();
             metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
             return saved;
@@ -160,6 +161,7 @@ public class TradeService {
         trade.setQuantity(req.quantity());
         trade.setPrice(req.price());
         trade.setTradeDate(req.tradeDate());
+        events.publish(TradeEvent.updated(trade.getTradeRef()));
 
         return tradeRepo.save(trade);
     }
@@ -190,6 +192,8 @@ public class TradeService {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException("id=" + id));
         trade.softDelete();
+        events.publish(TradeEvent.cancelled(trade.getTradeRef()));
+
         tradeRepo.save(trade);
     }
 
