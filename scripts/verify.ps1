@@ -30,6 +30,13 @@ $ReportRoot = $env:RECONX_VERIFY_REPORT_DIR
 if ([string]::IsNullOrWhiteSpace($ReportRoot)) {
     $ReportRoot = Join-Path $RepoRoot ".verification-reports"
 }
+if (Test-Path -LiteralPath $ReportRoot) {
+    $ReportRootItem = Get-Item -LiteralPath $ReportRoot -Force
+    if ($ReportRootItem.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
+        Write-Error "Refusing symbolic-link report directory: $ReportRoot"
+        exit 2
+    }
+}
 try {
     New-Item -ItemType Directory -Path $ReportRoot -Force -ErrorAction Stop | Out-Null
     $ReportRoot = (Resolve-Path -LiteralPath $ReportRoot -ErrorAction Stop).Path
@@ -50,6 +57,77 @@ if ($RepoPrefix.StartsWith($ReportPrefix, [System.StringComparison]::OrdinalIgno
     exit 2
 }
 
+$VerifyMarkerName = ".reconx-verify-owned"
+$LoadMarkerName = ".reconx-load-owned"
+
+function Prepare-OwnedDirectory {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [string]$ExpectedPath,
+        [Parameter(Mandatory = $true)]
+        [string]$MarkerName
+    )
+
+    if ($Path -ne $ExpectedPath) {
+        Write-Error "Refusing cleanup path outside its ownership invariant: $Path"
+        return $false
+    }
+
+    $MarkerPath = Join-Path $Path $MarkerName
+    if (Test-Path -LiteralPath $Path) {
+        $Item = Get-Item -LiteralPath $Path -Force
+        if (-not $Item.PSIsContainer -or $Item.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
+            Write-Error "Refusing symbolic-link or non-directory cleanup path: $Path"
+            return $false
+        }
+        if (-not (Test-Path -LiteralPath $MarkerPath -PathType Leaf)) {
+            Write-Error "Refusing cleanup without wrapper ownership marker: $Path"
+            return $false
+        }
+        $MarkerItem = Get-Item -LiteralPath $MarkerPath -Force
+        if ($MarkerItem.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
+            Write-Error "Refusing symbolic-link ownership marker: $MarkerPath"
+            return $false
+        }
+        try {
+            Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
+        } catch {
+            Write-Error "Unable to clear wrapper-owned directory '$Path': $($_.Exception.Message)"
+            return $false
+        }
+    }
+
+    try {
+        New-Item -ItemType Directory -Path $Path -Force -ErrorAction Stop | Out-Null
+        Set-Content -LiteralPath $MarkerPath -Value $MarkerName -NoNewline -ErrorAction Stop
+    } catch {
+        Write-Error "Unable to create wrapper-owned directory '$Path': $($_.Exception.Message)"
+        return $false
+    }
+    return $true
+}
+
+switch ($Mode) {
+    "all" { $PrepareBackend = $true; $PrepareFrontend = $true }
+    "backend" { $PrepareBackend = $true; $PrepareFrontend = $false }
+    "frontend" { $PrepareBackend = $false; $PrepareFrontend = $true }
+    "load" { $PrepareBackend = $false; $PrepareFrontend = $false }
+}
+if ($PrepareBackend -and -not (Prepare-OwnedDirectory `
+        -Path (Join-Path $ReportRoot "backend") `
+        -ExpectedPath (Join-Path $ReportRoot "backend") `
+        -MarkerName $VerifyMarkerName)) {
+    exit 2
+}
+if ($PrepareFrontend -and -not (Prepare-OwnedDirectory `
+        -Path (Join-Path $ReportRoot "frontend") `
+        -ExpectedPath (Join-Path $ReportRoot "frontend") `
+        -MarkerName $VerifyMarkerName)) {
+    exit 2
+}
+
 $BackendReportsPath = $env:RECONX_BACKEND_REPORTS_PATH
 if ([string]::IsNullOrWhiteSpace($BackendReportsPath)) {
     $BackendReportsPath = "/workspace/backend/target"
@@ -59,9 +137,6 @@ $FrontendReportsPath = $env:RECONX_FRONTEND_REPORTS_PATH
 if ([string]::IsNullOrWhiteSpace($FrontendReportsPath)) {
     $FrontendReportsPath = "/app/test-results"
 }
-
-Remove-Item -LiteralPath (Join-Path $ReportRoot "backend") -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -LiteralPath (Join-Path $ReportRoot "frontend") -Recurse -Force -ErrorAction SilentlyContinue
 
 function Invoke-Compose {
     param(
@@ -127,13 +202,44 @@ function Invoke-TestService {
         }
     }
 
-    if ($TestStatus -ne 0) {
-        return $TestStatus
-    }
-    if ($CopyStatus -ne 0) {
-        return $CopyStatus
-    }
+    if ($TestStatus -ne 0) { return $TestStatus }
+    if ($CopyStatus -ne 0) { return $CopyStatus }
     return $CleanupStatus
+}
+
+function Invoke-LoggedLoadCommand {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$LogPath,
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments
+    )
+
+    $AllArguments = $script:ComposeArguments + $Arguments
+    & docker compose @AllArguments *> $LogPath
+    $Status = [int]$LASTEXITCODE
+    Get-Content -LiteralPath $LogPath | ForEach-Object { Write-Host $_ }
+    return $Status
+}
+
+function Require-LoadArtifacts {
+    $RequiredArtifacts = @(
+        "k6-summary.json",
+        "k6-raw-summary.json",
+        "prometheus-query-evidence.json",
+        "load-run-metadata.json",
+        "k6.log",
+        "prometheus-query.log",
+        "compose.log"
+    )
+    foreach ($Artifact in $RequiredArtifacts) {
+        $Path = Join-Path $script:LoadArtifactDir $Artifact
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf) -or (Get-Item -LiteralPath $Path).Length -eq 0) {
+            Write-Error "Required load artifact is missing or empty: $Artifact"
+            return 1
+        }
+    }
+    return 0
 }
 
 function Invoke-Load {
@@ -142,6 +248,13 @@ function Invoke-Load {
     $LoadArtifactDir = $env:RECONX_LOAD_ARTIFACT_DIR
     if ([string]::IsNullOrWhiteSpace($LoadArtifactDir)) {
         $LoadArtifactDir = Join-Path $RepoRoot ".verification-reports/load"
+    }
+    if (Test-Path -LiteralPath $LoadArtifactDir) {
+        $LoadItem = Get-Item -LiteralPath $LoadArtifactDir -Force
+        if ($LoadItem.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {
+            Write-Error "Refusing symbolic-link load artifact directory: $LoadArtifactDir"
+            return 2
+        }
     }
 
     try {
@@ -158,25 +271,26 @@ function Invoke-Load {
         Write-Error "Refusing load artifact directory that contains the repository: $LoadArtifactDir"
         return 2
     }
-
-    $env:RECONX_LOAD_ARTIFACT_DIR = $LoadArtifactDir
-    @(
-        "k6-summary.json",
-        "k6-raw-summary.json",
-        "prometheus-query-evidence.json",
-        "load-run-metadata.json",
-        "compose.log"
-    ) | ForEach-Object {
-        Remove-Item -LiteralPath (Join-Path $LoadArtifactDir $_) -Force -ErrorAction SilentlyContinue
+    if ($LoadArtifactDir -eq $ReportRoot) {
+        Write-Error "Refusing load artifact directory shared with verification reports: $LoadArtifactDir"
+        return 2
+    }
+    if (-not (Prepare-OwnedDirectory `
+            -Path $LoadArtifactDir `
+            -ExpectedPath $LoadArtifactDir `
+            -MarkerName $LoadMarkerName)) {
+        return 2
     }
 
-    $ComposeArguments = @("-f", $ComposeFile, "-p", $ProjectName)
+    $script:LoadArtifactDir = $LoadArtifactDir
+    $env:RECONX_LOAD_ARTIFACT_DIR = $LoadArtifactDir
+    $script:ComposeArguments = @("-f", $ComposeFile, "-p", $ProjectName)
     $LoadStatus = 0
     $CleanupStatus = 0
     try {
         Write-Host ""
         Write-Host "==> Starting isolated ADV097 Compose project $ProjectName"
-        $LoadStatus = Invoke-Compose -Arguments ($ComposeArguments + @(
+        $LoadStatus = Invoke-Compose -Arguments ($script:ComposeArguments + @(
             "up", "--build", "--force-recreate", "--detach",
             "load-postgres", "load-zookeeper", "load-kafka", "load-backend", "load-prometheus", "load-grafana"
         ))
@@ -184,8 +298,8 @@ function Invoke-Load {
         $GrafanaUrl = ""
         $PrometheusUrl = ""
         if ($LoadStatus -eq 0) {
-            $GrafanaPort = (& docker compose @ComposeArguments port load-grafana 3000 2>$null | Select-Object -First 1)
-            $PrometheusPort = (& docker compose @ComposeArguments port load-prometheus 9090 2>$null | Select-Object -First 1)
+            $GrafanaPort = (& docker compose @script:ComposeArguments port load-grafana 3000 2>$null | Select-Object -First 1)
+            $PrometheusPort = (& docker compose @script:ComposeArguments port load-prometheus 9090 2>$null | Select-Object -First 1)
             if (-not [string]::IsNullOrWhiteSpace($GrafanaPort)) {
                 $GrafanaUrl = "http://127.0.0.1:{0}" -f (($GrafanaPort -split ":")[-1]).Trim()
             }
@@ -202,24 +316,50 @@ function Invoke-Load {
             Write-Host "Grafana observation URL: $GrafanaUrl"
 
             Write-Host ""
-            Write-Host "==> Running pinned Grafana k6 load generator"
-            $LoadStatus = Invoke-Compose -Arguments ($ComposeArguments + @("run", "--rm", "load-k6"))
+            Write-Host "==> Preparing project-scoped non-root load artifact volume"
+            $LoadStatus = Invoke-LoggedLoadCommand -LogPath (Join-Path $LoadArtifactDir "results-init.log") -Arguments @("run", "--rm", "--no-deps", "load-results-init")
         }
 
         if ($LoadStatus -eq 0) {
             Write-Host ""
-            Write-Host "==> Capturing Prometheus panel-query evidence"
-            $LoadStatus = Invoke-Compose -Arguments ($ComposeArguments + @("run", "--rm", "load-query"))
+            Write-Host "==> Capturing Prometheus pre-run counter baseline"
+            $LoadStatus = Invoke-LoggedLoadCommand -LogPath (Join-Path $LoadArtifactDir "prometheus-baseline.log") -Arguments @("run", "--rm", "--no-deps", "-e", "PROMETHEUS_PHASE=baseline", "load-query")
         }
 
-        (& docker compose @ComposeArguments logs --no-color load-backend load-prometheus load-grafana 2>&1) |
-            Set-Content -LiteralPath (Join-Path $LoadArtifactDir "compose.log")
+        if ($LoadStatus -eq 0) {
+            Write-Host ""
+            Write-Host "==> Running pinned Grafana k6 load generator"
+            $LoadStatus = Invoke-LoggedLoadCommand -LogPath (Join-Path $LoadArtifactDir "k6.log") -Arguments @("run", "--rm", "--no-deps", "load-k6")
+        }
+
+        if (Test-Path -LiteralPath (Join-Path $LoadArtifactDir "k6.log") -PathType Leaf) {
+            Write-Host ""
+            Write-Host "==> Capturing aligned Prometheus panel-query evidence"
+            $QueryStatus = Invoke-LoggedLoadCommand -LogPath (Join-Path $LoadArtifactDir "prometheus-query.log") -Arguments @("run", "--rm", "--no-deps", "load-query")
+            if ($LoadStatus -eq 0 -and $QueryStatus -ne 0) { $LoadStatus = $QueryStatus }
+        }
+
+        if ($LoadStatus -eq 0 -or (Test-Path -LiteralPath (Join-Path $LoadArtifactDir "k6.log") -PathType Leaf)) {
+            Write-Host ""
+            Write-Host "==> Validating and exporting load artifacts"
+            $ExportStatus = Invoke-LoggedLoadCommand -LogPath (Join-Path $LoadArtifactDir "export.log") -Arguments @("run", "--rm", "--no-deps", "load-export")
+            if ($LoadStatus -eq 0 -and $ExportStatus -ne 0) { $LoadStatus = $ExportStatus }
+        }
+
+        $ComposeLog = & docker compose @script:ComposeArguments logs --no-color load-backend load-prometheus load-grafana 2>&1 |
+            ForEach-Object {
+                $Line = "$_"
+                $Line = $Line -replace '(?i)(Using generated security password:\s*)\S+', '${1}[REDACTED]'
+                $Line = $Line -replace '(?i)(Authorization:\s*Bearer\s+)\S+', '${1}[REDACTED]'
+                $Line
+            }
+        $ComposeLog | Set-Content -LiteralPath (Join-Path $LoadArtifactDir "compose.log")
     } finally {
         if ($env:RECONX_LOAD_KEEP_STACK -eq "1") {
             Write-Host ""
             Write-Host "Keeping isolated Compose project $ProjectName for Grafana observation."
         } else {
-            $CleanupStatus = Invoke-Compose -Arguments ($ComposeArguments + @("down", "--volumes", "--remove-orphans"))
+            $CleanupStatus = Invoke-Compose -Arguments ($script:ComposeArguments + @("down", "--volumes", "--remove-orphans"))
         }
     }
 
@@ -231,6 +371,8 @@ function Invoke-Load {
         Write-Error "ADV097 cleanup failed (status=$CleanupStatus). Project: $ProjectName"
         return 1
     }
+    $ArtifactStatus = Require-LoadArtifacts
+    if ($ArtifactStatus -ne 0) { return $ArtifactStatus }
     Write-Host "ADV097 load verification passed. Artifacts: $LoadArtifactDir"
     return 0
 }

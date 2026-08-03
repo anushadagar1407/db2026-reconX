@@ -5,19 +5,29 @@ import exec from 'k6/execution';
 import { sleep } from 'k6';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+const VUS = 10;
+const ITERATIONS_PER_VU = 10;
+const TOTAL_ITERATIONS = VUS * ITERATIONS_PER_VU;
+const PACED_INTERVAL_SECONDS = 6;
 const TRADE_REQUESTS = new Counter('adv097_trade_requests');
 const TRADE_CREATED = new Counter('adv097_trade_created');
 const TRADE_FAILURES = new Counter('adv097_trade_failures');
 const TRADE_DURATION = new Trend('adv097_trade_duration', true);
 
 export const options = {
-  vus: 10,
-  iterations: 100,
+  scenarios: {
+    adv097_trade_creation: {
+      executor: 'per-vu-iterations',
+      vus: VUS,
+      iterations: ITERATIONS_PER_VU,
+      maxDuration: '75s',
+    },
+  },
   thresholds: {
     checks: ['rate==1'],
     http_req_failed: ['rate==0'],
-    adv097_trade_requests: ['count==100'],
-    adv097_trade_created: ['count==100'],
+    adv097_trade_requests: [`count==${TOTAL_ITERATIONS}`],
+    adv097_trade_created: [`count==${TOTAL_ITERATIONS}`],
     adv097_trade_failures: ['count==0'],
   },
 };
@@ -71,7 +81,7 @@ export default function (data) {
   TRADE_FAILURES.add(created ? 0 : 1);
 
   check(response, { 'trade status is 201': (result) => result.status === 201 });
-  sleep(0.75);
+  sleep(Math.max(0, PACED_INTERVAL_SECONDS - response.timings.duration / 1000));
 }
 
 function metricValues(data, name) {
@@ -83,15 +93,19 @@ export function handleSummary(data) {
   const created = metricValues(data, 'adv097_trade_created');
   const failures = metricValues(data, 'adv097_trade_failures');
   const duration = metricValues(data, 'adv097_trade_duration');
+  const runDurationMilliseconds = data.state?.testRunDurationMs ?? null;
   const summary = {
     ticket: 'TICKET-ADV097',
-    vus: 10,
-    iterations: 100,
+    vus: VUS,
+    iterations: TOTAL_ITERATIONS,
+    iterationsPerVu: ITERATIONS_PER_VU,
     measuredTradeRequests: requests.count ?? 0,
     successfulTradeCreations: created.count ?? 0,
     failedTradeRequests: failures.count ?? 0,
     requestsPerSecond: requests.rate ?? null,
     p95Milliseconds: duration['p(95)'] ?? null,
+    runDurationMilliseconds,
+    runFinishedAtEpochSeconds: Date.now() / 1000,
     throughputUnit: 'requests/second',
     latencyUnit: 'milliseconds',
   };

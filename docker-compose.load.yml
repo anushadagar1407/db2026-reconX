@@ -103,7 +103,7 @@ services:
       BASE_URL: http://load-backend:8080
     volumes:
       - ./scripts/load:/scripts:ro
-      - ${RECONX_LOAD_ARTIFACT_DIR:-.verification-reports/load}:/results
+      - load_results:/results
     command: ["run", "--summary-export", "/results/k6-raw-summary.json", "/scripts/adv097.js"]
 
   load-query:
@@ -116,5 +116,26 @@ services:
       PROMETHEUS_URL: http://load-prometheus:9090
     volumes:
       - ./scripts/load:/scripts:ro
-      - ${RECONX_LOAD_ARTIFACT_DIR:-.verification-reports/load}:/results
+      - load_results:/results
     command: ["python", "/scripts/query-prometheus.py"]
+
+  load-results-init:
+    image: busybox:1.36.1
+    profiles: ["load"]
+    user: "0:0"
+    volumes:
+      - load_results:/results
+    command: ["sh", "-ec", "rm -f /results/* && chown 12345:12345 /results"]
+
+  load-export:
+    image: python:3.13.1-alpine
+    profiles: ["load"]
+    user: "0:0"
+    volumes:
+      - ./scripts/load:/scripts:ro
+      - load_results:/results:ro
+      - ${RECONX_LOAD_ARTIFACT_DIR:-.verification-reports/load}:/export
+    command: ["python", "/scripts/export-artifacts.py"]
+
+volumes:
+  load_results:

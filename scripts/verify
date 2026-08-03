@@ -34,16 +34,10 @@ else
   report_root=$repo_root/.verification-reports
 fi
 
-backend_reports_path=${RECONX_BACKEND_REPORTS_PATH:-/workspace/backend/target}
-frontend_reports_path=${RECONX_FRONTEND_REPORTS_PATH:-/app/test-results}
-load_project_name=''
-load_compose_file=''
-load_cleanup_required=0
-
-load_compose() {
-  docker compose -f "$load_compose_file" -p "$load_project_name" "$@"
-}
-
+if [ -L "$report_root" ]; then
+  printf 'Refusing symbolic-link report directory: %s\n' "$report_root" >&2
+  exit 2
+fi
 if ! mkdir -p "$report_root"; then
   printf 'Unable to create report directory: %s\n' "$report_root" >&2
   exit 1
@@ -57,7 +51,68 @@ case "$repo_root/" in
     ;;
 esac
 
-rm -rf "$report_root/backend" "$report_root/frontend"
+backend_reports_path=${RECONX_BACKEND_REPORTS_PATH:-/workspace/backend/target}
+frontend_reports_path=${RECONX_FRONTEND_REPORTS_PATH:-/app/test-results}
+verify_marker_name=.reconx-verify-owned
+load_marker_name=.reconx-load-owned
+load_project_name=''
+load_compose_file=''
+load_cleanup_required=0
+
+prepare_owned_directory() {
+  owned_path=$1
+  expected_path=$2
+  marker_name=$3
+  marker_path=$owned_path/$marker_name
+
+  if [ "$owned_path" != "$expected_path" ]; then
+    printf 'Refusing cleanup path outside its ownership invariant: %s\n' "$owned_path" >&2
+    return 2
+  fi
+  if [ -L "$owned_path" ]; then
+    printf 'Refusing symbolic-link cleanup path: %s\n' "$owned_path" >&2
+    return 2
+  fi
+  if [ -e "$owned_path" ]; then
+    if [ ! -d "$owned_path" ] || [ ! -f "$marker_path" ] || [ -L "$marker_path" ]; then
+      printf 'Refusing cleanup without wrapper ownership marker: %s\n' "$owned_path" >&2
+      return 2
+    fi
+    if ! rm -rf "$owned_path"; then
+      printf 'Unable to clear wrapper-owned directory: %s\n' "$owned_path" >&2
+      return 1
+    fi
+  fi
+  if ! mkdir -p "$owned_path"; then
+    printf 'Unable to create wrapper-owned directory: %s\n' "$owned_path" >&2
+    return 1
+  fi
+  if ! printf '%s\n' "$marker_name" > "$marker_path"; then
+    printf 'Unable to create ownership marker: %s\n' "$marker_path" >&2
+    return 1
+  fi
+}
+
+case "$mode" in
+  all|backend)
+    prepare_owned_directory \
+      "$report_root/backend" \
+      "$report_root/backend" \
+      "$verify_marker_name" || exit $?
+    ;;
+esac
+case "$mode" in
+  all|frontend)
+    prepare_owned_directory \
+      "$report_root/frontend" \
+      "$report_root/frontend" \
+      "$verify_marker_name" || exit $?
+    ;;
+esac
+
+load_compose() {
+  docker compose -f "$load_compose_file" -p "$load_project_name" "$@"
+}
 
 active_cleanup_required=0
 cleanup_on_exit() {
@@ -149,12 +204,47 @@ run_frontend() {
     test-frontend
 }
 
+run_logged_load_command() {
+  log_path=$1
+  shift
+  command_status=0
+  load_compose "$@" > "$log_path" 2>&1 || command_status=$?
+  cat "$log_path"
+  return "$command_status"
+}
+
+redact_compose_logs() {
+  sed -E \
+    -e 's/(Using generated security password: )[[:alnum:][:punct:]]+/\1[REDACTED]/g' \
+    -e 's/(Authorization: Bearer )[[:alnum:]._~+\/-]+/\1[REDACTED]/g'
+}
+
+require_load_artifacts() {
+  for artifact in \
+    k6-summary.json \
+    k6-raw-summary.json \
+    prometheus-query-evidence.json \
+    load-run-metadata.json \
+    k6.log \
+    prometheus-query.log \
+    compose.log; do
+    if [ ! -s "$load_artifact_dir/$artifact" ]; then
+      printf 'Required load artifact is missing or empty: %s\n' "$artifact" >&2
+      return 1
+    fi
+  done
+}
+
 run_load() {
   load_project_name="reconx-adv097-$(date -u +%Y%m%d%H%M%S)-$$"
   load_compose_file="$repo_root/docker-compose.load.yml"
   load_artifact_dir=${RECONX_LOAD_ARTIFACT_DIR:-$repo_root/.verification-reports/load}
   load_keep_stack=${RECONX_LOAD_KEEP_STACK:-0}
 
+  if [ -L "$load_artifact_dir" ]; then
+    printf 'Refusing symbolic-link load artifact directory: %s\n' "$load_artifact_dir" >&2
+    return 2
+  fi
   if ! mkdir -p "$load_artifact_dir"; then
     printf 'Unable to create load artifact directory: %s\n' "$load_artifact_dir" >&2
     return 1
@@ -167,15 +257,17 @@ run_load() {
       return 2
       ;;
   esac
+  if [ "$load_artifact_dir" = "$report_root" ]; then
+    printf 'Refusing load artifact directory shared with verification reports: %s\n' \
+      "$load_artifact_dir" >&2
+    return 2
+  fi
+  prepare_owned_directory \
+    "$load_artifact_dir" \
+    "$load_artifact_dir" \
+    "$load_marker_name" || return $?
 
   export RECONX_LOAD_ARTIFACT_DIR="$load_artifact_dir"
-  rm -f \
-    "$load_artifact_dir/k6-summary.json" \
-    "$load_artifact_dir/k6-raw-summary.json" \
-    "$load_artifact_dir/prometheus-query-evidence.json" \
-    "$load_artifact_dir/load-run-metadata.json" \
-    "$load_artifact_dir/compose.log"
-
   load_cleanup_required=1
   load_status=0
   cleanup_status=0
@@ -203,17 +295,45 @@ run_load() {
       "$load_project_name" > "$load_artifact_dir/load-run-metadata.json"
     printf 'Grafana observation URL: %s\n' "${grafana_url:-unavailable}"
 
-    printf '\n==> Running pinned Grafana k6 load generator\n'
-    load_compose run --rm load-k6 || load_status=$?
+    printf '\n==> Preparing project-scoped non-root load artifact volume\n'
+    run_logged_load_command "$load_artifact_dir/results-init.log" \
+      run --rm --no-deps load-results-init || load_status=$?
   fi
 
   if [ "$load_status" -eq 0 ]; then
-    printf '\n==> Capturing Prometheus panel-query evidence\n'
-    load_compose run --rm load-query || load_status=$?
+    printf '\n==> Capturing Prometheus pre-run counter baseline\n'
+    run_logged_load_command "$load_artifact_dir/prometheus-baseline.log" \
+      run --rm --no-deps -e PROMETHEUS_PHASE=baseline load-query || load_status=$?
   fi
 
-  load_compose logs --no-color load-backend load-prometheus load-grafana \
-    > "$load_artifact_dir/compose.log" 2>&1 || true
+  if [ "$load_status" -eq 0 ]; then
+    printf '\n==> Running pinned Grafana k6 load generator\n'
+    run_logged_load_command "$load_artifact_dir/k6.log" \
+      run --rm --no-deps load-k6 || load_status=$?
+  fi
+
+  if [ -s "$load_artifact_dir/k6.log" ]; then
+    printf '\n==> Capturing aligned Prometheus panel-query evidence\n'
+    query_status=0
+    run_logged_load_command "$load_artifact_dir/prometheus-query.log" \
+      run --rm --no-deps load-query || query_status=$?
+    if [ "$load_status" -eq 0 ] && [ "$query_status" -ne 0 ]; then
+      load_status=$query_status
+    fi
+  fi
+
+  if [ "$load_status" -eq 0 ] || [ -s "$load_artifact_dir/k6.log" ]; then
+    printf '\n==> Validating and exporting load artifacts\n'
+    export_status=0
+    run_logged_load_command "$load_artifact_dir/export.log" \
+      run --rm --no-deps load-export || export_status=$?
+    if [ "$load_status" -eq 0 ] && [ "$export_status" -ne 0 ]; then
+      load_status=$export_status
+    fi
+  fi
+
+  load_compose logs --no-color load-backend load-prometheus load-grafana 2>&1 \
+    | redact_compose_logs > "$load_artifact_dir/compose.log" || true
 
   if [ "$load_keep_stack" = '1' ]; then
     load_cleanup_required=0
@@ -223,6 +343,9 @@ run_load() {
     load_cleanup_required=0
   fi
 
+  if [ "$load_status" -eq 0 ]; then
+    require_load_artifacts || load_status=$?
+  fi
   if [ "$load_status" -ne 0 ]; then
     printf '\nADV097 load verification failed (status=%s). Artifacts: %s\n' \
       "$load_status" "$load_artifact_dir" >&2
@@ -242,14 +365,22 @@ load_status=0
 
 case "$mode" in
   all)
-    run_backend || backend_status=$?
-    run_frontend || frontend_status=$?
+    run_backend_status=0
+    run_backend || run_backend_status=$?
+    backend_status=$run_backend_status
+    run_frontend_status=0
+    run_frontend || run_frontend_status=$?
+    frontend_status=$run_frontend_status
     ;;
   backend)
-    run_backend || backend_status=$?
+    run_backend_status=0
+    run_backend || run_backend_status=$?
+    backend_status=$run_backend_status
     ;;
   frontend)
-    run_frontend || frontend_status=$?
+    run_frontend_status=0
+    run_frontend || run_frontend_status=$?
+    frontend_status=$run_frontend_status
     ;;
   load)
     run_load || load_status=$?

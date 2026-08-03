@@ -10,7 +10,7 @@
       "title": "API request rate by endpoint (ADV087)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
       "targets": [
-        { "expr": "sum(rate(http_server_requests_seconds_count{uri=\"/v1/trades\",method=\"POST\",status=\"201\"}[1m])) by (uri)", "legendFormat": "{{uri}}" }
+        { "expr": "sum(rate(http_server_requests_seconds_count[1m])) by (uri)", "legendFormat": "{{uri}}" }
       ],
       "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
@@ -21,7 +21,7 @@
       "title": "API P95 latency (ADV088)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
       "targets": [
-        { "expr": "1000 * histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri=\"/v1/trades\",method=\"POST\",status=\"201\"}[5m])) by (le, uri))", "legendFormat": "{{uri}}" }
+        { "expr": "1000 * histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[1m])) by (le, uri))", "legendFormat": "{{uri}}" }
       ],
       "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
@@ -39,7 +39,8 @@
       "type": "timeseries",
       "title": "Trades created / sec (ADV089)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
-      "targets": [{ "expr": "sum(rate(trade_total[1m]))" }],
+      "targets": [{ "expr": "sum(rate(trade_created_total[1m]))" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 6, "y": 8 }
     },
     {
