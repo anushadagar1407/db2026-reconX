@@ -22,6 +22,7 @@ on:
       - "docker-compose.load.yml"
       - "monitoring/prometheus/prometheus-load.yml"
       - "monitoring/grafana/provisioning/datasources/prometheus-load.yml"
+      - "monitoring/grafana/provisioning/dashboards/**"
       - ".github/workflows/build.yml"
   workflow_dispatch:
     inputs:
@@ -70,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      RECONX_FULL_VERIFICATION: ${{ (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'workflow_dispatch' && inputs.verification_mode == 'verify') }}
+      RECONX_FULL_VERIFICATION: ${{ (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'develop')) || (github.event_name == 'workflow_dispatch' && inputs.verification_mode == 'verify') }}
 
     steps:
       - name: Check out repository
@@ -110,21 +111,20 @@ jobs:
             ${{ runner.temp }}/reconx-verification/backend/target/surefire-reports/
             ${{ runner.temp }}/reconx-verification/backend/target/failsafe-reports/
             ${{ runner.temp }}/reconx-verification/backend/target/site/jacoco/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
 
       - name: Publish backend JUnit report
         if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
-        continue-on-error: true
         uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3
         with:
           token: ${{ github.token }}
           report_paths: ${{ runner.temp }}/reconx-verification/backend/target/**/TEST-*.xml
           check_name: Backend JUnit
           annotate_only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-          fail_on_failure: false
-          fail_on_parse_error: false
-          require_tests: false
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
           include_passed: true
           detailed_summary: true
           job_summary: true
@@ -138,7 +138,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      RECONX_FULL_VERIFICATION: ${{ (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name == 'workflow_dispatch' && inputs.verification_mode == 'verify') }}
+      RECONX_FULL_VERIFICATION: ${{ (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'develop')) || (github.event_name == 'workflow_dispatch' && inputs.verification_mode == 'verify') }}
 
     steps:
       - name: Check out repository
@@ -175,21 +175,20 @@ jobs:
         with:
           name: frontend-verification-reports
           path: ${{ runner.temp }}/reconx-verification/frontend/test-results/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
 
       - name: Publish frontend JUnit report
         if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
-        continue-on-error: true
         uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3
         with:
           token: ${{ github.token }}
           report_paths: ${{ runner.temp }}/reconx-verification/frontend/test-results/vitest-junit.xml
           check_name: Frontend Vitest JUnit
           annotate_only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-          fail_on_failure: false
-          fail_on_parse_error: false
-          require_tests: false
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
           include_passed: true
           detailed_summary: true
           job_summary: true
@@ -244,21 +243,20 @@ jobs:
             backend/target/surefire-reports/
             backend/target/failsafe-reports/
             backend/target/site/jacoco/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
 
       - name: Publish native backend JUnit report
         if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
-        continue-on-error: true
         uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3
         with:
           token: ${{ github.token }}
           report_paths: ${{ github.workspace }}/backend/target/**/TEST-*.xml
           check_name: Backend JUnit (native fallback)
           annotate_only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-          fail_on_failure: false
-          fail_on_parse_error: false
-          require_tests: false
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
           include_passed: true
           detailed_summary: true
           job_summary: true
@@ -307,21 +305,20 @@ jobs:
         with:
           name: frontend-native-verification-reports
           path: frontend/test-results/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
 
       - name: Publish native frontend JUnit report
         if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
-        continue-on-error: true
         uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3
         with:
           token: ${{ github.token }}
           report_paths: ${{ github.workspace }}/frontend/test-results/vitest-junit.xml
           check_name: Frontend Vitest JUnit (native fallback)
           annotate_only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-          fail_on_failure: false
-          fail_on_parse_error: false
-          require_tests: false
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
           include_passed: true
           detailed_summary: true
           job_summary: true
@@ -358,5 +355,5 @@ jobs:
         with:
           name: adv097-load-evidence
           path: ${{ runner.temp }}/reconx-adv097/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
