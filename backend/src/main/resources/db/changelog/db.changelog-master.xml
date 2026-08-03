@@ -28,5 +28,7 @@
     <include file="changes/009-trade-envers.xml"  relativeToChangelogFile="true"/>
     <include file="changes/010-envers-revision-sequence.xml" relativeToChangelogFile="true"/>
     <include file="changes/011-reconciliation-integration.xml" relativeToChangelogFile="true"/>
+    <include file="changes/012-soft-delete.xml"   relativeToChangelogFile="true"/>
+    <include file="changes/013-reconciliation-jobs.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

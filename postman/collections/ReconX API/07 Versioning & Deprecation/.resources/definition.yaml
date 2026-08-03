@@ -1,0 +1,9 @@
+$kind: collection
+description: Verifies the authenticated v0 tombstone and successor metadata.
+auth:
+  - id: 0f6eeb0a-e6f0-4715-bee6-554bbbd96457
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{viewerToken}}"
+order: 9000

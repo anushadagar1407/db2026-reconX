@@ -16,6 +16,9 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
+  jmx:
+    enabled: true
+
   sql:
     init:
       mode: never
@@ -34,11 +37,10 @@ spring:
       hibernate.format_sql: true
       hibernate.jdbc.time_zone: UTC
 
-  # ADV081-ADV082 — Caffeine cache config; per-cache spec overrides the global one.
+  # ADV081-ADV082 — cache names; per-cache Caffeine policies live in CacheConfig.
   cache:
+    type: caffeine
     cache-names: instruments,counterparties
-    caffeine:
-      spec: maximumSize=500,expireAfterWrite=5m
 
   # ADV128 — Kafka producer/consumer defaults. Environments that run Kafka set
   # bootstrap-servers in their profile; dev intentionally leaves it absent.
@@ -71,7 +73,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,env,loggers
+        include: health,info,metrics,prometheus,env,loggers,caches
       base-path: /actuator
   endpoint:
     health:

@@ -70,31 +70,30 @@ public enum ReconciliationRule {
      */
     public boolean matches(BigDecimal internalPrice, BigDecimal internalQty,
                            BigDecimal externalPrice, BigDecimal externalQty) {
-        // TICKET-ADV026:
-        //   1. Compute |internalPrice - externalPrice| as priceDiff.
-        //   2. priceDiffPct = priceDiff / internalPrice (guard divide-by-zero).
-        //   3. qtyDiff = |internalQty - externalQty|.
-        //   4. Return true iff priceDiffPct <= priceTolerancePct AND
-        //      qtyDiff <= qtyToleranceAbs.
-        BigDecimal priceDiff = internalPrice.add(externalPrice.negate()).abs();
+        return matches(internalPrice, internalQty, externalPrice, externalQty, priceTolerancePct);
+    }
 
-        // Prevent division by 0 erros
+    public boolean matches(BigDecimal internalPrice,
+                           BigDecimal internalQty,
+                           BigDecimal externalPrice,
+                           BigDecimal externalQty,
+                           BigDecimal effectivePriceTolerance) {
+        if (effectivePriceTolerance.signum() < 0) {
+            throw new IllegalArgumentException("price tolerance must not be negative");
+        }
+
+        BigDecimal priceDiff = internalPrice.add(externalPrice.negate()).abs();
         BigDecimal priceDiffPct;
-        if (internalPrice.compareTo(new BigDecimal("0")) > 0) {
+        if (internalPrice.compareTo(BigDecimal.ZERO) > 0) {
             priceDiffPct = priceDiff.divide(internalPrice);
-        } else if (priceDiff.equals(new BigDecimal("0"))){
-            priceDiffPct = new BigDecimal("0");
+        } else if (priceDiff.compareTo(BigDecimal.ZERO) == 0) {
+            priceDiffPct = BigDecimal.ZERO;
         } else {
             priceDiffPct = new BigDecimal("100");
         }
 
         BigDecimal qtyDiff = internalQty.add(externalQty.negate()).abs();
-
-        if (priceDiffPct.compareTo(this.priceTolerancePct) <= 0 && qtyDiff.compareTo(this.qtyToleranceAbs) <= 0 ) {
-            return true;
-        }
-
-        return false;
-
+        return priceDiffPct.compareTo(effectivePriceTolerance) <= 0
+                && qtyDiff.compareTo(qtyToleranceAbs) <= 0;
     }
 }

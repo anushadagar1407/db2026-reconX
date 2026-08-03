@@ -1,0 +1,9 @@
+$kind: collection
+description: Read-only trade queries run as VIEWER. The first request captures an existing trade ID from the seeded page rather than assuming an ID.
+auth:
+  - id: f37f8318-3606-490d-b924-b0ca082c9169
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{viewerToken}}"
+order: 3000

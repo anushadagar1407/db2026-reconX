@@ -1,6 +1,8 @@
 package com.dbtraining.reconx.observability;
 
 import com.dbtraining.reconx.repository.ReconBreakRepository;
+import com.dbtraining.reconx.repository.TradeRepository;
+import com.dbtraining.reconx.repository.entity.TradeStatus;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
@@ -40,11 +42,22 @@ public class TradeMetrics {
 
     private final Counter tradeCreated;
     private final DistributionSummary tradeValue;
+    private final TradeRepository tradeRepo;
 
-    public TradeMetrics(MeterRegistry registry, ReconBreakRepository breakRepo) {
+    public TradeMetrics(MeterRegistry registry, ReconBreakRepository breakRepo, TradeRepository tradeRepo) {
+
         this.tradeCreated = Counter.builder("trade_created_total")
                 .description("Total trades created")
                 .register(registry);
+    
+
+        this.tradeRepo = tradeRepo;
+
+        for (TradeStatus status : TradeStatus.values()) {
+            Gauge.builder("trade_by_status", () -> tradeRepo.countByStatus(status))
+                    .tag("status", status.name())
+                    .register(registry);
+        }
 
         this.tradeValue = DistributionSummary.builder("trade_value_total")
                 .description("Distribution of trade notional values")
@@ -59,10 +72,10 @@ public class TradeMetrics {
     }
 
     public void incrementTradeCreated() {
-        // TODO(TICKET-ADV083): increment the tradeCreated counter.
+        tradeCreated.increment();
     }
 
     public void recordTradeValue(double value) {
-        // TODO(TICKET-ADV086): record the value on the tradeValue distribution summary.
+        tradeValue.record(value);
     }
 }

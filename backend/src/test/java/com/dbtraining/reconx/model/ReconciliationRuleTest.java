@@ -2,10 +2,12 @@ package com.dbtraining.reconx.model;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ReconciliationRuleTest {
 
@@ -20,9 +22,33 @@ class ReconciliationRuleTest {
             "LOOSE,                100.00, 104.00, 10, 18, true"
     })
     void matches(ReconciliationRule rule, BigDecimal pa, BigDecimal pb,
-                 BigDecimal qa, BigDecimal qb, boolean expected) {
-        // TICKET-ADV026: assert rule.matches(pa, qa, pb, qb) equals expected for each CSV row.
-        //org.junit.jupiter.api.Assertions.fail("TICKET-ADV026 not implemented yet");
-        assertThat(rule.matches(pa, pb, qa, qb)==expected);
+                  BigDecimal qa, BigDecimal qb, boolean expected) {
+        assertThat(rule.matches(pa, qa, pb, qb)).isEqualTo(expected);
+    }
+
+    @Test
+    void effectivePriceToleranceOverridesRuleThreshold() {
+        assertThat(ReconciliationRule.PRICE_TOLERANCE_1PCT.matches(
+                new BigDecimal("100.00"),
+                new BigDecimal("10"),
+                new BigDecimal("100.75"),
+                new BigDecimal("10"),
+                new BigDecimal("0.005")))
+                .isFalse();
+        assertThat(ReconciliationRule.PRICE_TOLERANCE_1PCT.matches(
+                new BigDecimal("100.00"),
+                new BigDecimal("10"),
+                new BigDecimal("100.75"),
+                new BigDecimal("10"),
+                new BigDecimal("0.01")))
+                .isTrue();
+    }
+
+    @Test
+    void rejectsNegativeEffectiveTolerance() {
+        assertThatThrownBy(() -> ReconciliationRule.EXACT.matches(
+                BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                new BigDecimal("-0.01")))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }
