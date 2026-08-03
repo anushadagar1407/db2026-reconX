@@ -36,12 +36,20 @@ def finite(value, name):
 
 def metric_values(raw_summary, name):
     try:
-        values = raw_summary["metrics"][name]["values"]
+        metric = raw_summary["metrics"][name]
     except (KeyError, TypeError) as error:
         raise SystemExit(f"k6 raw summary is missing metric: {name}") from error
-    if not isinstance(values, dict):
+    values = metric.get("values") if isinstance(metric, dict) else None
+    if isinstance(values, dict) and values:
+        return values
+    if isinstance(metric, dict) and any(
+        key in metric
+        for key in ("count", "rate", "value", "passes", "fails", "p(95)")
+    ):
+        return metric
+    if not isinstance(metric, dict):
         raise SystemExit(f"k6 raw summary metric has no values: {name}")
-    return values
+    raise SystemExit(f"k6 raw summary metric has no values: {name}")
 
 
 def exact_count(raw_summary, metric_name, expected):
@@ -64,27 +72,79 @@ if summary.get("successfulTradeCreations") != 100:
     raise SystemExit("k6 summary does not prove 100 HTTP 201 creations")
 if summary.get("failedTradeRequests") != 0:
     raise SystemExit("k6 summary reports failed trade requests")
-finite(summary.get("requestsPerSecond"), "k6 throughput")
-finite(summary.get("p95Milliseconds"), "k6 P95")
+if finite(summary.get("requestsPerSecond"), "k6 throughput") <= 0:
+    raise SystemExit("k6 throughput must be positive")
+if finite(summary.get("p95Milliseconds"), "k6 P95") <= 0:
+    raise SystemExit("k6 P95 must be positive")
 
 exact_count(raw_summary, "adv097_trade_requests", 100)
 exact_count(raw_summary, "adv097_trade_created", 100)
 exact_count(raw_summary, "adv097_trade_failures", 0)
 exact_count(raw_summary, "http_reqs", 101)
-if finite(metric_values(raw_summary, "http_req_failed").get("rate"), "k6 failure rate") != 0:
-    raise SystemExit("k6 http_req_failed.rate must be 0")
-if finite(metric_values(raw_summary, "checks").get("rate"), "k6 check rate") != 1:
-    raise SystemExit("k6 checks.rate must be 1")
+raw_trade_values = metric_values(raw_summary, "adv097_trade_requests")
+raw_duration_values = metric_values(raw_summary, "adv097_trade_duration")
+if not math.isclose(
+    finite(summary.get("requestsPerSecond"), "k6 summary throughput"),
+    finite(raw_trade_values.get("rate"), "k6 raw throughput"),
+    rel_tol=1e-9,
+    abs_tol=1e-9,
+):
+    raise SystemExit("k6 summary throughput is inconsistent with the raw summary")
+if not math.isclose(
+    finite(summary.get("p95Milliseconds"), "k6 summary P95"),
+    finite(raw_duration_values.get("p(95)"), "k6 raw P95"),
+    rel_tol=1e-9,
+    abs_tol=1e-9,
+):
+    raise SystemExit("k6 summary P95 is inconsistent with the raw summary")
+failed_metric = metric_values(raw_summary, "http_req_failed")
+failed_rate = finite(
+    failed_metric.get("rate", failed_metric.get("value")), "k6 failure rate"
+)
+failed_samples = finite(failed_metric.get("passes"), "k6 failed samples")
+check_metric = metric_values(raw_summary, "checks")
+check_rate = finite(check_metric.get("rate", check_metric.get("value")), "k6 check rate")
+check_failures = finite(check_metric.get("fails"), "k6 check failure count")
+if failed_rate != 0 or failed_samples != 0:
+    raise SystemExit("k6 http_req_failed must prove zero failures")
+if check_rate != 1 or check_failures != 0:
+    raise SystemExit("k6 checks must prove every check passed")
 
 creation_delta = evidence.get("prometheusCreationDelta", {}).get("delta")
 if finite(creation_delta, "Prometheus creation delta") != 100:
     raise SystemExit("Prometheus creation delta must be exactly 100")
+business_delta = evidence.get("prometheusTradeCreatedDelta", {}).get("delta")
+if finite(business_delta, "Prometheus trade_created_total delta") != 100:
+    raise SystemExit("Prometheus trade_created_total delta must be exactly 100")
 comparison = evidence.get("throughputComparison", {})
 if comparison.get("withinTolerance") is not True:
     raise SystemExit("Prometheus throughput comparison is outside the enforced tolerance")
+if finite(evidence.get("tradeCreatedRate", {}).get("value"), "ADV089 rate") <= 0:
+    raise SystemExit("ADV089 trade_created_total rate must be positive")
 
 EXPORT_DIR.mkdir(parents=True, exist_ok=True)
 for name in REQUIRED_FILES:
-    shutil.copyfile(RESULTS_DIR / name, EXPORT_DIR / name)
+    if name == "k6-raw-summary.json":
+        sanitized_raw_summary = dict(raw_summary)
+        sanitized_raw_summary.pop("setup_data", None)
+        serialized_raw_summary = json.dumps(sanitized_raw_summary, indent=2) + "\n"
+        if '"token"' in serialized_raw_summary or '"password"' in serialized_raw_summary:
+            raise SystemExit("Refusing to export a k6 summary containing credentials")
+        (EXPORT_DIR / name).write_text(serialized_raw_summary, encoding="utf-8")
+    else:
+        shutil.copyfile(RESULTS_DIR / name, EXPORT_DIR / name)
+
+for name in REQUIRED_FILES:
+    path = EXPORT_DIR / name
+    if not path.is_file() or path.stat().st_size == 0:
+        raise SystemExit(f"Exported load artifact is missing or empty: {name}")
+    try:
+        with path.open(encoding="utf-8") as source:
+            exported = json.load(source)
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"Exported load artifact is not parseable JSON: {name}") from error
+    serialized = json.dumps(exported)
+    if '"token"' in serialized or 'trader123' in serialized:
+        raise SystemExit(f"Refusing credential-bearing exported artifact: {name}")
 
 print("ADV097 load artifacts validated and exported")

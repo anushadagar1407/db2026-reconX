@@ -6,7 +6,7 @@ import { dirname, resolve } from 'node:path';
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const read = (relativePath) => readFile(resolve(repositoryRoot, relativePath), 'utf8');
 
-const [k6Script, queryScript, exportScript, loadCompose, posixWrapper, powershellWrapper, dashboard] = await Promise.all([
+const [k6Script, queryScript, exportScript, loadCompose, posixWrapper, powershellWrapper, dashboard, tradeMetrics, loadPrometheus, prometheus] = await Promise.all([
   read('scripts/load/adv097.js'),
   read('scripts/load/query-prometheus.py'),
   read('scripts/load/export-artifacts.py'),
@@ -14,6 +14,9 @@ const [k6Script, queryScript, exportScript, loadCompose, posixWrapper, powershel
   read('scripts/verify'),
   read('scripts/verify.ps1'),
   read('monitoring/grafana/provisioning/dashboards/reconx-overview.json'),
+  read('backend/src/main/java/com/dbtraining/reconx/observability/TradeMetrics.java'),
+  read('monitoring/prometheus/prometheus-load.yml'),
+  read('monitoring/prometheus/prometheus.yml'),
 ]);
 
 assert.match(k6Script, /const VUS = 10/);
@@ -40,8 +43,12 @@ const p95Query = '1000 * histogram_quantile(0.95, sum(rate(http_server_requests_
 assert.match(queryScript, /http_server_requests_seconds_count/);
 assert.match(queryScript, /http_server_requests_seconds_bucket/);
 assert.match(queryScript, /CREATION_COUNTER_SELECTOR/);
+assert.match(queryScript, /BUSINESS_COUNTER_QUERY = "trade_created_total"/);
+assert.match(queryScript, /BUSINESS_RATE_QUERY = "sum\(rate\(trade_created_total\[1m\]\)\)"/);
+assert.match(queryScript, /status="201"/);
 assert.match(queryScript, /THROUGHPUT_TOLERANCE_PERCENT = 20/);
 assert.match(queryScript, /creation_delta != 100/);
+assert.match(queryScript, /business_delta != 100/);
 assert.match(queryScript, /within_tolerance/);
 assert.match(queryScript, /prometheus-query-evidence\.json/);
 assert.match(exportScript, /k6-summary\.json/);
@@ -49,6 +56,12 @@ assert.match(exportScript, /k6-raw-summary\.json/);
 assert.match(exportScript, /prometheus-query-evidence\.json/);
 assert.match(exportScript, /adv097_trade_created/);
 assert.match(exportScript, /withinTolerance/);
+assert.match(exportScript, /prometheusTradeCreatedDelta/);
+assert.match(exportScript, /setup_data/);
+assert.match(tradeMetrics, /Counter\.builder\("trade_created_total"\)/);
+assert.match(tradeMetrics, /incrementTradeCreated/);
+assert.match(loadPrometheus, /replacement: trade_created_total/);
+assert.match(prometheus, /replacement: trade_created_total/);
 
 const dashboardDocument = JSON.parse(dashboard);
 const requestRatePanel = dashboardDocument.panels.find(({ title }) => title.includes('ADV087'));
@@ -73,9 +86,11 @@ assert.match(posixWrapper, /all\|backend\|frontend\|load/);
 assert.match(powershellWrapper, /all", "backend", "frontend", "load"/);
 assert.match(posixWrapper, /prepare_owned_directory/);
 assert.match(posixWrapper, /Refusing cleanup without wrapper ownership marker/);
+assert.match(posixWrapper, /--profile load down --volumes/);
 assert.doesNotMatch(posixWrapper, /rm -rf "\$report_root\/(backend|frontend)"/);
 assert.match(powershellWrapper, /Prepare-OwnedDirectory/);
 assert.match(powershellWrapper, /Refusing cleanup without wrapper ownership marker/);
+assert.match(powershellWrapper, /"--profile", "load", "down"/);
 assert.doesNotMatch(powershellWrapper, /Remove-Item -LiteralPath \(Join-Path \$ReportRoot/);
 
 console.log('ADV097 static wiring validation passed.');

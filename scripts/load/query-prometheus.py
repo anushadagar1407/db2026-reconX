@@ -11,6 +11,7 @@ from urllib.request import urlopen
 PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL", "http://localhost:9090").rstrip("/")
 TRADE_URI = "/v1/trades"
 RATE_WINDOW_SECONDS = 60
+MAX_SAMPLE_AGE_SECONDS = 15
 THROUGHPUT_TOLERANCE_PERCENT = 20
 RESULTS_DIR = Path("/results")
 BASELINE_PATH = RESULTS_DIR / "prometheus-baseline.json"
@@ -23,6 +24,8 @@ CREATION_COUNTER_SELECTOR = (
 )
 BASELINE_QUERY = f"{CREATION_COUNTER_SELECTOR} or vector(0)"
 CREATION_COUNT_QUERY = CREATION_COUNTER_SELECTOR
+BUSINESS_COUNTER_QUERY = "trade_created_total"
+BUSINESS_RATE_QUERY = "sum(rate(trade_created_total[1m]))"
 REQUEST_RATE_QUERY = "sum(rate(http_server_requests_seconds_count[1m])) by (uri)"
 P95_QUERY = (
     "1000 * histogram_quantile(0.95, "
@@ -62,14 +65,26 @@ def finite_number(value, name):
     return number
 
 
-def metric_value(result, name):
+def metric_value(result, name, evaluated_at=None, allow_non_finite=False):
     values = result.get("value")
     if not isinstance(values, list) or len(values) != 2:
         raise RuntimeError(f"Prometheus result has no scalar value for {name}")
-    return finite_number(values[1], name)
+    sample_time = finite_number(values[0], f"{name} sample timestamp")
+    reference_time = time.time() if evaluated_at is None else evaluated_at
+    sample_age = reference_time - sample_time
+    if sample_age < -2 or sample_age > MAX_SAMPLE_AGE_SECONDS:
+        raise RuntimeError(
+            f"Prometheus result is stale for {name}: sample age {sample_age:.3f}s"
+        )
+    try:
+        return finite_number(values[1], name)
+    except RuntimeError:
+        if allow_non_finite:
+            return None
+        raise
 
 
-def single_counter_value(payload, name, allow_zero_vector=False):
+def single_http_counter_value(payload, name, allow_zero_vector=False):
     results = payload.get("data", {}).get("result", [])
     if len(results) != 1:
         raise RuntimeError(f"Expected exactly one Prometheus counter series for {name}")
@@ -88,7 +103,24 @@ def single_counter_value(payload, name, allow_zero_vector=False):
     return metric_value(results[0], name)
 
 
-def vector_values(payload, name):
+def single_business_counter_value(payload, name):
+    results = payload.get("data", {}).get("result", [])
+    if len(results) != 1:
+        raise RuntimeError(f"Expected exactly one trade_created_total series for {name}")
+    metric = results[0].get("metric", {})
+    if not isinstance(metric, dict) or metric.get("__name__") != "trade_created_total":
+        raise RuntimeError(f"Unexpected Prometheus business-counter labels for {name}")
+    return metric_value(results[0], name)
+
+
+def single_expression_value(payload, name, evaluated_at):
+    results = payload.get("data", {}).get("result", [])
+    if len(results) != 1 or results[0].get("metric") != {}:
+        raise RuntimeError(f"Expected exactly one unlabeled Prometheus series for {name}")
+    return metric_value(results[0], name, evaluated_at)
+
+
+def vector_values(payload, name, evaluated_at, allow_non_finite=False):
     results = payload.get("data", {}).get("result", [])
     if not results:
         raise RuntimeError(f"Prometheus returned no series for {name}")
@@ -100,7 +132,12 @@ def vector_values(payload, name):
         uri = metric["uri"]
         if uri in values:
             raise RuntimeError(f"Prometheus returned duplicate URI series for {name}: {uri}")
-        values[uri] = metric_value(result, f"{name}[{uri}]")
+        values[uri] = metric_value(
+            result,
+            f"{name}[{uri}]",
+            evaluated_at,
+            allow_non_finite=allow_non_finite,
+        )
     return values
 
 
@@ -108,10 +145,18 @@ def metric_values(summary, metric_name):
     metrics = summary.get("metrics")
     if not isinstance(metrics, dict) or metric_name not in metrics:
         raise RuntimeError(f"k6 raw summary is missing metric: {metric_name}")
-    values = metrics[metric_name].get("values")
-    if not isinstance(values, dict):
+    metric = metrics[metric_name]
+    values = metric.get("values") if isinstance(metric, dict) else None
+    if isinstance(values, dict) and values:
+        return values
+    if isinstance(metric, dict) and any(
+        key in metric
+        for key in ("count", "rate", "value", "passes", "fails", "p(95)")
+    ):
+        return metric
+    if not isinstance(metric, dict):
         raise RuntimeError(f"k6 raw summary metric has no values: {metric_name}")
-    return values
+    raise RuntimeError(f"k6 raw summary metric has no values: {metric_name}")
 
 
 def exact_count(values, key, expected, name):
@@ -158,18 +203,28 @@ def validate_k6_artifacts():
     exact_count(metric_values(raw_summary, "adv097_trade_failures"), "count", 0, "trade failures")
     exact_count(metric_values(raw_summary, "http_reqs"), "count", 101, "HTTP requests")
 
+    failed_metric = metric_values(raw_summary, "http_req_failed")
     failed_rate = finite_number(
-        metric_values(raw_summary, "http_req_failed").get("rate"),
-        "k6 http_req_failed.rate",
+        failed_metric.get("rate", failed_metric.get("value")),
+        "k6 http_req_failed rate",
     )
+    failed_samples = finite_number(failed_metric.get("passes"), "k6 failed samples")
+    check_metric = metric_values(raw_summary, "checks")
     check_rate = finite_number(
-        metric_values(raw_summary, "checks").get("rate"),
-        "k6 checks.rate",
+        check_metric.get("rate", check_metric.get("value")),
+        "k6 checks rate",
     )
-    if failed_rate != 0:
-        raise RuntimeError(f"k6 http_req_failed.rate must be 0, observed {failed_rate}")
-    if check_rate != 1:
-        raise RuntimeError(f"k6 checks.rate must be 1, observed {check_rate}")
+    check_failures = finite_number(check_metric.get("fails"), "k6 checks fails")
+    if failed_rate != 0 or failed_samples != 0:
+        raise RuntimeError(
+            "k6 http_req_failed must prove zero failures "
+            f"(rate={failed_rate}, failedSamples={failed_samples})"
+        )
+    if check_rate != 1 or check_failures != 0:
+        raise RuntimeError(
+            "k6 checks must prove every check passed "
+            f"(rate={check_rate}, fails={check_failures})"
+        )
 
     return {
         "summary": summary,
@@ -186,9 +241,15 @@ def wait_for_baseline():
     last_error = None
     while time.monotonic() < deadline:
         try:
-            payload = query(BASELINE_QUERY)
-            value = single_counter_value(payload, "baseline", allow_zero_vector=True)
-            return payload, value
+            http_payload = query(BASELINE_QUERY)
+            business_payload = query(BUSINESS_COUNTER_QUERY)
+            http_value = single_http_counter_value(
+                http_payload, "HTTP 201 baseline", allow_zero_vector=True
+            )
+            business_value = single_business_counter_value(
+                business_payload, "trade_created_total baseline"
+            )
+            return http_payload, http_value, business_payload, business_value
         except Exception as error:  # noqa: BLE001 - retry while Prometheus starts
             last_error = error
             time.sleep(2)
@@ -196,20 +257,30 @@ def wait_for_baseline():
 
 
 def write_baseline():
-    payload, value = wait_for_baseline()
+    http_payload, http_value, business_payload, business_value = wait_for_baseline()
     with BASELINE_PATH.open("w", encoding="utf-8") as output:
         json.dump(
             {
                 "capturedAt": datetime.now(timezone.utc).isoformat(),
-                "query": BASELINE_QUERY,
-                "value": value,
-                "rawResponse": payload,
+                "http201Creation": {
+                    "query": BASELINE_QUERY,
+                    "value": http_value,
+                    "rawResponse": http_payload,
+                },
+                "tradeCreated": {
+                    "query": BUSINESS_COUNTER_QUERY,
+                    "value": business_value,
+                    "rawResponse": business_payload,
+                },
             },
             output,
             indent=2,
         )
         output.write("\n")
-    print(f"ADV097 Prometheus baseline captured: {value:.0f}")
+    print(
+        "ADV097 Prometheus baselines captured: "
+        f"HTTP 201={http_value:.0f}, trade_created_total={business_value:.0f}"
+    )
 
 
 def wait_for_exact_creation_delta(baseline):
@@ -220,7 +291,7 @@ def wait_for_exact_creation_delta(baseline):
     while time.monotonic() < deadline:
         try:
             final_payload = query(CREATION_COUNT_QUERY)
-            final_value = single_counter_value(final_payload, "final creation count")
+            final_value = single_http_counter_value(final_payload, "final HTTP 201 count")
             delta = final_value - baseline
             if delta == 100:
                 return final_payload, final_value, delta
@@ -235,6 +306,31 @@ def wait_for_exact_creation_delta(baseline):
     raise RuntimeError(f"Prometheus did not observe exact creation delta 100: {last_error}")
 
 
+def wait_for_exact_business_delta(baseline):
+    deadline = time.monotonic() + 60
+    last_error = None
+    while time.monotonic() < deadline:
+        try:
+            payload = query(BUSINESS_COUNTER_QUERY)
+            final_value = single_business_counter_value(
+                payload, "final trade_created_total count"
+            )
+            delta = final_value - baseline
+            if delta == 100:
+                return payload, final_value, delta
+            if delta > 100:
+                raise RuntimeError(
+                    f"Prometheus observed more than 100 trade_created_total increments: {delta}"
+                )
+            last_error = RuntimeError(f"business-counter delta is {delta}, waiting for 100")
+        except RuntimeError as error:
+            last_error = error
+        time.sleep(2)
+    raise RuntimeError(
+        f"Prometheus did not observe exact trade_created_total delta 100: {last_error}"
+    )
+
+
 def wait_for_panel_values(at_time):
     deadline = time.monotonic() + 45
     last_error = None
@@ -242,15 +338,32 @@ def wait_for_panel_values(at_time):
         try:
             request_rate_payload = query(REQUEST_RATE_QUERY, at_time=at_time)
             p95_payload = query(P95_QUERY, at_time=at_time)
-            request_rates = vector_values(request_rate_payload, "request rate")
-            p95_values = vector_values(p95_payload, "P95")
+            business_rate_payload = query(BUSINESS_RATE_QUERY, at_time=at_time)
+            request_rates = vector_values(request_rate_payload, "request rate", at_time)
+            p95_values = vector_values(
+                p95_payload, "P95", at_time, allow_non_finite=True
+            )
             trade_rate = request_rates.get(TRADE_URI)
             trade_p95 = p95_values.get(TRADE_URI)
+            business_rate = single_expression_value(
+                business_rate_payload, "trade_created_total rate", at_time
+            )
             if trade_rate is None or trade_rate <= 0:
                 raise RuntimeError("Prometheus request-rate panel has no non-zero trade series")
             if trade_p95 is None or trade_p95 <= 0:
                 raise RuntimeError("Prometheus P95 panel has no non-zero trade series")
-            return request_rate_payload, p95_payload, request_rates, p95_values, trade_rate, trade_p95
+            if business_rate <= 0:
+                raise RuntimeError("Prometheus ADV089 panel has no non-zero trade-created rate")
+            return (
+                request_rate_payload,
+                p95_payload,
+                business_rate_payload,
+                request_rates,
+                p95_values,
+                trade_rate,
+                trade_p95,
+                business_rate,
+            )
         except Exception as error:  # noqa: BLE001 - retry while the scrape catches up
             last_error = error
             time.sleep(2)
@@ -260,22 +373,38 @@ def wait_for_panel_values(at_time):
 def write_evidence():
     k6 = validate_k6_artifacts()
     baseline_document = read_json(BASELINE_PATH)
-    baseline = finite_number(baseline_document.get("value"), "Prometheus baseline")
-    if baseline < 0:
-        raise RuntimeError(f"Prometheus baseline cannot be negative: {baseline}")
+    http_baseline_document = baseline_document.get("http201Creation", {})
+    business_baseline_document = baseline_document.get("tradeCreated", {})
+    http_baseline = finite_number(
+        http_baseline_document.get("value"), "Prometheus HTTP 201 baseline"
+    )
+    business_baseline = finite_number(
+        business_baseline_document.get("value"), "Prometheus trade_created_total baseline"
+    )
+    if http_baseline < 0 or business_baseline < 0:
+        raise RuntimeError("Prometheus counter baselines cannot be negative")
 
-    creation_payload, final_value, creation_delta = wait_for_exact_creation_delta(baseline)
+    creation_payload, final_value, creation_delta = wait_for_exact_creation_delta(http_baseline)
     if not math.isfinite(creation_delta) or creation_delta != 100:
         raise RuntimeError(f"Prometheus creation delta must be exactly 100: {creation_delta}")
+    business_payload, business_final, business_delta = wait_for_exact_business_delta(
+        business_baseline
+    )
+    if not math.isfinite(business_delta) or business_delta != 100:
+        raise RuntimeError(
+            f"Prometheus trade_created_total delta must be exactly 100: {business_delta}"
+        )
 
     run_finished = k6["runFinishedAtEpochSeconds"]
     (
         request_rate_payload,
         p95_payload,
+        business_rate_payload,
         request_rates,
         p95_values,
         trade_rate,
         trade_p95,
+        business_rate,
     ) = wait_for_panel_values(run_finished)
 
     throughput_delta = abs(k6["throughput"] - trade_rate)
@@ -319,6 +448,13 @@ def write_evidence():
             "query": P95_QUERY,
             "series": p95_values,
             "tradeUriValueMilliseconds": trade_p95,
+            "measurement": "server-side HTTP histogram latency; distinct from k6 client latency",
+        },
+        "tradeCreatedRate": {
+            "value": business_rate,
+            "unit": "trades/second",
+            "window": "1m",
+            "query": BUSINESS_RATE_QUERY,
         },
         "throughputComparison": {
             "k6TradeRequestsPerSecond": k6["throughput"],
@@ -329,17 +465,27 @@ def write_evidence():
             "withinTolerance": within_tolerance,
         },
         "prometheusCreationDelta": {
-            "baseline": baseline,
+            "baseline": http_baseline,
             "final": final_value,
             "delta": creation_delta,
             "query": CREATION_COUNT_QUERY,
             "window": "isolated run pre/post counter delta",
         },
+        "prometheusTradeCreatedDelta": {
+            "baseline": business_baseline,
+            "final": business_final,
+            "delta": business_delta,
+            "query": BUSINESS_COUNTER_QUERY,
+            "window": "isolated run pre/post counter delta",
+        },
         "rawResponses": {
-            "baseline": baseline_document.get("rawResponse"),
+            "httpBaseline": http_baseline_document.get("rawResponse"),
+            "tradeCreatedBaseline": business_baseline_document.get("rawResponse"),
             "creationCount": creation_payload,
+            "tradeCreatedCount": business_payload,
             "requestRate": request_rate_payload,
             "p95": p95_payload,
+            "tradeCreatedRate": business_rate_payload,
         },
     }
 
@@ -350,8 +496,10 @@ def write_evidence():
 
     print("ADV097 Prometheus panel-query evidence")
     print(f"HTTP 201 creations observed: {creation_delta:.0f}/100")
+    print(f"trade_created_total increments observed: {business_delta:.0f}/100")
     print(f"request-rate panel trade series: {trade_rate} requests/second (1m rate)")
     print(f"server P95 panel trade series: {trade_p95} milliseconds (1m histogram)")
+    print(f"ADV089 trade-created rate: {business_rate} trades/second (1m rate)")
     print(
         "throughput delta: "
         f"{throughput_delta} requests/second ({throughput_delta_percent:.2f}%, "

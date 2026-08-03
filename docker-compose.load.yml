@@ -130,7 +130,7 @@ services:
   load-export:
     image: python:3.13.1-alpine
     profiles: ["load"]
-    user: "0:0"
+    user: "${RECONX_LOAD_EXPORT_USER:-0:0}"
     volumes:
       - ./scripts/load:/scripts:ro
       - load_results:/results:ro
