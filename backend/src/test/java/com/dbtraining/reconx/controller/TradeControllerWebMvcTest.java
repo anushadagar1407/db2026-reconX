@@ -100,6 +100,12 @@ void testCreateTrade_viewerRole_returns403() throws Exception {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(validRequest())))
                     .andExpect(status().isForbidden());
+    @Test
+void testCreateTrade_unauthenticated_returns401() throws Exception {
+    mockMvc.perform(post("/api/v1/trades")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(validRequest())))
+            .andExpect(status().isUnauthorized());
 }
 
     private TradeRequest validRequest() {
