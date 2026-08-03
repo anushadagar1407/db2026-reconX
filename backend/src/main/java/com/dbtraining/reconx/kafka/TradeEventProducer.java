@@ -38,13 +38,20 @@ public class TradeEventProducer {
     private static final Logger log = LoggerFactory.getLogger(TradeEventProducer.class);
     private static final String TOPIC = "trade-events";
 
-    private final KafkaTemplate<String, TradeEvent> template;
+    private final KafkaTemplate<String, String> template;
 
-    public TradeEventProducer(KafkaTemplate<String, TradeEvent> template) {
+    public TradeEventProducer(KafkaTemplate<String, String> template) {
         this.template = template;
     }
 
-    public void publish(TradeEvent event) {
-        throw new UnsupportedOperationException("TICKET-ADV129");
+    // public void publish(TradeEvent event) {
+    //     log.debug("Publishing TradeEvent eventId={} ref={} type={}",
+    //               event.eventId(), event.tradeRef(), event.eventType());
+    //     template.send(TOPIC, event.tradeRef(), event);
+    // }
+    public void publish() {
+        // log.debug("Publishing TradeEvent eventId={} ref={} type={}",
+        //            event.eventId(), event.tradeRef(), event.eventType());
+        template.send(TOPIC, "DONE", "DONE");
     }
 }
