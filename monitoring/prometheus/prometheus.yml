@@ -12,6 +12,11 @@ scrape_configs:
     metrics_path: '/api/actuator/prometheus'
     static_configs:
       - targets: ['backend:8080']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: trade_total
+        target_label: __name__
+        replacement: trade_created_total
 
   - job_name: 'prometheus'
     static_configs:

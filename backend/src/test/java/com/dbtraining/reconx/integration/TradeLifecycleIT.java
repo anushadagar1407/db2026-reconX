@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.integration;
 
+import com.dbtraining.reconx.support.PostgresTestConfiguration;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -8,29 +9,21 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@Import(PostgresTestConfiguration.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class TradeLifecycleIT {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> postgres =
-            new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired
     private TestRestTemplate http;
@@ -47,7 +40,7 @@ class TradeLifecycleIT {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         var response = http.postForEntity(
-                "/api/auth/login",
+                "/auth/login",
                 new HttpEntity<>("""
                         {"username":"admin@db.com","password":"admin123"}
                         """, headers),
@@ -63,7 +56,7 @@ class TradeLifecycleIT {
     @Order(2)
     void createTrade() {
         var response = http.exchange(
-                "/api/v1/trades",
+                "/v1/trades",
                 HttpMethod.POST,
                 authenticatedRequest("""
                         {
@@ -89,7 +82,7 @@ class TradeLifecycleIT {
     @Order(3)
     void getTradeBack() {
         var response = http.exchange(
-                "/api/v1/trades?status=PENDING",
+                "/v1/trades?status=PENDING",
                 HttpMethod.GET,
                 authenticatedRequest(),
                 JsonNode.class);
@@ -103,7 +96,7 @@ class TradeLifecycleIT {
     @Order(4)
     void patchStatus() {
         var response = http.exchange(
-                "/api/v1/trades/{id}/status",
+                "/v1/trades/{id}/status",
                 HttpMethod.PATCH,
                 authenticatedRequest("""
                         {"status":"MATCHED"}
@@ -120,7 +113,7 @@ class TradeLifecycleIT {
     @Order(5)
     void triggerRecon() {
         var response = http.exchange(
-                "/api/v1/recon/run",
+                "/v1/recon/run",
                 HttpMethod.POST,
                 authenticatedRequest("""
                         {"from":"2026-03-01","to":"2026-03-31"}
@@ -138,7 +131,7 @@ class TradeLifecycleIT {
     void resolveBreak() {
         breakId = 1L;
         var response = http.exchange(
-                "/api/v1/recon/results/{id}/resolve",
+                "/v1/recon/results/{id}/resolve",
                 HttpMethod.PUT,
                 authenticatedRequest("""
                         {"note":"Confirmed via counterparty email on 2026-03-16."}

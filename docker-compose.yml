@@ -54,7 +54,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    image: ghcr.io/sidoncode/reconx-backend:latest
+    image: reconx-backend:local
     container_name: reconx-backend
     depends_on:
       postgres: {condition: service_healthy}
@@ -78,11 +78,55 @@ services:
 
   frontend:
     build: ./frontend
-    image: ghcr.io/sidoncode/reconx-frontend:latest
+    image: reconx-frontend:local
     container_name: reconx-frontend
     depends_on:
       backend: {condition: service_healthy}
     ports: ["5173:80"]
+    networks: [reconx]
+
+  test-postgres:
+    image: postgres:16-alpine
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: reconx_test
+      POSTGRES_USER: reconx_test
+      POSTGRES_PASSWORD: reconx_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reconx_test -d reconx_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    networks: [reconx]
+
+  test-backend:
+    image: reconx-backend-test:local
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: test
+    environment:
+      # Database-backed tests activate the test profile; other slices retain native Maven parity.
+      RECONX_TEST_DATABASE_PROVIDER: external
+      TEST_POSTGRES_HOST: test-postgres
+      TEST_POSTGRES_PORT: 5432
+      TEST_POSTGRES_DB: reconx_test
+      TEST_POSTGRES_USER: reconx_test
+      TEST_POSTGRES_PASSWORD: reconx_test
+    depends_on:
+      test-postgres: {condition: service_healthy}
+    networks: [reconx]
+
+  test-frontend:
+    image: reconx-frontend-test:local
+    profiles: ["test"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: test
     networks: [reconx]
 
   prometheus:
