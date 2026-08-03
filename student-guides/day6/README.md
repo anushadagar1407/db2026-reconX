@@ -26,7 +26,7 @@ Before you start, confirm Prometheus is reachable at `http://localhost:9090`, Gr
 
 This block adds an in-process cache to one hot read path and gives the cache realistic, per-cache eviction policies. The pattern you learn here is what you would also apply to counterparty lookup, security master joins, and any other read-mostly reference data.
 
-### TICKET-ADV081 — `@Cacheable` on `InstrumentService.findBySymbol()`
+### TICKET-ADV081 — `@Cacheable` on `InstrumentService.findBySymbol()` ✅
 
 **Goal:** Wrap the symbol lookup so a second call for the same symbol hits memory, not the database.
 
@@ -136,7 +136,7 @@ curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/actuator/caches
 
 ---
 
-### TICKET-ADV082 — Cache eviction: TTL 5 min instruments, 1 min counterparties
+### TICKET-ADV082 — Cache eviction: TTL 5 min instruments, 1 min counterparties ✅
 
 **Goal:** Configure two separately-named Caffeine caches with different time-to-live policies and turn on the stats hooks that Micrometer needs.
 
@@ -1341,7 +1341,7 @@ curl -s http://localhost:8080/actuator/prometheus | grep trades_by_status
 
 ---
 
-### TICKET-ADV093 — Alert: `recon_break_count > 50` for 5 min
+### TICKET-ADV093 — Alert: `recon_break_count > 50` for 5 min - Done
 
 **Goal:** A Prometheus alert rule that fires when there have been more than 50 open breaks continuously for 5 minutes.
 
@@ -1438,7 +1438,7 @@ docker compose up -d postgres prometheus grafana
 
 ---
 
-### TICKET-ADV094 — Alert: API P95 latency > 500ms for 3 min
+### TICKET-ADV094 — Alert: API P95 latency > 500ms for 3 min - Done
 
 **Goal:** A Prometheus alert rule on P95 HTTP latency exceeding 500 ms continuously for 3 minutes.
 

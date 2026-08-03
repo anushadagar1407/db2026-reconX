@@ -1,8 +1,8 @@
 package com.dbtraining.reconx;
 
+import com.dbtraining.reconx.config.CacheConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -13,14 +13,13 @@ import org.springframework.scheduling.annotation.EnableAsync;
  * <p>Activated capabilities:
  * <ul>
  *   <li>{@link EnableJpaAuditing} — ADV050 @CreatedDate / @LastModifiedDate population.</li>
- *   <li>{@link EnableCaching}    — ADV081 @Cacheable on InstrumentService.</li>
+ *   <li>{@link CacheConfig}      — ADV081 caching for instrument lookups.</li>
  *   <li>{@link EnableKafka}      — ADV128–ADV133 Kafka producers and @KafkaListener consumers.</li>
  *   <li>{@link EnableAsync}      — ADV037 CompletableFuture-based parallel reconciliation.</li>
  * </ul>
  */
 @SpringBootApplication
 @EnableJpaAuditing
-@EnableCaching
 @EnableKafka
 @EnableAsync
 public class ReconxApplication {

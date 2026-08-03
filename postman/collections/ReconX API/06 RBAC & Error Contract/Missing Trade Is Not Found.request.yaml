@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{baseUrl}}/v1/trades/999999999"
+method: GET
+headers:
+  - key: Accept
+    value: application/problem+json
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 404", () => pm.response.to.have.status(404));
+      pm.test("not-found problem is returned", () => {
+        const body = pm.response.json();
+        pm.expect(body.status).to.eql(404);
+        pm.expect(body.detail).to.include("999999999");
+      });
+    language: text/javascript
+order: 7000
