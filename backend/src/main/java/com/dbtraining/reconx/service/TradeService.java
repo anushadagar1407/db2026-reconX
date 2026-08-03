@@ -18,16 +18,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import com.dbtraining.reconx.kafka.TradeEventProducer;
-import com.dbtraining.reconx.dto.TradeEvent;
-import com.dbtraining.reconx.dto.TradeEvent.EventType;
-
 
 import java.time.LocalDate;
-import java.time.Instant;
-import java.util.UUID;
 
 import static com.dbtraining.reconx.repository.TradeSpecifications.*;
 
@@ -50,22 +42,17 @@ public class TradeService {
     private final TradeMetrics metrics;
     private final Counter tradeCreatedCounter;
 
-    @Autowired
-    private final TradeEventProducer events;
-
 
     public TradeService(TradeRepository tradeRepo,
             CounterpartyRepository cpRepo,
             InstrumentRepository instRepo,
             TradeMetrics metrics,
-            MeterRegistry meterRegistry,
-            TradeEventProducer events) {
+                        MeterRegistry meterRegistry) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
         this.metrics = metrics;
         this.tradeCreatedCounter = meterRegistry.counter("trade_created_total");
-        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -104,10 +91,9 @@ public class TradeService {
         trade.setTradeDate(req.tradeDate());
         trade.setStatus(TradeStatus.PENDING);
 
+        
         try {
             Trade saved = tradeRepo.save(trade);
-            events.publish(); // Produce a message on the trade_created topic
-
             tradeCreatedCounter.increment();
             metrics.incrementTradeCreated();
             metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
