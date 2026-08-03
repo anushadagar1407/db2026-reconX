@@ -1,0 +1,9 @@
+$kind: collection
+description: Run these requests individually. Actuator administration is exploratory, and resolving a seeded recon break mutates shared fixture state.
+auth:
+  - id: e8147cd0-c7a6-4034-b583-f8a46e59acc1
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{adminToken}}"
+order: 10000

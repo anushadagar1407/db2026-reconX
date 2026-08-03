@@ -1,0 +1,29 @@
+$kind: http-request
+url: "{{baseUrl}}/v1/recon/run"
+method: POST
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "from": "2026-04-01",
+      "to": "2026-04-30",
+      "counterpartyId": {{testCounterpartyId}}
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 202", () => pm.response.to.have.status(202));
+      if (pm.response.code === 202) {
+        const body = pm.response.json();
+        pm.test("queued job handle is returned", () => {
+          pm.expect(body.jobId).to.be.a("string").and.not.empty;
+          pm.expect(body.status).to.eql("QUEUED");
+          pm.expect(pm.response.headers.get("Location")).to.eql(`/api/v1/recon/jobs/${body.jobId}/results`);
+        });
+        pm.collectionVariables.set("jobId", body.jobId);
+      }
+    language: text/javascript
+order: 1000

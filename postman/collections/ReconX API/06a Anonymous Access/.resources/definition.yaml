@@ -1,0 +1,7 @@
+$kind: collection
+description: Anonymous checks are isolated from the bearer-authenticated RBAC folder so collection runners cannot retain a no-auth override across role cases.
+auth:
+  - id: ""
+    type: noauth
+    name: No Auth
+order: 8000
