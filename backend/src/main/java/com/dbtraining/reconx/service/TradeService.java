@@ -18,6 +18,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import com.dbtraining.reconx.kafka.TradeEventProducer;
 
 import java.time.LocalDate;
 
@@ -41,18 +44,21 @@ public class TradeService {
     private final InstrumentRepository instRepo;
     private final TradeMetrics metrics;
     private final Counter tradeCreatedCounter;
+    private final TradeEventProducer events;
 
 
     public TradeService(TradeRepository tradeRepo,
             CounterpartyRepository cpRepo,
             InstrumentRepository instRepo,
             TradeMetrics metrics,
-                        MeterRegistry meterRegistry) {
+            MeterRegistry meterRegistry,
+            TradeEventProducer events) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
         this.metrics = metrics;
         this.tradeCreatedCounter = meterRegistry.counter("trade_created_total");
+        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -94,6 +100,7 @@ public class TradeService {
         
         try {
             Trade saved = tradeRepo.save(trade);
+            events.publish();
             tradeCreatedCounter.increment();
             metrics.incrementTradeCreated();
             metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());

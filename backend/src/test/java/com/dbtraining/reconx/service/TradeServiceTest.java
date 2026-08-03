@@ -45,12 +45,12 @@ class TradeServiceTest {
     private final TradeRepository tradeRepository = mock(TradeRepository.class);
     private final CounterpartyRepository counterpartyRepository = mock(CounterpartyRepository.class);
     private final InstrumentRepository instrumentRepository = mock(InstrumentRepository.class);
-
+    private final TradeMetrics tradeMetrics = mock(TradeMetrics.class);
     private final TradeService service = new TradeService(
             tradeRepository,
             counterpartyRepository,
             instrumentRepository,
-            mock(TradeMetrics.class),
+            tradeMetrics,
             mock(MeterRegistry.class),
             mock(TradeEventProducer.class));
 
