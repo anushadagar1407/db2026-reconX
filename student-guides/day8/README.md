@@ -1511,7 +1511,7 @@ cd frontend && npm run dev
 
 ---
 
-### TICKET-ADV123 — Trade entry form: RHF + Yup
+### TICKET-ADV123 — Trade entry form: RHF + Yup - In Progress
 
 **Goal:** Build the `/trades/new` page as a `react-hook-form` form
 validated against a `yup` schema that covers trade ref, instrument,
