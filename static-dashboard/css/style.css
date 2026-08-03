@@ -61,7 +61,15 @@ body {
 
 /* TICKET-ADV103 / ADV104 — live feed slide-in */
 #trade-feed { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); max-height: 50vh; overflow-y: auto; }
-.trade-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-2) var(--space-3); animation: slide-in 0.3s ease-out; }
+.sse-status { display: inline-block; margin-left: var(--space-2); padding: var(--space-1) var(--space-2); border-radius: var(--radius); font-size: 12px; font-weight: 600; vertical-align: middle; }
+.sse-status--connecting,
+.sse-status--reconnecting { background: var(--color-warning); color: #1a1a1a; }
+.sse-status--live { background: var(--color-success); color: #fff; }
+.trade-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-2) var(--space-3); }
+.trade-card--new { animation: slide-in 0.3s ease-out; }
+.trade-card__header,
+.trade-card__body { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.trade-card__body { margin-top: var(--space-1); flex-wrap: wrap; }
 .trade-card--matched { border-left: 4px solid var(--color-success); }
 .trade-card--break   { border-left: 4px solid var(--color-danger); }
 @keyframes slide-in  { from { transform: translateX(-10%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }

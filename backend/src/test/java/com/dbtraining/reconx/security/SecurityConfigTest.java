@@ -5,6 +5,7 @@ import com.dbtraining.reconx.controller.AuthController;
 import com.dbtraining.reconx.controller.DeprecatedTradeController;
 import com.dbtraining.reconx.controller.ReconController;
 import com.dbtraining.reconx.controller.TradeController;
+import com.dbtraining.reconx.controller.TradeStreamController;
 import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.repository.AppUserRepository;
 import com.dbtraining.reconx.repository.AuditLogRepository;
@@ -13,6 +14,7 @@ import com.dbtraining.reconx.repository.ReconBreakRepository;
 import com.dbtraining.reconx.repository.entity.ReconBreak;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
+import com.dbtraining.reconx.service.TradeStreamService;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
@@ -72,6 +75,9 @@ class SecurityConfigTest {
 
     @MockBean
     private TradeMapper tradeMapper;
+
+    @MockBean
+    private TradeStreamService tradeStreamService;
 
     @MockBean
     private ReconBreakRepository reconBreakRepository;
@@ -140,6 +146,15 @@ class SecurityConfigTest {
                         .contextPath(CONTEXT_PATH)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer not.a.real.token"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void tradeStreamIsPublicForNativeEventSourceClients() throws Exception {
+        when(tradeStreamService.subscribe()).thenReturn(new SseEmitter(0L));
+
+        mockMvc.perform(get("/api/v1/trades/stream").contextPath(CONTEXT_PATH))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.request().asyncStarted());
     }
 
     @Test
@@ -426,8 +441,13 @@ class SecurityConfigTest {
     static class TestBeans {
 
         @Bean
-        TradeController tradeController(TradeService service, TradeMapper mapper) {
-            return new TradeController(service, mapper);
+        TradeController tradeController(TradeService service, TradeMapper mapper, TradeStreamService stream) {
+            return new TradeController(service, mapper, stream);
+        }
+
+        @Bean
+        TradeStreamController tradeStreamController(TradeStreamService stream) {
+            return new TradeStreamController(stream);
         }
 
         @Bean
