@@ -130,12 +130,12 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- Reusable audit auto-configuration (ADV095) 
+        <!-- Reusable audit auto-configuration (ADV095) -->
         <dependency>
             <groupId>com.dbtraining.reconx</groupId>
             <artifactId>recon-audit-starter</artifactId>
             <version>1.0.0</version>
-        </dependency> -->
+        </dependency>
 
         <!-- Caching (ADV081-ADV082) -->
         <dependency>
