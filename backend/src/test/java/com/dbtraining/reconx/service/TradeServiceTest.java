@@ -12,6 +12,7 @@ import com.dbtraining.reconx.repository.entity.Counterparty;
 import com.dbtraining.reconx.repository.entity.Instrument;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -45,7 +46,8 @@ class TradeServiceTest {
             tradeRepository,
             counterpartyRepository,
             instrumentRepository,
-            mock(TradeMetrics.class));
+            mock(TradeMetrics.class),
+            mock(MeterRegistry.class));
 
     @Test
     void findByIdReturnsTrade() {
