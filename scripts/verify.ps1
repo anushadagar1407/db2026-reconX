@@ -30,6 +30,16 @@ $ReportRoot = $env:RECONX_VERIFY_REPORT_DIR
 if ([string]::IsNullOrWhiteSpace($ReportRoot)) {
     $ReportRoot = Join-Path $RepoRoot ".verification-reports"
 }
+try {
+    $ReportRootFullPath = [System.IO.Path]::GetFullPath($ReportRoot, $RepoRoot)
+} catch {
+    Write-Error "Invalid report directory '$ReportRoot': $($_.Exception.Message)"
+    exit 2
+}
+if ($ReportRootFullPath -eq [System.IO.Path]::GetPathRoot($ReportRootFullPath)) {
+    Write-Error "Refusing filesystem-root report directory: $ReportRoot"
+    exit 2
+}
 if ($ReportRoot -match '(^|[\\/])\.\.?(?:[\\/]|$)') {
     Write-Error "Refusing aliased report directory: $ReportRoot"
     exit 2
@@ -262,6 +272,11 @@ function Require-LoadArtifacts {
     return 0
 }
 
+function Test-LoadArtifactCredentials {
+    & node (Join-Path $RepoRoot "scripts/load/validate-artifacts.mjs") $script:LoadArtifactDir
+    return [int]$LASTEXITCODE
+}
+
 function Invoke-Load {
     $ProjectName = "reconx-adv097-{0}-{1}" -f [DateTimeOffset]::UtcNow.ToString("yyyyMMddHHmmss"), $PID
     $ComposeFile = Join-Path $RepoRoot "docker-compose.load.yml"
@@ -273,6 +288,10 @@ function Invoke-Load {
         Write-Error "Refusing aliased load artifact directory: $LoadArtifactInput"
         return 2
     }
+    if (-not [System.IO.Path]::IsPathRooted($LoadArtifactInput)) {
+        $LoadArtifactInput = Join-Path $RepoRoot $LoadArtifactInput
+    }
+    $LoadArtifactInput = [System.IO.Path]::GetFullPath($LoadArtifactInput)
     $LoadArtifactName = Split-Path -Leaf $LoadArtifactInput
     $LoadArtifactParent = Split-Path -Parent $LoadArtifactInput
     if ([string]::IsNullOrWhiteSpace($LoadArtifactName) -or $LoadArtifactName -in @(".", "..")) {
@@ -388,6 +407,9 @@ function Invoke-Load {
                 $Line = "$_"
                 $Line = $Line -replace '(?i)(Using generated security password:\s*)\S+', '${1}[REDACTED]'
                 $Line = $Line -replace '(?i)(Authorization:\s*Bearer\s+)\S+', '${1}[REDACTED]'
+                $Line = $Line -replace '(?i)(GF_SECURITY_ADMIN_PASSWORD[=:]\s*)[^\s,]+', '${1}[REDACTED]'
+                $Line = $Line -replace '(?i)(JWT_SECRET[=:]\s*)[^\s,]+', '${1}[REDACTED]'
+                $Line = $Line -replace '\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b', '[REDACTED]'
                 $Line
             }
         $ComposeLog | Set-Content -LiteralPath (Join-Path $LoadArtifactDir "compose.log")
@@ -400,6 +422,10 @@ function Invoke-Load {
         }
     }
 
+    $ArtifactStatus = Require-LoadArtifacts
+    $CredentialStatus = Test-LoadArtifactCredentials
+    if ($LoadStatus -eq 0 -and $ArtifactStatus -ne 0) { $LoadStatus = $ArtifactStatus }
+    if ($LoadStatus -eq 0 -and $CredentialStatus -ne 0) { $LoadStatus = $CredentialStatus }
     if ($LoadStatus -ne 0) {
         Write-Error "ADV097 load verification failed (status=$LoadStatus). Artifacts: $LoadArtifactDir"
         return 1
@@ -408,8 +434,6 @@ function Invoke-Load {
         Write-Error "ADV097 cleanup failed (status=$CleanupStatus). Project: $ProjectName"
         return 1
     }
-    $ArtifactStatus = Require-LoadArtifacts
-    if ($ArtifactStatus -ne 0) { return $ArtifactStatus }
     Write-Host "ADV097 load verification passed. Artifacts: $LoadArtifactDir"
     return 0
 }

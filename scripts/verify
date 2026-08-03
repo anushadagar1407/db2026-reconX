@@ -34,6 +34,12 @@ else
   report_root=$repo_root/.verification-reports
 fi
 
+case "$report_root" in
+  /|//)
+    printf 'Refusing filesystem-root report directory: %s\n' "$report_root" >&2
+    exit 2
+    ;;
+esac
 case "/$report_root/" in
   */../*|*/./*)
     printf 'Refusing aliased report directory: %s\n' "$report_root" >&2
@@ -240,7 +246,10 @@ run_logged_load_command() {
 redact_compose_logs() {
   sed -E \
     -e 's/(Using generated security password: )[[:alnum:][:punct:]]+/\1[REDACTED]/g' \
-    -e 's/(Authorization: Bearer )[[:alnum:]._~+\/-]+/\1[REDACTED]/g'
+    -e 's/(Authorization: Bearer )[[:alnum:]._~+\/-]+/\1[REDACTED]/g' \
+    -e 's/(GF_SECURITY_ADMIN_PASSWORD[=:][[:space:]]*)[^[:space:],]+/\1[REDACTED]/Ig' \
+    -e 's/(JWT_SECRET[=:][[:space:]]*)[^[:space:],]+/\1[REDACTED]/Ig' \
+    -e 's/eyJ[[:alnum:]_-]+\.[[:alnum:]_-]+\.[[:alnum:]_-]+/[REDACTED]/g'
 }
 
 require_load_artifacts() {
@@ -257,6 +266,10 @@ require_load_artifacts() {
       return 1
     fi
   done
+}
+
+validate_load_artifact_credentials() {
+  node "$repo_root/scripts/load/validate-artifacts.mjs" "$load_artifact_dir"
 }
 
 run_load() {
@@ -385,8 +398,11 @@ run_load() {
     load_cleanup_required=0
   fi
 
-  if [ "$load_status" -eq 0 ]; then
-    require_load_artifacts || load_status=$?
+  artifact_status=0
+  require_load_artifacts || artifact_status=$?
+  validate_load_artifact_credentials || artifact_status=$?
+  if [ "$load_status" -eq 0 ] && [ "$artifact_status" -ne 0 ]; then
+    load_status=$artifact_status
   fi
   if [ "$load_status" -ne 0 ]; then
     printf '\nADV097 load verification failed (status=%s). Artifacts: %s\n' \

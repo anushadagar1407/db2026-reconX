@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const read = (relativePath) => readFile(resolve(repositoryRoot, relativePath), 'utf8');
@@ -85,12 +87,59 @@ assert.match(loadCompose, /load-export/);
 assert.match(posixWrapper, /all\|backend\|frontend\|load/);
 assert.match(powershellWrapper, /all", "backend", "frontend", "load"/);
 assert.match(posixWrapper, /prepare_owned_directory/);
+assert.match(posixWrapper, /Refusing filesystem-root report directory/);
 assert.match(posixWrapper, /Refusing cleanup without wrapper ownership marker/);
+assert.match(posixWrapper, /validate-artifacts\.mjs/);
+assert.match(posixWrapper, /GF_SECURITY_ADMIN_PASSWORD/);
 assert.match(posixWrapper, /--profile load down --volumes/);
 assert.doesNotMatch(posixWrapper, /rm -rf "\$report_root\/(backend|frontend)"/);
 assert.match(powershellWrapper, /Prepare-OwnedDirectory/);
+assert.match(powershellWrapper, /Refusing filesystem-root report directory/);
 assert.match(powershellWrapper, /Refusing cleanup without wrapper ownership marker/);
+assert.match(powershellWrapper, /IsPathRooted\(\$LoadArtifactInput\)/);
+assert.match(powershellWrapper, /Join-Path \$RepoRoot \$LoadArtifactInput/);
+assert.match(powershellWrapper, /validate-artifacts\.mjs/);
+assert.match(powershellWrapper, /GF_SECURITY_ADMIN_PASSWORD/);
 assert.match(powershellWrapper, /"--profile", "load", "down"/);
 assert.doesNotMatch(powershellWrapper, /Remove-Item -LiteralPath \(Join-Path \$ReportRoot/);
+
+const testRoot = await mkdtemp(join(tmpdir(), 'reconx-adv097-static-'));
+try {
+  const fakeBin = join(testRoot, 'bin');
+  const operationLog = join(testRoot, 'root-operations.log');
+  await mkdir(fakeBin);
+  for (const command of ['mkdir', 'rm']) {
+    const fakeCommand = join(fakeBin, command);
+    await writeFile(fakeCommand, `#!/bin/sh\nprintf '%s\\n' "$0 $*" >> "$RECONX_TEST_OPERATION_LOG"\nexit 99\n`);
+    await chmod(fakeCommand, 0o755);
+  }
+  const rootResult = spawnSync(join(repositoryRoot, 'scripts/verify'), ['all'], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      PATH: `${fakeBin}:${process.env.PATH}`,
+      RECONX_TEST_OPERATION_LOG: operationLog,
+      RECONX_VERIFY_REPORT_DIR: '/',
+    },
+  });
+  assert.equal(rootResult.status, 2);
+  assert.match(rootResult.stderr, /Refusing filesystem-root report directory: \//);
+  await assert.rejects(readFile(operationLog, 'utf8'), { code: 'ENOENT' });
+
+  const safeArtifacts = join(testRoot, 'safe');
+  await mkdir(safeArtifacts);
+  await writeFile(join(safeArtifacts, 'safe.json'), '{"password":"[REDACTED]","token":null}\n');
+  await writeFile(join(safeArtifacts, 'safe.log'), 'password field declared without a value\n');
+  const safeResult = spawnSync('node', [join(repositoryRoot, 'scripts/load/validate-artifacts.mjs'), safeArtifacts], { encoding: 'utf8' });
+  assert.equal(safeResult.status, 0, safeResult.stderr);
+
+  await writeFile(join(safeArtifacts, 'unsafe.log'), 'GF_SECURITY_ADMIN_PASSWORD=demo-value\n');
+  const unsafeResult = spawnSync('node', [join(repositoryRoot, 'scripts/load/validate-artifacts.mjs'), safeArtifacts], { encoding: 'utf8' });
+  assert.equal(unsafeResult.status, 1);
+  assert.match(unsafeResult.stderr, /credential-bearing GF_SECURITY_ADMIN_PASSWORD assignment/);
+  assert.doesNotMatch(unsafeResult.stderr, /demo-value/);
+} finally {
+  await rm(testRoot, { recursive: true, force: true });
+}
 
 console.log('ADV097 static wiring validation passed.');

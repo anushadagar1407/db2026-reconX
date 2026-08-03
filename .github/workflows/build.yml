@@ -353,8 +353,16 @@ jobs:
           RECONX_LOAD_ARTIFACT_DIR: ${{ runner.temp }}/reconx-adv097
         run: ./scripts/verify load
 
-      - name: Upload ADV097 tool and panel evidence
+      - name: Validate credential-free ADV097 evidence
+        id: credential-validation
         if: ${{ always() }}
+        run: >-
+          node scripts/load/validate-artifacts.mjs
+          "${RUNNER_TEMP}/reconx-adv097"
+          "${RUNNER_TEMP}/adv097-static-validation.log"
+
+      - name: Upload ADV097 tool and panel evidence
+        if: ${{ always() && steps.credential-validation.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: adv097-load-evidence
