@@ -2,6 +2,7 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.config.CacheConfig;
 import com.dbtraining.reconx.exception.InvalidTradeException;
+import com.dbtraining.reconx.observability.ReconConfigMBean;
 import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.entity.Instrument;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = {
         CacheConfig.class,
+        ReconConfigMBean.class,
         InstrumentServiceCacheTest.TestConfig.class
 })
 class InstrumentServiceCacheTest {
@@ -39,9 +41,13 @@ class InstrumentServiceCacheTest {
     @Autowired
     private CacheManager cacheManager;
 
+    @Autowired
+    private ReconConfigMBean reconConfig;
+
     @BeforeEach
     void clearCacheAndMock() {
         cacheManager.getCache("instruments").clear();
+        reconConfig.setCachingEnabled(true);
         clearInvocations(repository);
     }
 
@@ -70,6 +76,20 @@ class InstrumentServiceCacheTest {
                 .isInstanceOf(InvalidTradeException.class);
 
         verify(repository, org.mockito.Mockito.times(2)).findBySymbol("UNKNOWN");
+    }
+
+    @Test
+    void disabledCachingBypassesReadsAndWrites() {
+        Instrument sap = new Instrument();
+        sap.setSymbol("SAP.DE");
+        when(repository.findBySymbol("SAP.DE")).thenReturn(Optional.of(sap));
+        reconConfig.setCachingEnabled(false);
+
+        service.findBySymbol("SAP.DE");
+        service.findBySymbol("SAP.DE");
+
+        verify(repository, org.mockito.Mockito.times(2)).findBySymbol("SAP.DE");
+        assertThat(cacheManager.getCache("instruments").get("SAP.DE")).isNull();
     }
 
     @Configuration
