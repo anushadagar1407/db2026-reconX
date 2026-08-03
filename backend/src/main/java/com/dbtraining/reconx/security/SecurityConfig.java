@@ -48,7 +48,10 @@ public class SecurityConfig {
                                 "/v1/api-docs",
                                 "/v1/api-docs/**",
                                 "/v3/api-docs/**",
-                                "/h2/**"
+                                "/h2/**",
+                                // Native EventSource cannot attach the API's Bearer header.
+                                // Keep this read-only stream public; mutations remain protected.
+                                "/v1/trades/stream"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/v1/trades/**")

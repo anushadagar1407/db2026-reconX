@@ -6,6 +6,7 @@ import com.dbtraining.reconx.dto.TradeResponse;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.security.JwtTokenProvider;
 import com.dbtraining.reconx.service.TradeService;
+import com.dbtraining.reconx.service.TradeStreamService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,9 @@ class TradeControllerWebMvcTest {
 
     @MockitoBean
     private TradeMapper tradeMapper;
+
+    @MockitoBean
+    private TradeStreamService tradeStreamService;
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;

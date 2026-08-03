@@ -8,6 +8,7 @@ import com.dbtraining.reconx.exception.GlobalExceptionHandler;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
+import com.dbtraining.reconx.service.TradeStreamService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
@@ -59,9 +60,12 @@ class TradeControllerTest {
     @Mock
     private TradeMapper mapper;
 
+    @Mock
+    private TradeStreamService stream;
+
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new TradeController(service, mapper))
+        mockMvc = MockMvcBuilders.standaloneSetup(new TradeController(service, mapper, stream))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();
@@ -168,6 +172,7 @@ class TradeControllerTest {
                 new BigDecimal("100.0"), new BigDecimal("245.50"),
                 LocalDate.of(2026, 7, 30)));
         verify(mapper).toResponse(saved);
+        verify(stream).publish(response);
     }
 
     @Test
