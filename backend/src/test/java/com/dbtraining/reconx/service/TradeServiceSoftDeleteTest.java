@@ -6,7 +6,6 @@ import com.dbtraining.reconx.repository.CounterpartyRepository;
 import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
-import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -25,8 +24,7 @@ class TradeServiceSoftDeleteTest {
             tradeRepository,
             mock(CounterpartyRepository.class),
             mock(InstrumentRepository.class),
-            mock(TradeMetrics.class),
-            mock(MeterRegistry.class));
+            mock(TradeMetrics.class));
 
     @Test
     void softDeleteMarksAndSavesTheLoadedTrade() {
