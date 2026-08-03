@@ -1,0 +1,12 @@
+$kind: http-request
+description: breakId=1 is only a convenience on a fresh seeded database. Missing IDs currently produce 500 instead of the intended 404.
+url: "{{baseUrl}}/v1/recon/results/{{breakId}}"
+method: GET
+headers:
+  - key: Accept
+    value: application/json
+auth:
+  type: bearer
+  credentials:
+    token: "{{reconToken}}"
+order: 4000

@@ -1,0 +1,33 @@
+$kind: http-request
+url: "{{baseUrl}}/v1/trades/{{tradeId}}"
+method: PUT
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "tradeRef": "{{tradeRef}}",
+      "instrumentId": {{testInstrumentId}},
+      "counterpartyId": {{testCounterpartyId}},
+      "assetClass": "EQUITY",
+      "side": "BUY",
+      "quantity": 125.0000,
+      "price": 250.0000,
+      "tradeDate": "{{tradeDate}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status remains 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+        const body = pm.response.json();
+        pm.test("repeated PUT preserves the resource identity and values", () => {
+          pm.expect(String(body.id)).to.eql(pm.collectionVariables.get("tradeId"));
+          pm.expect(body.tradeRef).to.eql(pm.collectionVariables.get("tradeRef"));
+          pm.expect(Number(body.price)).to.eql(250);
+        });
+      }
+    language: text/javascript
+order: 5000

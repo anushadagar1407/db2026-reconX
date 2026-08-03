@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/v1/trades/{{tradeId}}"
+method: GET
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+        const body = pm.response.json();
+        pm.test("created trade is persisted", () => {
+          pm.expect(String(body.id)).to.eql(pm.collectionVariables.get("tradeId"));
+          pm.expect(body.tradeRef).to.eql(pm.collectionVariables.get("tradeRef"));
+          pm.expect(Number(body.price)).to.eql(245.5);
+        });
+      }
+    language: text/javascript
+order: 3000

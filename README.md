@@ -96,6 +96,8 @@ reconx-studentCopy/
 │   ├── prometheus/prometheus.yml
 │   └── grafana/provisioning/
 │
+├── .postman/                      ← Postman Git-connected workspace mapping
+├── postman/                       ← Local API collection + Docker/H2 environments
 ├── .github/workflows/ci.yml       ← Day 10: GitHub Actions pipeline
 ├── docker-compose.yml             ← Day 10: 7-service stack
 ├── .env.example                   ← Sample environment variables
@@ -116,6 +118,7 @@ before you start.**
 - **Node.js 20+** and npm
 - **Docker Desktop** (allocate ≥ 6 GB RAM — Kafka + Postgres + Prometheus + Grafana is heavier than Intermediate)
 - **PostgreSQL 16** client tools (or use the bundled Docker container)
+- **Postman Desktop** (optional, for local API exploration)
 - **Git**
 - IDE: IntelliJ IDEA Ultimate (backend) + VS Code (frontend) recommended
 
@@ -137,12 +140,12 @@ npm install
 npm run dev
 
 # 4. Open
-# - Swagger UI:      http://localhost:8080/swagger-ui.html
+# - Swagger UI:      http://localhost:8080/api/swagger-ui.html
 # - Frontend:        http://localhost:5173
 # - Prometheus:      http://localhost:9090
 # - Grafana:         http://localhost:3000   (admin / admin)
 # - Kafdrop:         http://localhost:9000
-# - Actuator health: http://localhost:8080/actuator/health
+# - Actuator health: http://localhost:8080/api/actuator/health
 ```
 
 ### Default credentials (dev profile only, after you implement Day 5)
@@ -154,8 +157,27 @@ npm run dev
 | VIEWER        | `viewer@db.com` | `viewer123`  |
 | RECON_ANALYST | `recon@db.com`  | `recon123`   |
 
-JWT issued from `POST /api/auth/login` is valid for 60 minutes. Refresh tokens
-live in HttpOnly cookies for 7 days.
+JWT issued from `POST /api/auth/login` is valid for 60 minutes. There is no
+refresh-token endpoint yet; authenticate again when a local token expires.
+
+### Local API testing with Postman
+
+The repository is connected to a Postman Desktop project workspace through
+`.postman/resources.yaml`. Postman automatically registers the split YAML
+resources under `postman/` in Local View and writes desktop edits back to those
+files, so collection changes are reviewed and shared through normal Git commits.
+
+After cloning, open the repository folder in the same Postman project workspace
+and switch to Local View. Select `ReconX - Local Docker` when using the Compose
+stack or `ReconX - Local H2` when running the backend with the dev profile. Run
+folder `01 Authentication` first to save the role-specific JWTs as local values
+in the selected environment, then send individual requests or use Postman's
+Collection Runner. The checked-in shared token values remain blank.
+
+Folders `00` through `07` cover the current runnable API. Folder `90` contains
+manual or destructive operations, and folder `99` records API surfaces blocked
+by future tickets. Do not add deployed credentials or generated JWT values to
+the checked-in workspace files.
 
 ---
 

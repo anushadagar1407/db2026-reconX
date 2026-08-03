@@ -1,0 +1,37 @@
+$kind: http-request
+url: "{{baseUrl}}/v1/trades?page=0&size=5&sort=tradeDate,desc"
+method: GET
+headers:
+  - key: Accept
+    value: application/json
+queryParams:
+  - key: page
+    value: '0'
+  - key: size
+    value: '5'
+  - key: sort
+    value: 'tradeDate,desc'
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+        const body = pm.response.json();
+        pm.test("page envelope uses the current DTO", () => {
+          pm.expect(body.items).to.be.an("array");
+          pm.expect(body.page).to.eql(0);
+          pm.expect(body.size).to.eql(5);
+          pm.expect(body.totalElements).to.be.a("number");
+          pm.expect(body.totalPages).to.be.a("number");
+          pm.expect(body).not.to.have.property("content");
+        });
+        pm.test("local seed contains at least one trade", () => pm.expect(body.items).not.to.be.empty);
+        if (body.items.length > 0) {
+          pm.collectionVariables.set("seedTradeId", String(body.items[0].id));
+          pm.collectionVariables.set("seedTradeRef", body.items[0].tradeRef);
+          pm.collectionVariables.set("testInstrumentId", String(body.items[0].instrumentId));
+          pm.collectionVariables.set("testCounterpartyId", String(body.items[0].counterpartyId));
+        }
+      }
+    language: text/javascript
+order: 1000

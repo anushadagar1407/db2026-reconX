@@ -1,0 +1,7 @@
+$kind: collection
+description: Authenticates all seeded roles and captures each JWT in collection scope for subsequent folders. Login returns token, not accessToken.
+auth:
+  - id: ""
+    type: noauth
+    name: No Auth
+order: 2000
