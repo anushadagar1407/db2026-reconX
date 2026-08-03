@@ -407,8 +407,8 @@ function Invoke-Load {
                 $Line = "$_"
                 $Line = $Line -replace '(?i)(Using generated security password:\s*)\S+', '${1}[REDACTED]'
                 $Line = $Line -replace '(?i)(Authorization:\s*Bearer\s+)\S+', '${1}[REDACTED]'
-                $Line = $Line -replace '(?i)(GF_SECURITY_ADMIN_PASSWORD[=:]\s*)[^\s,]+', '${1}[REDACTED]'
-                $Line = $Line -replace '(?i)(JWT_SECRET[=:]\s*)[^\s,]+', '${1}[REDACTED]'
+                $Line = $Line -replace '(?i)(GF_SECURITY_ADMIN_PASSWORD[=:]\s*)[^\s,"]+', '${1}[REDACTED]'
+                $Line = $Line -replace '(?i)(JWT_SECRET[=:]\s*)[^\s,"]+', '${1}[REDACTED]'
                 $Line = $Line -replace '\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b', '[REDACTED]'
                 $Line
             }

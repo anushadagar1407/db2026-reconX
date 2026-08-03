@@ -247,8 +247,8 @@ redact_compose_logs() {
   sed -E \
     -e 's/(Using generated security password: )[[:alnum:][:punct:]]+/\1[REDACTED]/g' \
     -e 's/(Authorization: Bearer )[[:alnum:]._~+\/-]+/\1[REDACTED]/g' \
-    -e 's/(GF_SECURITY_ADMIN_PASSWORD[=:][[:space:]]*)[^[:space:],]+/\1[REDACTED]/Ig' \
-    -e 's/(JWT_SECRET[=:][[:space:]]*)[^[:space:],]+/\1[REDACTED]/Ig' \
+    -e 's/(GF_SECURITY_ADMIN_PASSWORD[=:][[:space:]]*)[^[:space:],"]+/\1[REDACTED]/Ig' \
+    -e 's/(JWT_SECRET[=:][[:space:]]*)[^[:space:],"]+/\1[REDACTED]/Ig' \
     -e 's/eyJ[[:alnum:]_-]+\.[[:alnum:]_-]+\.[[:alnum:]_-]+/[REDACTED]/g'
 }
 
