@@ -40,7 +40,7 @@ class TradeLifecycleIT {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         var response = http.postForEntity(
-                "/api/auth/login",
+                "/auth/login",
                 new HttpEntity<>("""
                         {"username":"admin@db.com","password":"admin123"}
                         """, headers),
@@ -56,7 +56,7 @@ class TradeLifecycleIT {
     @Order(2)
     void createTrade() {
         var response = http.exchange(
-                "/api/v1/trades",
+                "/v1/trades",
                 HttpMethod.POST,
                 authenticatedRequest("""
                         {
@@ -82,7 +82,7 @@ class TradeLifecycleIT {
     @Order(3)
     void getTradeBack() {
         var response = http.exchange(
-                "/api/v1/trades?status=PENDING",
+                "/v1/trades?status=PENDING",
                 HttpMethod.GET,
                 authenticatedRequest(),
                 JsonNode.class);
@@ -96,7 +96,7 @@ class TradeLifecycleIT {
     @Order(4)
     void patchStatus() {
         var response = http.exchange(
-                "/api/v1/trades/{id}/status",
+                "/v1/trades/{id}/status",
                 HttpMethod.PATCH,
                 authenticatedRequest("""
                         {"status":"MATCHED"}
@@ -113,7 +113,7 @@ class TradeLifecycleIT {
     @Order(5)
     void triggerRecon() {
         var response = http.exchange(
-                "/api/v1/recon/run",
+                "/v1/recon/run",
                 HttpMethod.POST,
                 authenticatedRequest("""
                         {"from":"2026-03-01","to":"2026-03-31"}
@@ -131,7 +131,7 @@ class TradeLifecycleIT {
     void resolveBreak() {
         breakId = 1L;
         var response = http.exchange(
-                "/api/v1/recon/results/{id}/resolve",
+                "/v1/recon/results/{id}/resolve",
                 HttpMethod.PUT,
                 authenticatedRequest("""
                         {"note":"Confirmed via counterparty email on 2026-03-16."}
