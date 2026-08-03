@@ -1139,7 +1139,7 @@ done
 
 ---
 
-### TICKET-ADV091 — Grafana stat panel: `recon_break_count`
+### TICKET-ADV091 — Grafana stat panel: `recon_break_count` -Done
 
 **Goal:** A single big-number tile showing the current open-break count, coloured by severity.
 
