@@ -1,11 +1,11 @@
 # ============================================================================
 # TICKET-ADV146 — Spring Boot Dockerfile (multi-stage Maven -> JRE 25 slim)
 #
-# Stage 1: build the JAR with Temurin JDK 25 + Maven.
-# Stage 2: copy ONLY the JAR onto a slim JRE image.
+# Shared JDK layers feed one-shot tests and the production JAR build.
+# The final image copies only the JAR onto a slim JRE image.
 # ============================================================================
 
-FROM eclipse-temurin:25-jdk AS build
+FROM eclipse-temurin:25-jdk AS build-base
 WORKDIR /workspace/backend
 COPY backend/pom.xml backend/mvnw ./
 COPY backend/.mvn .mvn
@@ -15,10 +15,15 @@ COPY recon-audit-starter/src /workspace/recon-audit-starter/src
 RUN ./mvnw -q -B -f ../recon-audit-starter/pom.xml install
 RUN ./mvnw -q -B dependency:go-offline || true
 COPY backend/src src
+
+FROM build-base AS test
+CMD ["./mvnw", "--batch-mode", "--no-transfer-progress", "verify"]
+
+FROM build-base AS build
 RUN ./mvnw -q -B -DskipTests package && \
     mv target/reconx-*.jar app.jar
 
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:25-jre-alpine AS production
 RUN addgroup -S reconx && adduser -S reconx -G reconx
 USER reconx
 WORKDIR /app

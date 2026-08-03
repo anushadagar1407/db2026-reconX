@@ -9,6 +9,7 @@ import com.dbtraining.reconx.controller.TradeStreamController;
 import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.repository.AppUserRepository;
 import com.dbtraining.reconx.repository.AuditLogRepository;
+import com.dbtraining.reconx.repository.JdbcReconJobRepository;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
 import com.dbtraining.reconx.repository.entity.ReconBreak;
 import com.dbtraining.reconx.repository.entity.Trade;
@@ -80,6 +81,9 @@ class SecurityConfigTest {
 
     @MockBean
     private ReconBreakRepository reconBreakRepository;
+
+    @MockBean
+    private JdbcReconJobRepository reconciliationJobRepository;
 
     @MockBean
     private AuditLogRepository auditLogRepository;
@@ -447,8 +451,9 @@ class SecurityConfigTest {
         }
 
         @Bean
-        ReconController reconController(ReconBreakRepository breaks) {
-            return new ReconController(breaks);
+        ReconController reconController(ReconBreakRepository breaks,
+                                        JdbcReconJobRepository reconciliationJobs) {
+            return new ReconController(breaks, reconciliationJobs);
         }
 
         @Bean

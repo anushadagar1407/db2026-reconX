@@ -9,19 +9,16 @@ import com.dbtraining.reconx.repository.ExternalTradeRepository;
 import com.dbtraining.reconx.repository.InternalTradeRepository;
 import com.dbtraining.reconx.repository.JdbcReconResultRepository;
 import com.dbtraining.reconx.repository.ReconResultRepository;
+import com.dbtraining.reconx.support.PostgresTestConfiguration;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,8 +32,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.reset;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
+@Import(PostgresTestConfiguration.class)
 class ReconciliationIntegrationTest {
 
     @Autowired
@@ -53,26 +50,6 @@ class ReconciliationIntegrationTest {
 
     @MockitoSpyBean
     private JdbcReconResultRepository jdbcReconResultRepository;
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("reconx")
-            .withUsername("test")
-            .withPassword("test");
-
-    @DynamicPropertySource
-    static void props(DynamicPropertyRegistry r) {
-        r.add("spring.datasource.url", postgres::getJdbcUrl);
-        r.add("spring.datasource.username", postgres::getUsername);
-        r.add("spring.datasource.password", postgres::getPassword);
-        r.add("spring.datasource.driver-class-name", postgres::getDriverClassName);
-        r.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
-    }
-
-    @Test
-    void containerIsRunning() {
-        assertThat(postgres.isRunning()).isTrue();
-    }
 
     @Test
     @Transactional

@@ -8,8 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:ci": "vitest run --mode ci",
     "test:watch": "vitest",
-    "lint": "eslint src --max-warnings 0"
+    "lint": "eslint src --max-warnings 0",
+    "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",

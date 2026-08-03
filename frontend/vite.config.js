@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   resolve: {
     alias: {
@@ -25,5 +25,11 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test-setup.js',
+    ...(mode === 'ci'
+      ? {
+          reporters: ['default', 'junit'],
+          outputFile: { junit: './test-results/vitest-junit.xml' },
+        }
+      : {}),
   },
-});
+}));

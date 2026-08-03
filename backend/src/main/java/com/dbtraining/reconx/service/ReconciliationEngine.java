@@ -7,6 +7,7 @@ import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.TradeType;
+import com.dbtraining.reconx.observability.ReconConfigMBean;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Service;
@@ -40,8 +41,10 @@ import java.util.stream.Collectors;
 public class ReconciliationEngine {
 
     private final Timer reconciliationTimer;
+    private final ReconConfigMBean reconConfig;
 
-    public ReconciliationEngine(MeterRegistry meterRegistry) {
+    public ReconciliationEngine(MeterRegistry meterRegistry, ReconConfigMBean reconConfig) {
+        this.reconConfig = reconConfig;
         this.reconciliationTimer = Timer.builder("reconciliation_duration")
                 .description("Time spent reconciling internal and external trades")
                 .publishPercentileHistogram()
@@ -51,12 +54,16 @@ public class ReconciliationEngine {
     public List<ReconResult> reconcile(List<TradeType> internal,
                                        List<TradeType> external,
                                        ReconciliationRule rule) {
-        return reconciliationTimer.record(() -> reconcileBatch(internal, external, rule));
+        BigDecimal priceTolerance = rule == ReconciliationRule.PRICE_TOLERANCE_1PCT
+                ? BigDecimal.valueOf(reconConfig.getPriceTolerance())
+                : rule.priceTolerancePct();
+        return reconciliationTimer.record(() -> reconcileBatch(internal, external, rule, priceTolerance));
     }
 
     private List<ReconResult> reconcileBatch(List<TradeType> internal,
-                                             List<TradeType> external,
-                                             ReconciliationRule rule) {
+                                              List<TradeType> external,
+                                              ReconciliationRule rule,
+                                              BigDecimal priceTolerance) {
         // TICKET-ADV033: build a Map<tradeRef, TradeType> from `external`
         //   (O(1) lookups beat O(n*m) nested iteration), then parallelStream
         //   over `internal` and call matchOne(in, externalByRef.get(...), rule)
@@ -84,7 +91,11 @@ public class ReconciliationEngine {
 
         // Stream over the internal trades, match each one with the external trades, and collect results into a List
         return internal.parallelStream()
-                .map(trade -> matchOne(trade, externalByRef.get(trade.tradeRef().value()), rule))
+                .map(trade -> matchOne(
+                        trade,
+                        externalByRef.get(trade.tradeRef().value()),
+                        rule,
+                        priceTolerance))
                 .collect(Collectors.toList());
     }
 
@@ -113,7 +124,10 @@ public class ReconciliationEngine {
                         .toList());
     }
 
-    private ReconResult matchOne(TradeType internal, TradeType external, ReconciliationRule rule) {
+    private ReconResult matchOne(TradeType internal,
+                                 TradeType external,
+                                 ReconciliationRule rule,
+                                 BigDecimal priceTolerance) {
         // TICKET-ADV033: if external is null return ReconResult.breakResult(ref, "MISSING_EXTERNAL", ...).
         //   Otherwise pull priceQty() for both sides, compare via rule.matches(...),
         //   return ReconResult.matched(ref) or breakResult(ref, "VALUE_MISMATCH", details).
@@ -131,7 +145,8 @@ public class ReconciliationEngine {
                 internalPair[0],
                 internalPair[1],
                 externalPair[0],
-                externalPair[1])) {
+                externalPair[1],
+                priceTolerance)) {
             return ReconResult.matched(ref);
         }
 

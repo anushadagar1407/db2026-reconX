@@ -3,6 +3,7 @@ package com.dbtraining.reconx.controller;
 import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.repository.AppUserRepository;
 import com.dbtraining.reconx.repository.AuditLogRepository;
+import com.dbtraining.reconx.repository.JdbcReconJobRepository;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
 import com.dbtraining.reconx.security.JwtTokenProvider;
 import com.dbtraining.reconx.service.TradeService;
@@ -52,6 +53,9 @@ class ApiVersioningControllerTest {
     private ReconBreakRepository reconBreakRepository;
 
     @Mock
+    private JdbcReconJobRepository reconciliationJobRepository;
+
+    @Mock
     private AuditLogRepository auditLogRepository;
 
     @Mock
@@ -69,7 +73,7 @@ class ApiVersioningControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new TradeController(tradeService, tradeMapper, tradeStreamService),
-                        new ReconController(reconBreakRepository),
+                        new ReconController(reconBreakRepository, reconciliationJobRepository),
                         new AuditController(auditLogRepository),
                         new AuthController(appUserRepository, passwordEncoder, jwtTokenProvider),
                         new DeprecatedTradeController())
