@@ -4,6 +4,7 @@ import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.exception.GlobalExceptionHandler;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.service.TradeService;
+import com.dbtraining.reconx.service.TradeStreamService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,8 @@ class TradeControllerSoftDeleteTest {
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("delete-actor", "password"));
-        mockMvc = MockMvcBuilders.standaloneSetup(new TradeController(service, mock(TradeMapper.class)))
+        mockMvc = MockMvcBuilders.standaloneSetup(new TradeController(
+                        service, mock(TradeMapper.class), mock(TradeStreamService.class)))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();

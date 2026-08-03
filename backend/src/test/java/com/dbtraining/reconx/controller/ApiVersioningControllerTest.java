@@ -7,6 +7,7 @@ import com.dbtraining.reconx.repository.JdbcReconJobRepository;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
 import com.dbtraining.reconx.security.JwtTokenProvider;
 import com.dbtraining.reconx.service.TradeService;
+import com.dbtraining.reconx.service.TradeStreamService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +47,9 @@ class ApiVersioningControllerTest {
     private TradeMapper tradeMapper;
 
     @Mock
+    private TradeStreamService tradeStreamService;
+
+    @Mock
     private ReconBreakRepository reconBreakRepository;
 
     @Mock
@@ -68,7 +72,7 @@ class ApiVersioningControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(
-                        new TradeController(tradeService, tradeMapper),
+                        new TradeController(tradeService, tradeMapper, tradeStreamService),
                         new ReconController(reconBreakRepository, reconciliationJobRepository),
                         new AuditController(auditLogRepository),
                         new AuthController(appUserRepository, passwordEncoder, jwtTokenProvider),
