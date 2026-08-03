@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * ============================================================================
@@ -81,8 +82,8 @@ public enum ReconciliationRule {
         // Prevent division by 0 erros
         BigDecimal priceDiffPct;
         if (internalPrice.compareTo(new BigDecimal("0")) > 0) {
-            priceDiffPct = priceDiff.divide(internalPrice);
-        } else if (priceDiff.equals(new BigDecimal("0"))){
+            priceDiffPct = priceDiff.divide(internalPrice, 6, RoundingMode.HALF_UP);
+        } else if (priceDiff.compareTo(BigDecimal.ZERO) == 0) {
             priceDiffPct = new BigDecimal("0");
         } else {
             priceDiffPct = new BigDecimal("100");
@@ -95,6 +96,30 @@ public enum ReconciliationRule {
         }
 
         return false;
+    }
 
+    // TICHKET-ADV-096 Overloaded matches method allowing a dynamic price tolerance.
+    public boolean matches(BigDecimal internalPrice, BigDecimal internalQty,
+                           BigDecimal externalPrice, BigDecimal externalQty,
+                           double overridePriceTolerance) {
+
+        BigDecimal priceDiff = internalPrice.subtract(externalPrice).abs();
+        BigDecimal priceDiffPct;
+        if (internalPrice.compareTo(BigDecimal.ZERO) > 0) {
+            // Use MathContext or scale to prevent ArithmeticException on non-terminating decimals (e.g. 1/3)
+            priceDiffPct = priceDiff.divide(internalPrice, 6, RoundingMode.HALF_UP);
+        } else if (priceDiff.compareTo(BigDecimal.ZERO) == 0) { // CompareTo checks value and scale
+            priceDiffPct = BigDecimal.ZERO;
+        } else {
+            priceDiffPct = new BigDecimal("100");
+        }
+
+        BigDecimal qtyDiff = internalQty.subtract(externalQty).abs();
+
+        // Convert runtime double tolerance to BigDecimal
+        BigDecimal effectivePriceTol = BigDecimal.valueOf(overridePriceTolerance);
+
+        return priceDiffPct.compareTo(effectivePriceTol) <= 0
+                && qtyDiff.compareTo(this.qtyToleranceAbs) <= 0;
     }
 }

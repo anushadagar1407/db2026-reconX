@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.entity.Instrument;
@@ -20,14 +21,30 @@ public class InstrumentService {
     private static final Logger log = LoggerFactory.getLogger(InstrumentService.class);
 
     private final InstrumentRepository repo;
+    private final ReconConfig reconConfig;
 
-    public InstrumentService(InstrumentRepository repo) { this.repo = repo; }
+    public InstrumentService(InstrumentRepository repo, ReconConfig reconConfig) {
+        this.repo = repo;
+        this.reconConfig = reconConfig;
+    }
 
-    @Cacheable(value = "instruments", key = "#symbol")
+    @Cacheable(value = "instruments", key = "#symbol", condition = "@reconConfig.isCachingEnabled()")
     public Instrument findBySymbol(String symbol) {
+
+        // If caching is disabled, bypass @Cacheable entirely
+        if (!reconConfig.isCachingEnabled()) {
+            return loadFromDb(symbol);
+        }
+        // When caching is enabled, @Cacheable will intercept this call
+        return loadFromDb(symbol);
+    }
+
+
+    private Instrument loadFromDb(String symbol) {
         log.info("DB hit for {}", symbol);
         return repo.findBySymbol(symbol)
                 .orElseThrow(() ->
                         new InvalidTradeException("Unknown instrument symbol: " + symbol));
     }
+
 }

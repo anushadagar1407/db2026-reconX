@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -11,14 +12,20 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.cache.CacheManager;
+
 /**
  * TICKET-ADV040 / ADV041 / ADV042 — TDD: write the test FIRST, then the impl.
  */
 class ReconciliationEngineTest {
 
-    private final ReconciliationEngine engine = new ReconciliationEngine(new SimpleMeterRegistry());
+    CacheManager cacheManagerMock = mock(CacheManager.class);
+    ReconConfig reconConfig = new ReconConfig(cacheManagerMock);
+    private final ReconciliationEngine engine = new ReconciliationEngine(new SimpleMeterRegistry(), reconConfig);
 
     @Test
     @DisplayName("Reconcile exact match returns MATCHED")

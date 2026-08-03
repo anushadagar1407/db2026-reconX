@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.BondTrade;
 import com.dbtraining.reconx.model.DerivativeTrade;
@@ -40,12 +41,14 @@ import java.util.stream.Collectors;
 public class ReconciliationEngine {
 
     private final Timer reconciliationTimer;
+    private final ReconConfig reconConfig;
 
-    public ReconciliationEngine(MeterRegistry meterRegistry) {
+    public ReconciliationEngine(MeterRegistry meterRegistry, ReconConfig reconConfig) {
         this.reconciliationTimer = Timer.builder("reconciliation_duration")
                 .description("Time spent reconciling internal and external trades")
                 .publishPercentileHistogram()
                 .register(meterRegistry);
+        this.reconConfig = reconConfig;
     }
 
     public List<ReconResult> reconcile(List<TradeType> internal,
@@ -127,11 +130,15 @@ public class ReconciliationEngine {
 
         BigDecimal[] internalPair = priceQty(internal);
         BigDecimal[] externalPair = priceQty(external);
+
+        double tol = reconConfig.getPriceTolerance();
+
         if (rule.matches(
                 internalPair[0],
                 internalPair[1],
                 externalPair[0],
-                externalPair[1])) {
+                externalPair[1],
+                tol)) {
             return ReconResult.matched(ref);
         }
 

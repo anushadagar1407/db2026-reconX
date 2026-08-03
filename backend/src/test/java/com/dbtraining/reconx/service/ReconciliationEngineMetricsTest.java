@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
@@ -9,19 +10,23 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheusmetrics.PrometheusConfig;
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.springframework.cache.CacheManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class ReconciliationEngineMetricsTest {
 
     @Test
     void recordsEveryReconcileInvocationAndPreservesResults() {
         PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-        ReconciliationEngine engine = new ReconciliationEngine(registry);
+        CacheManager cacheManagerMock = mock(CacheManager.class);
+        ReconConfig reconConfig = new ReconConfig(cacheManagerMock);
+        ReconciliationEngine engine = new ReconciliationEngine(registry, reconConfig);
 
         List<ReconResult> matched = engine.reconcile(
                 List.of(equity("ABC-20260729-0001", "100.00", "10")),
