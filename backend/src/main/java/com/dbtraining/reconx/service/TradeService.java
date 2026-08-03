@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
+import com.dbtraining.reconx.kafka.AlertProducer;
 import com.dbtraining.reconx.dto.TradeEvent;
 
 
@@ -46,17 +47,20 @@ public class TradeService {
     private final InstrumentRepository instRepo;
     private final TradeMetrics metrics;
     private final TradeEventProducer events;
+    private final AlertProducer alerts;
 
     public TradeService(TradeRepository tradeRepo,
             CounterpartyRepository cpRepo,
             InstrumentRepository instRepo,
             TradeMetrics metrics,
-            TradeEventProducer events) {
+            TradeEventProducer events,
+            AlertProducer alerts) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
         this.metrics = metrics;
         this.events = events;
+        this.alerts = alerts;
         
     }
 
@@ -107,6 +111,7 @@ public class TradeService {
             if (!isTradeReferenceUniqueViolation(ex)) {
                 throw ex;
             }
+            alerts.publish(TradeEvent.created(trade.getTradeRef()));
             throw new DuplicateTradeRefException(
                     "Trade with reference " + req.tradeRef() + " already exists", ex);
         }

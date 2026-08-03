@@ -20,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
+import com.dbtraining.reconx.kafka.AlertProducer;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -48,7 +49,8 @@ class TradeServiceTest {
             counterpartyRepository,
             instrumentRepository,
             tradeMetrics,
-            mock(TradeEventProducer.class));
+            mock(TradeEventProducer.class),
+            mock(AlertProducer.class));
 
     @Test
     void findByIdReturnsTrade() {

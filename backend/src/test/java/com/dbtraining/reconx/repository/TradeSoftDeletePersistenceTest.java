@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
+import com.dbtraining.reconx.kafka.AlertProducer;
 
 import java.sql.Timestamp;
 
@@ -40,7 +41,8 @@ class TradeSoftDeletePersistenceTest {
                 mock(CounterpartyRepository.class),
                 mock(InstrumentRepository.class),
                 mock(TradeMetrics.class),
-                mock(TradeEventProducer.class));
+                mock(TradeEventProducer.class),
+                mock(AlertProducer.class));
     }
 
     @Test
