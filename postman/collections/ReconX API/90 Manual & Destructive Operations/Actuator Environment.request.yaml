@@ -1,0 +1,8 @@
+$kind: http-request
+description: Authenticated operational endpoint. Spring sanitizes sensitive values; do not save responses as examples.
+url: "{{baseUrl}}/actuator/env"
+method: GET
+headers:
+  - key: Accept
+    value: application/json
+order: 2000

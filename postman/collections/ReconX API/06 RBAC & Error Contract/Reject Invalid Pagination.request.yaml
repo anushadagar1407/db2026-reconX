@@ -1,0 +1,21 @@
+$kind: http-request
+url: "{{baseUrl}}/v1/trades?page=-1&size=0&sort=notAField,sideways"
+method: GET
+queryParams:
+  - key: page
+    value: "-1"
+  - key: size
+    value: "0"
+  - key: sort
+    value: notAField,sideways
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 400", () => pm.response.to.have.status(400));
+      pm.test("invalid query problem is returned", () => {
+        const body = pm.response.json();
+        pm.expect(body.status).to.eql(400);
+        pm.expect(body.detail).to.include("page");
+      });
+    language: text/javascript
+order: 6000

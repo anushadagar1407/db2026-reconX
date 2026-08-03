@@ -1,53 +1,112 @@
-// TICKET-ADV112-related — fetch wrapper that attaches Bearer JWT from sessionStorage.
+// TICKET-ADV112 — HTTP boundary for the versioned ReconX API.
 const BASE = '/api';
 
 function authHeaders() {
-  // TODO(TICKET-ADV112): read 'reconx-token' from sessionStorage and return
-  //                     { Authorization: `Bearer <token>` }. Return {} when
-  //                     no token is set (login + signup endpoints).
-  return {};
+  const token = typeof sessionStorage === 'undefined'
+    ? null
+    : sessionStorage.getItem('reconx-token');
+
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function request(method, path, body) {
-  // TODO(TICKET-ADV112): fetch(`${BASE}${path}`, { method, headers, body }).
-  //   - headers must include Content-Type: application/json and ...authHeaders()
-  //   - serialise `body` via JSON.stringify when present
-  //   - on !res.ok throw new Error(`HTTP ${res.status}: ${detail}`)
-  //   - status 204 -> return null, otherwise return await res.json()
-  throw new Error('TICKET-ADV112 not implemented');
+function normalizeQuery(params) {
+  if (!params) return '';
+  if (typeof params === 'string') return params.replace(/^[?&]+/, '');
+  return new window.URLSearchParams(params).toString();
+}
+
+function withQuery(path, params) {
+  const query = normalizeQuery(params);
+  return query ? `${path}?${query}` : path;
+}
+
+async function readBody(response) {
+  if (typeof response.text === 'function') {
+    try {
+      const text = await response.text();
+      if (!text.trim()) return null;
+
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  if (typeof response.json === 'function') {
+    try {
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function errorDetail(body, statusText) {
+  if (body && typeof body === 'object') {
+    for (const property of ['detail', 'message', 'error', 'title']) {
+      if (typeof body[property] === 'string' && body[property].trim()) {
+        return body[property];
+      }
+    }
+
+    try {
+      return JSON.stringify(body);
+    } catch {
+      return 'Request failed';
+    }
+  }
+
+  if (typeof body === 'string' && body.trim()) return body;
+  return statusText || 'Request failed';
+}
+
+async function request(method, path, body, { authenticated = true } = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(authenticated ? authHeaders() : {}),
+  };
+  const options = { method, headers };
+
+  if (body !== undefined) {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(`${BASE}${path}`, options);
+
+  if (response.status === 204) return null;
+
+  if (!response.ok) {
+    const bodyContent = await readBody(response);
+    const error = new Error(
+      `HTTP ${response.status}: ${errorDetail(bodyContent, response.statusText)}`
+    );
+    error.status = response.status;
+    error.statusCode = response.status;
+    error.body = bodyContent;
+    throw error;
+  }
+
+  return readBody(response);
 }
 
 export const api = {
-  login: (email, password)   => {
-    // TODO(TICKET-ADV072): POST /auth/login with { email, password }.
-    throw new Error('TICKET-ADV072 not implemented');
-  },
-  listTrades: (params = '')  => {
-    // TODO(TICKET-ADV114): GET /v1/trades + `params` query string.
-    throw new Error('TICKET-ADV114 not implemented');
-  },
-  createTrade: (req)         => {
-    // TODO(TICKET-ADV123): POST /v1/trades with the form payload.
-    throw new Error('TICKET-ADV123 not implemented');
-  },
-  updateStatus: (id, status) => {
-    // TODO(TICKET-ADV119): PATCH /v1/trades/{id}/status with { status }.
-    throw new Error('TICKET-ADV119 not implemented');
-  },
-  deleteTrade: (id)          => {
-    // TODO(TICKET-ADV119): DELETE /v1/trades/{id}.
-    throw new Error('TICKET-ADV119 not implemented');
-  },
-  runRecon: (req)            => {
-    // TODO(TICKET-ADV121): POST /v1/recon/run to enqueue a recon job.
-    throw new Error('TICKET-ADV121 not implemented');
-  },
-  reconResults: (jobId)      => {
-    // TODO(TICKET-ADV121): GET /v1/recon/jobs/{jobId}/results.
-    throw new Error('TICKET-ADV121 not implemented');
-  },
-  audit: (tradeRef)          => {
-    // TODO(TICKET-ADV121): GET /v1/audit/trades/{tradeRef}.
-    throw new Error('TICKET-ADV121 not implemented');
-  },
+  login: (email, password) => request(
+    'POST',
+    '/auth/login',
+    { email, password },
+    { authenticated: false }
+  ),
+  listTrades: (params = '') => request('GET', withQuery('/v1/trades', params)),
+  createTrade: (req) => request('POST', '/v1/trades', req),
+  updateStatus: (id, status) => request('PATCH', `/v1/trades/${encodeURIComponent(id)}/status`, { status }),
+  deleteTrade: (id) => request('DELETE', `/v1/trades/${encodeURIComponent(id)}`),
+  runRecon: (req) => request('POST', '/v1/recon/run', req),
+  reconResults: (jobId) => request('GET', `/v1/recon/jobs/${encodeURIComponent(jobId)}/results`),
+  audit: (tradeRef) => request('GET', `/v1/audit/trades/${encodeURIComponent(tradeRef)}`),
 };

@@ -1,0 +1,7 @@
+$kind: collection
+description: Public runtime checks. The application context path is /api, so baseUrl must include it.
+auth:
+  - id: ""
+    type: noauth
+    name: No Auth
+order: 1000

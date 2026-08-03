@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{baseUrl}}/v1/trades/{{seedTradeId}}"
+method: GET
+headers:
+  - key: Accept
+    value: application/json
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("status is 200", () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+        const body = pm.response.json();
+        pm.test("trade response is flattened", () => {
+          pm.expect(String(body.id)).to.eql(pm.collectionVariables.get("seedTradeId"));
+          pm.expect(body.tradeRef).to.be.a("string");
+          pm.expect(body.instrumentId).to.be.a("number");
+          pm.expect(body.instrumentSymbol).to.be.a("string");
+          pm.expect(body.counterpartyId).to.be.a("number");
+          pm.expect(body.counterpartyName).to.be.a("string");
+        });
+      }
+    language: text/javascript
+order: 2000

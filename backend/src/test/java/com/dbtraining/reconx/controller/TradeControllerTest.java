@@ -296,13 +296,14 @@ class TradeControllerTest {
                         .param("size", "5"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", aMapWithSize(5)))
+                .andExpect(jsonPath("$", aMapWithSize(6)))
                 .andExpect(jsonPath("$.items").isArray())
                 .andExpect(jsonPath("$.items[0].tradeRef").value("TRD-2026-000001"))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(5))
                 .andExpect(jsonPath("$.totalElements").value(21))
                 .andExpect(jsonPath("$.totalPages").value(5))
+                .andExpect(jsonPath("$.last").value(false))
                 .andExpect(jsonPath("$.pageable").doesNotExist());
 
         var pageable = ArgumentCaptor.forClass(Pageable.class);

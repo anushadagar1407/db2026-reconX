@@ -1,0 +1,3 @@
+$kind: collection
+description: "Not runnable yet: persisted reconciliation jobs and paginated results (ADV068/ADV069), Kafka topics and trade event production, audit and alert consumers, DLQ/replay, event-sourced rebuild, the trade SSE stream, refresh-token exchange, and /v1/admin endpoints. Add requests and acceptance assertions only in the same change that implements each ticket."
+order: 11000
