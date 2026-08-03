@@ -72,6 +72,7 @@ public class TradeService {
         }
 
         Trade trade = new Trade();
+        
         trade.setTradeRef(req.tradeRef());
         trade.setInstrument(instRepo.findById(req.instrumentId())
                 .orElseThrow(() -> new TradeNotFoundException(
@@ -86,8 +87,12 @@ public class TradeService {
         trade.setTradeDate(req.tradeDate());
         trade.setStatus(TradeStatus.PENDING);
 
+        
         try {
-            return tradeRepo.save(trade);
+            Trade saved = tradeRepo.save(trade);
+            metrics.incrementTradeCreated();
+            metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
+            return saved;
         } catch (DataIntegrityViolationException ex) {
             if (!isTradeReferenceUniqueViolation(ex)) {
                 throw ex;
