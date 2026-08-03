@@ -3,6 +3,7 @@ package com.dbtraining.reconx.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.dbtraining.reconx.exception.GlobalExceptionHandler;
+import com.dbtraining.reconx.repository.JdbcReconJobRepository;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,9 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -29,6 +32,7 @@ class ReconControllerTest {
             "https://reconx.dbtraining.com/errors/validation-failed";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JdbcReconJobRepository reconciliationJobs = mock(JdbcReconJobRepository.class);
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -36,7 +40,7 @@ class ReconControllerTest {
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
         mockMvc = MockMvcBuilders.standaloneSetup(
-                        new ReconController(mock(ReconBreakRepository.class)))
+                        new ReconController(mock(ReconBreakRepository.class), reconciliationJobs))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setValidator(validator)
                 .build();
@@ -57,6 +61,11 @@ class ReconControllerTest {
         assertThat(body.path("status").asText()).isEqualTo("QUEUED");
         assertThat(result.getResponse().getHeader("Location"))
                 .isEqualTo("/api/v1/recon/jobs/" + jobId + "/results");
+        verify(reconciliationJobs).enqueue(
+                eq(jobId),
+                eq(java.time.LocalDate.of(2026, 3, 1)),
+                eq(java.time.LocalDate.of(2026, 3, 31)),
+                eq(42L));
     }
 
     @ParameterizedTest

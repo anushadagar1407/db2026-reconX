@@ -2,6 +2,7 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
+import com.dbtraining.reconx.observability.ReconConfigMBean;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,12 +14,15 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 /**
  * TICKET-ADV040 / ADV041 / ADV042 — TDD: write the test FIRST, then the impl.
  */
 class ReconciliationEngineTest {
 
-    private final ReconciliationEngine engine = new ReconciliationEngine(new SimpleMeterRegistry());
+    private final ReconConfigMBean reconConfig = new ReconConfigMBean(new ConcurrentMapCacheManager());
+    private final ReconciliationEngine engine = new ReconciliationEngine(
+            new SimpleMeterRegistry(), reconConfig);
 
     @Test
     @DisplayName("Reconcile exact match returns MATCHED")
@@ -57,6 +61,23 @@ class ReconciliationEngineTest {
         assertThat(results).hasSize(1);
         assertThat(results.get(0).status()).isEqualTo(ReconResult.Status.MATCHED);
 
+    }
+
+    @Test
+    void nextRunUsesUpdatedRuntimePriceTolerance() {
+        EquityTrade internalTrade = equity("ABC-20260729-1296", "100.00", "10");
+        EquityTrade externalTrade = equity("ABC-20260729-1296", "100.75", "10");
+
+        reconConfig.setPriceTolerance(0.005);
+        List<ReconResult> strictResults = engine.reconcile(
+                List.of(internalTrade), List.of(externalTrade), ReconciliationRule.PRICE_TOLERANCE_1PCT);
+
+        reconConfig.setPriceTolerance(0.01);
+        List<ReconResult> relaxedResults = engine.reconcile(
+                List.of(internalTrade), List.of(externalTrade), ReconciliationRule.PRICE_TOLERANCE_1PCT);
+
+        assertThat(strictResults.get(0).status()).isEqualTo(ReconResult.Status.BREAK);
+        assertThat(relaxedResults.get(0).status()).isEqualTo(ReconResult.Status.MATCHED);
     }
 
     @Test
