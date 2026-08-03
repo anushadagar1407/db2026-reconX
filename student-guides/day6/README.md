@@ -739,7 +739,7 @@ This is the headline block of the day. You will spend two hours here. Before any
 
 Open `http://localhost:9090/graph` and run a quick sanity check: query `up{job="recon-service"}`. You should see a value of `1`. If it is missing, your Prometheus job target is wrong or the app is not running. Fix that before continuing.
 
-### TICKET-ADV087 — Grafana panel: API request rate by endpoint
+### TICKET-ADV087 — Grafana panel: API request rate by endpoint - Done
 
 **Goal:** A time-series panel showing requests-per-second broken out by URI.
 
@@ -834,7 +834,7 @@ for i in 1 2 3 4 5; do curl -s http://localhost:8080/actuator/health > /dev/null
 
 ---
 
-### TICKET-ADV088 — Grafana panel: API response time P50/P95/P99
+### TICKET-ADV088 — Grafana panel: API response time P50/P95/P99 - Done
 
 **Goal:** A three-line time-series panel showing median, 95th, and 99th percentile latency for each endpoint.
 
@@ -1139,7 +1139,7 @@ done
 
 ---
 
-### TICKET-ADV091 — Grafana stat panel: `recon_break_count`
+### TICKET-ADV091 — Grafana stat panel: `recon_break_count` -Done
 
 **Goal:** A single big-number tile showing the current open-break count, coloured by severity.
 

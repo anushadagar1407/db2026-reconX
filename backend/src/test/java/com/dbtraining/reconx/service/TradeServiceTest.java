@@ -98,6 +98,8 @@ class TradeServiceTest {
         assertThat(saved.getStatus()).isEqualTo(TradeStatus.PENDING);
         verify(tradeRepository).findByTradeRef(request.tradeRef());
         verify(tradeRepository).save(saved);
+        verify(tradeMetrics).incrementTradeCreated();
+        verify(tradeMetrics).recordTradeValue(24550.0);
     }
 
     @Test
