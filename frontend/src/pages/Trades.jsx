@@ -12,11 +12,13 @@ const demoTrades = [
 ];
 
 const TradeRow = memo(function TradeRow({ trade, onClick, selected }) {
+  const handleClick = useCallback(() => onClick(trade.id), [onClick, trade.id]);
+
   return (
     <button
       type="button"
       className={selected ? 'trade-row trade-row--selected' : 'trade-row'}
-      onClick={() => onClick(trade.id)}
+      onClick={handleClick}
     >
       <span>{trade.tradeRef}</span>
       <span>{trade.symbol}</span>
