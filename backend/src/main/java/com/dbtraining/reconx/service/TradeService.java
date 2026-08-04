@@ -108,6 +108,8 @@ public class TradeService {
             metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
             return saved;
         } catch (DataIntegrityViolationException ex) {
+            alerts.publish(TradeEvent.created(trade.getTradeRef()));
+
             if (!isTradeReferenceUniqueViolation(ex)) {
                 throw ex;
             }
