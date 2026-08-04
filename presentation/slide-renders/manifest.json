@@ -6,9 +6,9 @@
     "packageVersion": "0.1.0",
     "playwrightVersion": "1.61.0"
   },
-  "generatedAt": "2026-08-04T11:46:23.996Z",
+  "generatedAt": "2026-08-04T12:05:47.073Z",
   "exportMode": "full",
-  "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+  "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
   "sourceDirty": false,
   "worktreeDirtyBeforeExport": true,
   "capture": {
@@ -41,8 +41,8 @@
       "verticalIndex": 0,
       "filename": "slide-001.png",
       "title": "Slide 1: ReconX title",
-      "capturedAt": "2026-08-04T11:46:22.772Z",
-      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "capturedAt": "2026-08-04T12:05:45.856Z",
+      "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
       "sourceDirty": false,
       "image": {
         "width": 1920,
@@ -108,8 +108,8 @@
       "verticalIndex": 0,
       "filename": "slide-002.png",
       "title": "Slide 2: Operations problem",
-      "capturedAt": "2026-08-04T11:46:22.921Z",
-      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "capturedAt": "2026-08-04T12:05:45.997Z",
+      "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
       "sourceDirty": false,
       "image": {
         "width": 1920,
@@ -175,8 +175,8 @@
       "verticalIndex": 0,
       "filename": "slide-003.png",
       "title": "Slide 3: Current runtime architecture",
-      "capturedAt": "2026-08-04T11:46:23.050Z",
-      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "capturedAt": "2026-08-04T12:05:46.126Z",
+      "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
       "sourceDirty": false,
       "image": {
         "width": 1920,
@@ -242,8 +242,8 @@
       "verticalIndex": 0,
       "filename": "slide-004.png",
       "title": "Slide 4: Technology stack",
-      "capturedAt": "2026-08-04T11:46:23.184Z",
-      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "capturedAt": "2026-08-04T12:05:46.260Z",
+      "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
       "sourceDirty": false,
       "image": {
         "width": 1920,
@@ -309,14 +309,14 @@
       "verticalIndex": 0,
       "filename": "slide-005.png",
       "title": "Slide 5: Live trade journey",
-      "capturedAt": "2026-08-04T11:46:23.309Z",
-      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "capturedAt": "2026-08-04T12:05:46.387Z",
+      "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
       "sourceDirty": false,
       "image": {
         "width": 1920,
         "height": 1080,
-        "sha256": "390607b187905134dfc189ae98c64391735d9198a921cdf281c2871a46bf9de2",
-        "bytes": 105841
+        "sha256": "8ca4bda0af8720a862ae7b3ada294bcb11f5b4ceba437a64591d90d599a6c919",
+        "bytes": 107368
       },
       "diagnostics": {
         "fragmentPolicy": "all-visible",
@@ -376,8 +376,8 @@
       "verticalIndex": 0,
       "filename": "slide-006.png",
       "title": "Slide 6: Reconciliation truth line",
-      "capturedAt": "2026-08-04T11:46:23.464Z",
-      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "capturedAt": "2026-08-04T12:05:46.541Z",
+      "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
       "sourceDirty": false,
       "image": {
         "width": 1920,
@@ -443,14 +443,14 @@
       "verticalIndex": 0,
       "filename": "slide-007.png",
       "title": "Slide 7: CI/CD delivery rail",
-      "capturedAt": "2026-08-04T11:46:23.599Z",
-      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "capturedAt": "2026-08-04T12:05:46.678Z",
+      "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
       "sourceDirty": false,
       "image": {
         "width": 1920,
         "height": 1080,
-        "sha256": "9af256c61ab7fe40b336fecb1a85f03f190398a2484a39f1cfda4fddb167ca07",
-        "bytes": 151214
+        "sha256": "f0b212f5639a2e6013d1cc78723ca417192ac54433105f1381e7291a30f71ead",
+        "bytes": 164302
       },
       "diagnostics": {
         "fragmentPolicy": "all-visible",
@@ -510,8 +510,8 @@
       "verticalIndex": 0,
       "filename": "slide-008.png",
       "title": "Slide 8: Monitoring and load evidence",
-      "capturedAt": "2026-08-04T11:46:23.739Z",
-      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "capturedAt": "2026-08-04T12:05:46.815Z",
+      "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
       "sourceDirty": false,
       "image": {
         "width": 1920,
@@ -577,8 +577,8 @@
       "verticalIndex": 0,
       "filename": "slide-009.png",
       "title": "Slide 9: Learnings",
-      "capturedAt": "2026-08-04T11:46:23.866Z",
-      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "capturedAt": "2026-08-04T12:05:46.944Z",
+      "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
       "sourceDirty": false,
       "image": {
         "width": 1920,
@@ -644,8 +644,8 @@
       "verticalIndex": 0,
       "filename": "slide-010.png",
       "title": "Slide 10: Questions and repository navigation",
-      "capturedAt": "2026-08-04T11:46:23.996Z",
-      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "capturedAt": "2026-08-04T12:05:47.072Z",
+      "sourceCommit": "e652d9a914a88edb3ad5d2db08db6c36c1d6e213",
       "sourceDirty": false,
       "image": {
         "width": 1920,
