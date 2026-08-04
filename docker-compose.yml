@@ -85,6 +85,18 @@ services:
     ports: ["5173:80"]
     networks: [reconx]
 
+  presentation:
+    profiles: ["presentation"]
+    build: ./presentation
+    image: reconx-presentation:local
+    container_name: reconx-presentation
+    depends_on:
+      frontend: {condition: service_started}
+    ports: ["4173:80"]
+    environment:
+      RECONX_DEMO_URL: ${RECONX_DEMO_URL:-http://localhost:5173}
+    networks: [reconx]
+
   test-postgres:
     image: postgres:16-alpine
     profiles: ["test"]
