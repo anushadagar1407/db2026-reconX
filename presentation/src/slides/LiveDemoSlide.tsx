@@ -11,7 +11,7 @@ import {
 } from '../design-system';
 
 export interface LiveDemoSlideProps {
-  demoUrl: string;
+  demoUrl: string | null;
 }
 
 const demoCheckpoints = [
@@ -48,10 +48,19 @@ export function LiveDemoSlide({ demoUrl }: LiveDemoSlideProps) {
           </Grid>
 
           <Cluster gap="sm" align="center" wrap={false} className="live-demo-slide__status" aria-label="Live demo fallback status">
-            <span className="live-demo-slide__status-flag">Runtime capture pending</span>
-            <span>Launch the guarded frame when ready</span>
-            <span className="live-demo-slide__status-separator" aria-hidden="true">/</span>
-            <span>If unavailable: full-demo link or source/API walkthrough</span>
+            {demoUrl === null ? (
+              <>
+                <span className="live-demo-slide__status-flag">Public demo disabled</span>
+                <span>No public demo configured; use source/API walkthrough</span>
+              </>
+            ) : (
+              <>
+                <span className="live-demo-slide__status-flag">Runtime capture pending</span>
+                <span>Launch the guarded frame when ready</span>
+                <span className="live-demo-slide__status-separator" aria-hidden="true">/</span>
+                <span>If unavailable: full-demo link or source/API walkthrough</span>
+              </>
+            )}
           </Cluster>
 
           <div className="live-demo-slide__frame" aria-label="Guarded ReconX live demo">

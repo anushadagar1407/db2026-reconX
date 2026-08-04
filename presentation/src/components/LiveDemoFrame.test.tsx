@@ -62,4 +62,15 @@ describe('LiveDemoFrame', () => {
       'http://localhost:5173',
     );
   });
+
+  it('renders a static disabled state without demo controls or links', () => {
+    render(<LiveDemoFrame src={null} />);
+
+    expect(screen.getByRole('status', { name: 'Public demo disabled' })).toHaveTextContent(
+      'No public demo configured; use source/API walkthrough',
+    );
+    expect(screen.queryByTitle('ReconX live demo')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
 });

@@ -84,6 +84,34 @@ button:focus-visible {
   line-height: var(--type-leading-body);
 }
 
+.live-demo__disabled {
+  display: grid;
+  flex: 1 1 0;
+  min-height: 0;
+  align-content: center;
+  justify-items: start;
+  gap: var(--space-xs);
+  padding: var(--space-md) var(--space-lg);
+  color: var(--primitive-blue-200);
+  text-align: left;
+}
+
+.live-demo__disabled-label {
+  color: var(--primitive-white);
+  font-size: var(--type-label-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.live-demo__disabled strong {
+  max-width: 52ch;
+  color: var(--primitive-white);
+  font-size: var(--type-body-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--type-leading-heading);
+}
+
 .live-demo__toolbar {
   display: flex;
   flex: none;

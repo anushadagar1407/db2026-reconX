@@ -3,11 +3,26 @@ import { useEffect, useRef, useState } from 'react';
 type LoadState = 'idle' | 'loading' | 'ready' | 'unavailable';
 
 interface LiveDemoFrameProps {
-  src: string;
+  src: string | null;
   loadTimeoutMs?: number;
 }
 
 export function LiveDemoFrame({ src, loadTimeoutMs = 10_000 }: LiveDemoFrameProps) {
+  if (src === null) {
+    return (
+      <div className="live-demo live-demo--disabled" role="status" aria-label="Public demo disabled">
+        <div className="live-demo__disabled">
+          <span className="live-demo__disabled-label">Pages runtime</span>
+          <strong>No public demo configured; use source/API walkthrough</strong>
+        </div>
+      </div>
+    );
+  }
+
+  return <ConfiguredLiveDemoFrame src={src} loadTimeoutMs={loadTimeoutMs} />;
+}
+
+function ConfiguredLiveDemoFrame({ src, loadTimeoutMs = 10_000 }: LiveDemoFrameProps & { src: string }) {
   const [loadState, setLoadState] = useState<LoadState>('idle');
   const frameRef = useRef<HTMLIFrameElement>(null);
   const demoUrl = new URL(src, window.location.href);

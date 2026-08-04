@@ -119,4 +119,15 @@ describe('flat slide components', () => {
       'https://demo.example.test',
     );
   });
+
+  it('shows the source walkthrough when no public demo is configured', () => {
+    render(<LiveDemoSlide demoUrl={null} />);
+
+    expect(screen.getByRole('status', { name: 'Public demo disabled' })).toHaveTextContent(
+      'No public demo configured; use source/API walkthrough',
+    );
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('ReconX live demo')).not.toBeInTheDocument();
+  });
 });

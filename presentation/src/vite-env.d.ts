@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ReconXPresentationConfig {
-  demoUrl?: string;
+  demoUrl?: string | null;
 }
 
 interface Window {

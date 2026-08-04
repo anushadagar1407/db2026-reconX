@@ -14,7 +14,9 @@ function safeHttpUrl(candidate: string | undefined, baseUrl: string): string | n
 export function getDemoUrl(
   runtimeConfig = window.__RECONX_PRESENTATION_CONFIG__,
   baseUrl = window.location.origin,
-): string {
+): string | null {
+  if (runtimeConfig?.demoUrl === null) return null;
+
   const configuredUrl = safeHttpUrl(runtimeConfig?.demoUrl, baseUrl);
   return configuredUrl ?? DEFAULT_DEMO_URL;
 }
