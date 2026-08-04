@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "exporter": {
+    "name": "reconx-slide-exporter",
+    "version": "1.0.0",
+    "packageVersion": "0.1.0",
+    "playwrightVersion": "1.61.0"
+  },
+  "generatedAt": "2026-08-04T09:38:52.162Z",
+  "exportMode": "single",
+  "sourceCommit": "f243ca23d098d5ad2383862157b0e726faf0a272",
+  "sourceDirty": true,
+  "worktreeDirtyBeforeExport": true,
+  "capture": {
+    "source": "local-preview",
+    "externalUrl": null,
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "deviceScaleFactor": 1,
+    "fragmentPolicy": "all-visible",
+    "discoveredSlideCount": 1,
+    "refreshedSlides": [
+      1
+    ]
+  },
+  "slides": [
+    {
+      "ordinal": 1,
+      "horizontalIndex": 0,
+      "verticalIndex": 0,
+      "filename": "slide-001.png",
+      "title": "ReconX presentation scaffold",
+      "capturedAt": "2026-08-04T09:38:52.162Z",
+      "sourceCommit": "f243ca23d098d5ad2383862157b0e726faf0a272",
+      "sourceDirty": true,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "sha256": "c0926064b92c935468b6df39decf54c866d19cf634a2b00aa9eadb745b300424",
+        "bytes": 63405
+      },
+      "diagnostics": {
+        "fragmentPolicy": "all-visible",
+        "overflow": {
+          "detected": false,
+          "missingSlideCanvas": false,
+          "document": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "slide": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "canvas": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeFrame": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeArea": {
+            "clientWidth": 1696,
+            "clientHeight": 904,
+            "scrollWidth": 1696,
+            "scrollHeight": 904,
+            "horizontal": false,
+            "vertical": false,
+            "inset": "safe",
+            "enforcement": "safe-content"
+          },
+          "outsideSafeArea": [],
+          "autoFit": []
+        }
+      }
+    }
+  ]
+}

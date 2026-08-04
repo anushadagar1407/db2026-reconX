@@ -16,6 +16,11 @@ describe('App', () => {
     render(<App />);
 
     expect(screen.getByTestId('deck')).toBeInTheDocument();
+    expect(screen.getByTestId('deck').querySelector('.slide-canvas--paper')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Deutsche Bank' })).toHaveAttribute(
+      'src',
+      '/assets/deutsche-bank-logo.svg',
+    );
     expect(screen.getByRole('heading', { name: 'ReconX presentation scaffold' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open full demo' })).toHaveAttribute(
       'href',

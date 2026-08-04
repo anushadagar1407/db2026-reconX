@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "exporter": {
+    "name": "reconx-pdf-exporter",
+    "version": "1.0.0",
+    "packageVersion": "0.1.0",
+    "playwrightVersion": "1.61.0",
+    "pdfjsVersion": "5.4.296"
+  },
+  "generatedAt": "2026-08-04T09:38:54.143Z",
+  "sourceCommit": "f243ca23d098d5ad2383862157b0e726faf0a272",
+  "sourceDirty": true,
+  "worktreeDirtyBeforeExport": true,
+  "capture": {
+    "source": "local-preview",
+    "externalUrl": null,
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "deviceScaleFactor": 1,
+    "printMode": "reveal-print-pdf",
+    "fragmentPolicy": "all-visible",
+    "pdfSeparateFragments": false,
+    "pageContract": {
+      "widthPoints": 1469.04,
+      "heightPoints": 826.08,
+      "tolerancePoints": 0.05,
+      "derivation": "1920x1080 Reveal canvas with configured 0.02 print margin"
+    },
+    "slideCount": 1
+  },
+  "output": {
+    "filename": "reconx-presentation.pdf",
+    "sha256": "196b8c437327396231d1599967a018230c5fa99b096c9d5d5289edb1c13bbf52",
+    "bytes": 104609,
+    "pageCount": 1,
+    "pageDimensions": {
+      "widthPoints": 1469.04,
+      "heightPoints": 826.08,
+      "unit": "pt"
+    }
+  }
+}
