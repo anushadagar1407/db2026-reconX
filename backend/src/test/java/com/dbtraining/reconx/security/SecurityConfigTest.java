@@ -387,19 +387,20 @@ class SecurityConfigTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"VIEWER", "RECON_ANALYST", "ADMIN"})
-    void readOnlyRolesCanReadAuditEvents(String role) throws Exception {
+    @ValueSource(strings = {"RECON_ANALYST", "ADMIN"})
+    void authorizedRolesCanReadAuditEvents(String role) throws Exception {
         mockMvc.perform(get("/api/v1/audit/trades/TRD-1/events")
                         .contextPath(CONTEXT_PATH)
                         .with(bearer(role)))
                 .andExpect(status().isOk());
     }
 
-    @Test
-    void traderCannotReadAuditEvents() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"VIEWER", "TRADER"})
+    void unauthorizedRolesCannotReadAuditEvents(String role) throws Exception {
         mockMvc.perform(get("/api/v1/audit/trades/TRD-1/events")
                         .contextPath(CONTEXT_PATH)
-                        .with(bearer("TRADER")))
+                        .with(bearer(role)))
                 .andExpect(status().isForbidden());
     }
 

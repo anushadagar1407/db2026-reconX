@@ -51,4 +51,24 @@
         </rollback>
     </changeSet>
 
+    <!-- Liquibase maps TEXT to CLOB on H2, while Hibernate validates
+         columnDefinition=TEXT as VARCHAR. Keep the test schema aligned with
+         the entity mapping, matching the existing audit_log workaround. -->
+    <changeSet id="014-h2-dlq-text-columns" author="reconx" dbms="h2">
+        <modifyDataType tableName="dlq_messages"
+                        columnName="payload"
+                        newDataType="VARCHAR(1000000)"/>
+        <modifyDataType tableName="dlq_messages"
+                        columnName="reason"
+                        newDataType="VARCHAR(1000000)"/>
+        <rollback>
+            <modifyDataType tableName="dlq_messages"
+                            columnName="payload"
+                            newDataType="CLOB"/>
+            <modifyDataType tableName="dlq_messages"
+                            columnName="reason"
+                            newDataType="CLOB"/>
+        </rollback>
+    </changeSet>
+
 </databaseChangeLog>
