@@ -16,6 +16,9 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
+  jmx:
+    enabled: true
+
   sql:
     init:
       mode: never

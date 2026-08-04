@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${TEST_POSTGRES_HOST:localhost}:${TEST_POSTGRES_PORT:5432}/${TEST_POSTGRES_DB:reconx_test}
+    username: ${TEST_POSTGRES_USER:reconx_test}
+    password: ${TEST_POSTGRES_PASSWORD:reconx_test}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
+  liquibase:
+    enabled: true
+
+reconx:
+  test:
+    database-provider: ${RECONX_TEST_DATABASE_PROVIDER:testcontainers}

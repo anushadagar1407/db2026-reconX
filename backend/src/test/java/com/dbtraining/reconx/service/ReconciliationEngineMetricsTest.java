@@ -5,10 +5,12 @@ import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.Side;
 import com.dbtraining.reconx.model.TradeRef;
+import com.dbtraining.reconx.observability.ReconConfigMBean;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheusmetrics.PrometheusConfig;
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,7 +23,8 @@ class ReconciliationEngineMetricsTest {
     @Test
     void recordsEveryReconcileInvocationAndPreservesResults() {
         PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-        ReconciliationEngine engine = new ReconciliationEngine(registry);
+        ReconciliationEngine engine = new ReconciliationEngine(
+                registry, new ReconConfigMBean(new ConcurrentMapCacheManager()));
 
         List<ReconResult> matched = engine.reconcile(
                 List.of(equity("ABC-20260729-0001", "100.00", "10")),

@@ -7,8 +7,49 @@ on:
       - "backend/**"
       - "recon-audit-starter/**"
       - "frontend/**"
+      - "docker-compose.yml"
+      - ".dockerignore"
+      - "backend/Dockerfile"
+      - "frontend/Dockerfile"
+      - "backend/pom.xml"
+      - "frontend/package.json"
+      - "frontend/package-lock.json"
+      - "frontend/vite.config.js"
+      - "frontend/src/test-setup.js"
+      - "scripts/verify"
+      - "scripts/verify.ps1"
+      - "scripts/load/**"
+      - "docker-compose.load.yml"
+      - "monitoring/prometheus/prometheus-load.yml"
+      - "monitoring/grafana/provisioning/datasources/prometheus-load.yml"
+      - "monitoring/grafana/provisioning/dashboards/**"
       - ".github/workflows/build.yml"
   workflow_dispatch:
+    inputs:
+      backend_runner:
+        description: "Backend runner (container is standard; native uses Java 25 + Testcontainers)"
+        required: true
+        type: choice
+        options: [container, native]
+        default: container
+      frontend_runner:
+        description: "Frontend runner (container is standard; native uses Node 22)"
+        required: true
+        type: choice
+        options: [container, native]
+        default: container
+      verification_mode:
+        description: "Run full verification or preserve build-only behavior"
+        required: true
+        type: choice
+        options: [verify, build]
+        default: verify
+      load_test:
+        description: "Run the explicit containerized ADV097 load evidence job"
+        required: true
+        type: choice
+        options: [skip, run]
+        default: skip
 
 permissions:
   contents: read
@@ -21,13 +62,16 @@ env:
   CI: true
 
 jobs:
-  backend:
-    name: Backend
+  backend-container:
+    name: Backend (container)
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.backend_runner == 'container' }}
+    permissions:
+      contents: read
+      checks: write
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: backend
+    timeout-minutes: 20
+    env:
+      RECONX_FULL_VERIFICATION: ${{ (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'develop')) || (github.event_name == 'workflow_dispatch' && inputs.verification_mode == 'verify') }}
 
     steps:
       - name: Check out repository
@@ -36,7 +80,138 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Set up Java
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend production image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./backend/Dockerfile
+          push: false
+          provenance: false
+          sbom: false
+          tags: reconx-backend:ci
+          cache-from: type=gha,scope=reconx-backend
+          cache-to: type=gha,mode=max,scope=reconx-backend
+
+      - name: Verify backend in Compose
+        if: ${{ env.RECONX_FULL_VERIFICATION == 'true' }}
+        env:
+          RECONX_VERIFY_REPORT_DIR: ${{ runner.temp }}/reconx-verification
+          RECONX_BACKEND_REPORTS_PATH: /workspace/backend/target
+        run: ./scripts/verify backend
+
+      - name: Upload backend Maven and JaCoCo reports
+        if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-verification-reports
+          path: |
+            ${{ runner.temp }}/reconx-verification/backend/target/surefire-reports/
+            ${{ runner.temp }}/reconx-verification/backend/target/failsafe-reports/
+            ${{ runner.temp }}/reconx-verification/backend/target/site/jacoco/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish backend JUnit report
+        if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
+        uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3
+        with:
+          token: ${{ github.token }}
+          report_paths: ${{ runner.temp }}/reconx-verification/backend/target/**/TEST-*.xml
+          check_name: Backend JUnit
+          annotate_only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
+          include_passed: true
+          detailed_summary: true
+          job_summary: true
+
+  frontend-container:
+    name: Frontend (container)
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.frontend_runner == 'container' }}
+    permissions:
+      contents: read
+      checks: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RECONX_FULL_VERIFICATION: ${{ (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'develop')) || (github.event_name == 'workflow_dispatch' && inputs.verification_mode == 'verify') }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend production image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          provenance: false
+          sbom: false
+          tags: reconx-frontend:ci
+          cache-from: type=gha,scope=reconx-frontend
+          cache-to: type=gha,mode=max,scope=reconx-frontend
+
+      - name: Verify frontend in Compose
+        if: ${{ env.RECONX_FULL_VERIFICATION == 'true' }}
+        env:
+          RECONX_VERIFY_REPORT_DIR: ${{ runner.temp }}/reconx-verification
+          RECONX_FRONTEND_REPORTS_PATH: /app/test-results
+        run: ./scripts/verify frontend
+
+      - name: Upload frontend Vitest report
+        if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-verification-reports
+          path: ${{ runner.temp }}/reconx-verification/frontend/test-results/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish frontend JUnit report
+        if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
+        uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3
+        with:
+          token: ${{ github.token }}
+          report_paths: ${{ runner.temp }}/reconx-verification/frontend/test-results/vitest-junit.xml
+          check_name: Frontend Vitest JUnit
+          annotate_only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
+          include_passed: true
+          detailed_summary: true
+          job_summary: true
+
+  backend-native:
+    name: Backend (native fallback)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.backend_runner == 'native' }}
+    permissions:
+      contents: read
+      checks: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RECONX_FULL_VERIFICATION: ${{ inputs.verification_mode == 'verify' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Java 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -50,20 +225,52 @@ jobs:
         working-directory: recon-audit-starter
         run: ../backend/mvnw --batch-mode --no-transfer-progress install
 
-      - name: Build backend
+      - name: Build backend natively
+        working-directory: backend
         run: ./mvnw --batch-mode --no-transfer-progress -DskipTests package
 
-      - name: Test backend on main
-        if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
-        run: ./mvnw --batch-mode --no-transfer-progress test
+      - name: Verify backend natively with Testcontainers
+        if: ${{ env.RECONX_FULL_VERIFICATION == 'true' }}
+        working-directory: backend
+        run: ./mvnw --batch-mode --no-transfer-progress verify
 
-  frontend:
-    name: Frontend
+      - name: Upload native backend Maven and JaCoCo reports
+        if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-native-verification-reports
+          path: |
+            backend/target/surefire-reports/
+            backend/target/failsafe-reports/
+            backend/target/site/jacoco/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish native backend JUnit report
+        if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
+        uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3
+        with:
+          token: ${{ github.token }}
+          report_paths: ${{ github.workspace }}/backend/target/**/TEST-*.xml
+          check_name: Backend JUnit (native fallback)
+          annotate_only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
+          include_passed: true
+          detailed_summary: true
+          job_summary: true
+
+  frontend-native:
+    name: Frontend (native fallback)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.frontend_runner == 'native' }}
+    permissions:
+      contents: read
+      checks: write
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: frontend
+    timeout-minutes: 20
+    env:
+      RECONX_FULL_VERIFICATION: ${{ inputs.verification_mode == 'verify' }}
 
     steps:
       - name: Check out repository
@@ -72,7 +279,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Set up Node.js
+      - name: Set up Node 22
         uses: actions/setup-node@v7
         with:
           node-version: "22"
@@ -80,31 +287,49 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install frontend dependencies
+        working-directory: frontend
         run: npm ci --no-audit --no-fund
 
-      - name: Build frontend
+      - name: Build frontend natively
+        working-directory: frontend
         run: npm run build
 
-      - name: Test frontend on main
-        if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
-        run: npm test
+      - name: Verify frontend natively
+        if: ${{ env.RECONX_FULL_VERIFICATION == 'true' }}
+        working-directory: frontend
+        run: npm run verify
 
-  containers:
-    name: Container (${{ matrix.component }})
-    if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
-    needs: [backend, frontend]
+      - name: Upload native frontend Vitest report
+        if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-native-verification-reports
+          path: frontend/test-results/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish native frontend JUnit report
+        if: ${{ always() && env.RECONX_FULL_VERIFICATION == 'true' }}
+        uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3
+        with:
+          token: ${{ github.token }}
+          report_paths: ${{ github.workspace }}/frontend/test-results/vitest-junit.xml
+          check_name: Frontend Vitest JUnit (native fallback)
+          annotate_only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
+          include_passed: true
+          detailed_summary: true
+          job_summary: true
+
+  load-container:
+    name: ADV097 load (container)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.load_test == 'run' }}
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - component: backend
-            context: .
-            dockerfile: ./backend/Dockerfile
-          - component: frontend
-            context: ./frontend
-            dockerfile: ./frontend/Dockerfile
+    timeout-minutes: 35
 
     steps:
       - name: Check out repository
@@ -113,17 +338,36 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Validate ADV097 wiring
+        run: |
+          set -o pipefail
+          node scripts/load/validate.mjs 2>&1 | tee "${RUNNER_TEMP}/adv097-static-validation.log"
+
       - name: Set up Docker Buildx
+        if: ${{ always() }}
         uses: docker/setup-buildx-action@v3
 
-      - name: Build ${{ matrix.component }} image
-        uses: docker/build-push-action@v7
+      - name: Run ADV097 containerized load
+        if: ${{ always() }}
+        env:
+          RECONX_LOAD_ARTIFACT_DIR: ${{ runner.temp }}/reconx-adv097
+        run: ./scripts/verify load
+
+      - name: Validate credential-free ADV097 evidence
+        id: credential-validation
+        if: ${{ always() }}
+        run: >-
+          node scripts/load/validate-artifacts.mjs
+          "${RUNNER_TEMP}/reconx-adv097"
+          "${RUNNER_TEMP}/adv097-static-validation.log"
+
+      - name: Upload ADV097 tool and panel evidence
+        if: ${{ always() && steps.credential-validation.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: false
-          provenance: false
-          sbom: false
-          tags: reconx-${{ matrix.component }}:ci
-          cache-from: type=gha,scope=reconx-${{ matrix.component }}
-          cache-to: type=gha,mode=max,scope=reconx-${{ matrix.component }}
+          name: adv097-load-evidence
+          path: |
+            ${{ runner.temp }}/reconx-adv097/
+            ${{ runner.temp }}/adv097-static-validation.log
+          if-no-files-found: error
+          retention-days: 14

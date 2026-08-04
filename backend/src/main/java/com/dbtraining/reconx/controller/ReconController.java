@@ -4,6 +4,7 @@ import com.dbtraining.reconx.dto.ReconRunRequest;
 import com.dbtraining.reconx.dto.ReconRunResponse;
 import com.dbtraining.reconx.dto.ResolutionRequest;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
+import com.dbtraining.reconx.repository.JdbcReconJobRepository;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
 import com.dbtraining.reconx.repository.entity.ReconBreak;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,17 +35,19 @@ public class ReconController {
     private static final Logger log = LoggerFactory.getLogger(ReconController.class);
 
     private final ReconBreakRepository breaks;
+    private final JdbcReconJobRepository reconciliationJobs;
 
-    public ReconController(ReconBreakRepository breaks) { this.breaks = breaks; }
+    public ReconController(ReconBreakRepository breaks, JdbcReconJobRepository reconciliationJobs) {
+        this.breaks = breaks;
+        this.reconciliationJobs = reconciliationJobs;
+    }
 
     @PostMapping("/run")
     @Operation(summary = "Trigger a reconciliation job (async)")
     @PreAuthorize("hasAnyRole('RECON_ANALYST', 'ADMIN')")
     public ResponseEntity<ReconRunResponse> runRecon(@Valid @RequestBody ReconRunRequest req) {
-        // TICKET-ADV068: generate a jobId, write a row to recon_jobs, and
-        //   return 202 Accepted with {"jobId": ..., "status": "QUEUED"}. A
-        //   worker (Day 6 / Kafka consumer) picks the job up asynchronously.
         UUID jobId = UUID.randomUUID();
+        reconciliationJobs.enqueue(jobId, req.from(), req.to(), req.counterpartyId());
         log.info("recon job dispatched: jobId={}", jobId);
 
         URI resultsLocation = URI.create("/api/v1/recon/jobs/" + jobId + "/results");

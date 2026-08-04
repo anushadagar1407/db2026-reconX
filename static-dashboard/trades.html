@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+============================================================================
+TICKET-ADV098 — CSS Grid page shell (sidebar + header + main + footer)
+TICKET-ADV099 — Semantic HTML5 (header/nav/main/section/article/aside/footer)
+TICKET-ADV100 — ARIA roles + aria-live for the trade feed
+============================================================================
+-->
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <title>ReconX (static) — Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="layout__header" role="banner">
+    <h1 class="layout__title">ReconX</h1>
+    <nav class="layout__nav" aria-label="Main navigation">
+      <a href="dashboard.html" aria-current="page">Dashboard</a>
+      <a href="trades.html">Trades</a>
+      <a href="recon.html">Recon</a>
+    </nav>
+    <button id="theme-toggle" aria-label="Toggle light/dark theme">🌗</button>
+  </header>
+
+  <aside class="layout__sidebar" role="complementary">
+    <h2>Quick filters</h2>
+    <ul class="sidebar_filters">
+      <li><a href="#">All trades</a></li>
+      <li><a href="#">Open breaks</a></li>
+      <li><a href="#">Today</a></li>
+    </ul>
+  </aside>
+
+  <main class="layout__main" role="main">
+    <!-- File: static-dashboard/trades.html — table fragment -->
+    <div class="table-scroll">
+      <table class="data-table" id="trades-table">
+        <thead>
+          <tr>
+            <th data-col="tradeRef"    data-dir="asc">Trade Ref <span class="resize-handle"></span></th>
+            <th data-col="symbol"      data-dir="asc">Instrument <span class="resize-handle"></span></th>
+            <th data-col="quantity"    data-dir="asc" data-type="number">Quantity <span class="resize-handle"></span></th>
+            <th data-col="price"       data-dir="asc" data-type="number">Price <span class="resize-handle"></span></th>
+            <th data-col="status"      data-dir="asc">Status <span class="resize-handle"></span></th>
+          </tr>
+        </thead>
+        <tbody id="trades-tbody"><!-- rows injected by JS --></tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer class="layout__footer" role="contentinfo">
+    <small>ReconX TDI 2026 · static dashboard (Day 7)</small>
+  </footer>
+
+  <script src="js/theme.js"></script>
+  <script src="js/sse.js"></script>
+  <script src="js/table.js"></script>
+</body>
+</html>

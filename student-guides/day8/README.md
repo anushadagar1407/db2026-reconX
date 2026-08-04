@@ -1511,7 +1511,7 @@ cd frontend && npm run dev
 
 ---
 
-### TICKET-ADV123 — Trade entry form: RHF + Yup
+### TICKET-ADV123 — Trade entry form: RHF + Yup - In Progress
 
 **Goal:** Build the `/trades/new` page as a `react-hook-form` form
 validated against a `yup` schema that covers trade ref, instrument,
@@ -1808,7 +1808,7 @@ Tests and profiling close the day. Two short RTL tests prove the app
 keeps working when you refactor; one Profiler trace turns
 "the dashboard feels slow" into a specific named culprit and a fix.
 
-### TICKET-ADV125 — RTL test: dashboard summary cards
+### TICKET-ADV125 — RTL test: dashboard summary cards - In Progress
 
 **Goal:** Render `<Dashboard />` with seeded trade data inside the
 required providers and assert each summary card is present.

@@ -31,6 +31,8 @@ export function AuthProvider({ children }) {
 
     if (role) {
       sessionStorage.setItem('reconx-role', role);
+    } else {
+      sessionStorage.removeItem('reconx-role');
     }
 
     setUser({ token, role });

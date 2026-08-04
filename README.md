@@ -98,7 +98,7 @@ reconx-studentCopy/
 │
 ├── .postman/                      ← Postman Git-connected workspace mapping
 ├── postman/                       ← Local API collection + Docker/H2 environments
-├── .github/workflows/ci.yml       ← Day 10: GitHub Actions pipeline
+├── .github/workflows/build.yml    ← Day 10: GitHub Actions pipeline
 ├── docker-compose.yml             ← Day 10: 7-service stack
 ├── .env.example                   ← Sample environment variables
 └── student-guides/                ← What you read each day
@@ -178,6 +178,111 @@ Folders `00` through `07` cover the current runnable API. Folder `90` contains
 manual or destructive operations, and folder `99` records API surfaces blocked
 by future tickets. Do not add deployed credentials or generated JWT values to
 the checked-in workspace files.
+
+---
+
+## Containerized verification
+
+Docker Compose is the standard verification path; the wrappers do not require
+host Java, Maven, Node, or npm. Run these commands from the repository root:
+
+```bash
+./scripts/verify              # backend and frontend (also: ./scripts/verify all)
+./scripts/verify backend
+./scripts/verify frontend
+./scripts/verify load         # explicit TICKET-ADV097 k6 + Prometheus evidence
+```
+
+On Windows PowerShell, use the equivalent `.\scripts\verify.ps1`,
+`.\scripts\verify.ps1 backend`, `.\scripts\verify.ps1 frontend`, or
+`.\scripts\verify.ps1 load`.
+The `all` mode runs both suites even if the first fails, labels each Compose
+log section, preserves the exit status, copies reports, and removes only the
+test service containers. It never runs `docker compose down`.
+
+The raw Compose alternatives target the profiled one-shot services explicitly:
+
+```bash
+mkdir -p .verification-reports/backend/target
+docker compose up --build --force-recreate --abort-on-container-exit --exit-code-from test-backend test-backend
+docker compose cp test-backend:/workspace/backend/target/. .verification-reports/backend/target/
+docker compose rm --force --stop test-backend test-postgres
+
+mkdir -p .verification-reports/frontend/test-results
+docker compose up --build --force-recreate --abort-on-container-exit --exit-code-from test-frontend test-frontend
+docker compose cp test-frontend:/app/test-results/. .verification-reports/frontend/test-results/
+docker compose rm --force --stop test-frontend
+```
+
+The raw `all` equivalent is the two target sequences above, run in order with
+each `docker compose up` status saved before its copy and cleanup commands.
+Preserve each `docker compose up` exit code before copying and cleaning when
+using the raw commands. Explicitly naming `test-backend` or `test-frontend`
+auto-enables its Compose profile and leaves the stopped container available for
+`docker compose cp`; `docker compose run --rm` would remove it too early.
+
+The wrapper currently expects backend reports at
+`/workspace/backend/target` and the Vitest report at
+`/app/test-results/vitest-junit.xml`. If the backend test image later uses an
+`/app` path, adjust `RECONX_BACKEND_REPORTS_PATH` (and the matching CI job env)
+before running verification. Reports are copied to the ignored
+`.verification-reports/` directory.
+
+### Native fallbacks and test phases
+
+The workflow uses the container jobs by default. `workflow_dispatch` exposes
+separate backend/frontend runner inputs for the manual native fallbacks: Java
+25 plus Testcontainers for the backend, and Node 22 for the frontend. Those
+fallbacks use the host runtime; the local equivalents are `cd backend &&
+./mvnw verify` and `cd frontend && npm ci && npm run verify`.
+
+Maven Surefire runs the ordinary `*Test` classes during `test`. Maven Failsafe
+uses the `*IT` convention for integration tests and is reached by `verify`,
+so `mvn test` alone does not run `*IT`; `verify` also produces the JaCoCo
+report/check. The Compose backend uses its
+external `test-postgres` dependency; the native fallback instead relies on
+tests' Testcontainers setup and still needs a working Docker daemon. Do not
+point either path at a developer database.
+
+CI uploads raw Surefire/Failsafe XML, the Vitest JUnit XML, and JaCoCo HTML as
+artifacts. The pinned JUnit reporter adds readable checks and job summaries and
+fails closed on missing, malformed, or failing reports. Console output remains
+in the job log. Frontend verification runs lint, Vitest, and the production
+build even if an earlier phase fails, then returns one aggregate status.
+
+The explicit `load` mode starts a separate Compose project with ephemeral
+PostgreSQL data, pinned k6/Python images, and the API, Prometheus, and Grafana
+services on dynamically assigned host ports. It authenticates once through
+`POST /api/auth/login`, then drives exactly 100 unique trade creations with 10
+k6 VUs. The ignored `.verification-reports/load/` directory receives the k6
+summary, raw Prometheus panel queries, and the Grafana observation URL. Set
+`RECONX_LOAD_KEEP_STACK=1` to leave that isolated project running for manual
+dashboard observation; otherwise the wrapper removes only that project and its
+ephemeral volumes.
+
+The load evidence uses a 60-second paced run interval for both k6 and the
+Prometheus queries. The wrapper fails unless their trade throughput values are
+within 20%, both client-side k6 and server-side histogram P95 values are finite
+and non-zero, and pre/post Prometheus deltas prove exactly 100 HTTP 201
+responses and exactly 100 `trade_created_total` increments. Client P95 includes
+network/client timing; server P95 is the endpoint-wide Micrometer HTTP
+histogram, so the two values are recorded with separate labels and units rather
+than presented as identical measurements. Both k6 JSON summaries are exported
+from a project-scoped named volume, parsed and cross-checked, stripped of setup
+credentials, and written as host-user-writable files.
+
+The ADV097 workflow is an explicit `workflow_dispatch` load option rather than
+a default pull-request job because it starts Kafka, PostgreSQL, Prometheus, and
+Grafana and is intentionally a runtime evidence run, not a flaky universal
+performance gate. The job uploads the tool and panel-query artifacts whenever
+the option is selected.
+
+Pull requests targeting either `develop` or `main` run full containerized
+backend and frontend verification alongside the production image builds.
+Manual dispatch can select `verify` or explicit image-build-only behavior
+independently of the selected runner and can opt into the separate ADV097 load
+job. A selected load job runs and uploads its static-validation log and all
+available runtime evidence even when either validation phase fails.
 
 ---
 
