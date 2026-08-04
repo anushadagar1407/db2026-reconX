@@ -1,0 +1,85 @@
+name: Presentation Pages
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "presentation/**"
+      - ".github/workflows/presentation-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  build:
+    name: Build presentation Pages artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 22.22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.22.0
+          cache: npm
+          cache-dependency-path: presentation/package-lock.json
+
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Install presentation dependencies
+        working-directory: presentation
+        run: npm ci
+
+      - name: Write Pages runtime configuration
+        working-directory: presentation
+        env:
+          RECONX_DEMO_URL: ${{ vars.RECONX_DEMO_URL }}
+        run: node scripts/write-pages-runtime-config.mjs public/config.js
+
+      - name: Build presentation
+        working-directory: presentation
+        env:
+          PRESENTATION_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: presentation/dist
+
+  deploy:
+    name: Deploy presentation to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@v4

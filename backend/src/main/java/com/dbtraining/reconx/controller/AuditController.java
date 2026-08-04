@@ -1,15 +1,19 @@
 package com.dbtraining.reconx.controller;
 
+import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.repository.AuditLogRepository;
 import com.dbtraining.reconx.repository.entity.AuditLogEntry;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * TICKET-ADV071 — GET /api/v1/audit/trades/{tradeRef}
@@ -22,8 +26,12 @@ import java.util.List;
 public class AuditController {
 
     private final AuditLogRepository auditRepo;
+    private final ObjectMapper objectMapper;
 
-    public AuditController(AuditLogRepository auditRepo) { this.auditRepo = auditRepo; }
+    public AuditController(AuditLogRepository auditRepo, ObjectMapper objectMapper) {
+        this.auditRepo = auditRepo;
+        this.objectMapper = objectMapper;
+    }
 
     @GetMapping("/trades/{tradeRef}")
     @Operation(summary = "Get audit history for a trade (by tradeRef)")
@@ -37,10 +45,55 @@ public class AuditController {
 
     @GetMapping("/trades/{tradeRef}/events")
     @Operation(summary = "Stream of all Kafka-sourced events for a trade")
-    @PreAuthorize("hasAnyRole('VIEWER', 'RECON_ANALYST', 'ADMIN')")
-    public List<AuditLogEntry> events(@PathVariable String tradeRef) {
-        // TODO(TICKET-ADV138): once the audit-log Kafka consumer is in place,
-        //   return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef).
-        return Collections.emptyList();
+    @PreAuthorize("hasAnyRole('RECON_ANALYST', 'ADMIN')")
+    public List<TradeEvent> events(@PathVariable String tradeRef) {
+        return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef).stream()
+                .filter(AuditController::isTradeEvent)
+                .map(this::toTradeEvent)
+                .toList();
+    }
+
+    private static boolean isTradeEvent(AuditLogEntry entry) {
+        try {
+            TradeEvent.EventType.valueOf(entry.getEventType());
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    private TradeEvent toTradeEvent(AuditLogEntry entry) {
+        return new TradeEvent(
+                UUID.fromString(entry.getEventId()),
+                entry.getTradeRef(),
+                TradeEvent.EventType.valueOf(entry.getEventType()),
+                entry.getEventTimestamp(),
+                entry.getActor(),
+                parseSnapshot(entry.getBeforeState(), "before", entry.getEventId()),
+                parseSnapshot(entry.getAfterState(), "after", entry.getEventId()));
+    }
+
+    private JsonNode parseSnapshot(String storedJson, String field, String eventId) {
+        if (storedJson == null) {
+            return null;
+        }
+        if (storedJson.isBlank()) {
+            throw invalidSnapshot(field, eventId, null);
+        }
+        try {
+            JsonNode snapshot = objectMapper.readTree(storedJson);
+            if (snapshot == null) {
+                throw invalidSnapshot(field, eventId, null);
+            }
+            return snapshot;
+        } catch (JsonProcessingException exception) {
+            throw invalidSnapshot(field, eventId, exception);
+        }
+    }
+
+    private static IllegalStateException invalidSnapshot(
+            String field, String eventId, Exception cause) {
+        return new IllegalStateException(
+                "Invalid " + field + "-state JSON for eventId=" + eventId, cause);
     }
 }

@@ -149,7 +149,7 @@ cleanup_on_exit() {
   status=$?
   trap - EXIT
   if [ "$active_cleanup_required" -eq 1 ]; then
-    docker compose rm --force --stop test-backend test-frontend test-postgres >/dev/null 2>&1 || true
+    docker compose rm --force --stop test-backend test-frontend test-postgres test-kafka test-zookeeper >/dev/null 2>&1 || true
   fi
   if [ "$load_cleanup_required" -eq 1 ]; then
     load_compose --profile load down --volumes --remove-orphans >/dev/null 2>&1 || true
@@ -223,7 +223,7 @@ run_backend() {
     test-backend \
     "$backend_reports_path" \
     "$report_root/backend/target" \
-    test-backend test-postgres
+    test-backend test-postgres test-kafka test-zookeeper
 }
 
 run_frontend() {

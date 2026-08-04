@@ -448,7 +448,7 @@ switch ($Mode) {
             -Service "test-backend" `
             -SourcePath $BackendReportsPath `
             -Destination (Join-Path $ReportRoot "backend/target") `
-            -CleanupServices @("test-backend", "test-postgres")
+            -CleanupServices @("test-backend", "test-postgres", "test-kafka", "test-zookeeper")
         $FrontendStatus = Invoke-TestService `
             -Service "test-frontend" `
             -SourcePath $FrontendReportsPath `
@@ -460,7 +460,7 @@ switch ($Mode) {
             -Service "test-backend" `
             -SourcePath $BackendReportsPath `
             -Destination (Join-Path $ReportRoot "backend/target") `
-            -CleanupServices @("test-backend", "test-postgres")
+            -CleanupServices @("test-backend", "test-postgres", "test-kafka", "test-zookeeper")
     }
     "frontend" {
         $FrontendStatus = Invoke-TestService `

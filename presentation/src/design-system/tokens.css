@@ -1,0 +1,108 @@
+:root {
+  /* Primitive palette */
+  --primitive-blue-950: #000c47;
+  --primitive-blue-900: #00106f;
+  --primitive-blue-800: #0018a8;
+  --primitive-blue-700: #0037c2;
+  --primitive-blue-600: #1658d4;
+  --primitive-blue-200: #b9cdf9;
+  --primitive-blue-100: #dce7ff;
+  --primitive-blue-050: #eef3ff;
+  --primitive-neutral-1000: #071522;
+  --primitive-neutral-900: #10263c;
+  --primitive-neutral-700: #40556b;
+  --primitive-neutral-500: #718095;
+  --primitive-neutral-300: #bdc7d4;
+  --primitive-neutral-200: #d8dfe8;
+  --primitive-neutral-100: #e9edf2;
+  --primitive-neutral-050: #f4f6f9;
+  --primitive-neutral-025: #f8f9fb;
+  --primitive-white: #ffffff;
+
+  /* Semantic color roles */
+  --color-canvas: var(--primitive-neutral-025);
+  --color-surface: var(--primitive-white);
+  --color-surface-muted: var(--primitive-neutral-050);
+  --color-ink: var(--primitive-neutral-1000);
+  --color-ink-secondary: var(--primitive-neutral-700);
+  --color-ink-inverse: var(--primitive-white);
+  --color-signal: var(--primitive-blue-800);
+  --color-signal-strong: var(--primitive-blue-950);
+  --color-signal-soft: var(--primitive-blue-100);
+  --color-border: var(--primitive-neutral-200);
+  --color-border-strong: var(--primitive-neutral-300);
+
+  /* Data and status roles; reserve these for meaning, never decoration. */
+  --color-data-primary: #0037c2;
+  --color-data-secondary: #6c49a8;
+  --color-data-tertiary: #9b5c00;
+  --color-status-information: #0047bb;
+  --color-status-success: #176b45;
+  --color-status-warning: #835700;
+  --color-status-critical: #b20d2c;
+  --color-status-information-soft: #eaf1ff;
+  --color-status-success-soft: #e9f5ee;
+  --color-status-warning-soft: #fff3d6;
+  --color-status-critical-soft: #fdecef;
+
+  /* Offline-safe typography */
+  --font-sans: Aptos, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-code: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-weight-regular: 400;
+  --font-weight-medium: 550;
+  --font-weight-semibold: 650;
+  --font-weight-bold: 720;
+  --type-display-size: 92px;
+  --type-title-size: 76px;
+  --type-section-size: 54px;
+  --type-lede-size: 38px;
+  --type-body-size: 32px;
+  --type-label-size: 20px;
+  --type-leading-tight: 1.05;
+  --type-leading-heading: 1.12;
+  --type-leading-body: 1.38;
+  --type-measure: 70ch;
+
+  /* Spatial rhythm */
+  --space-0: 0;
+  --space-2xs: 8px;
+  --space-xs: 12px;
+  --space-sm: 20px;
+  --space-md: 32px;
+  --space-lg: 48px;
+  --space-xl: 72px;
+  --space-2xl: 104px;
+  --space-3xl: 144px;
+
+  /* 1920 × 1080 authoring geometry */
+  --slide-width: 1920px;
+  --slide-height: 1080px;
+  --slide-safe-inline: 112px;
+  --slide-safe-block: 88px;
+  --slide-compact-inline: 72px;
+  --slide-compact-block: 56px;
+  --slide-content-width: 1696px;
+  --slide-content-height: 904px;
+  --slide-grid-columns: 12;
+  --slide-grid-gap: 32px;
+
+  /* Shape, borders, and depth */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --border-hairline: 1px;
+  --border-emphasis: 2px;
+  --elevation-raised: 0 8px 24px rgb(7 21 34 / 12%);
+  --elevation-overlay: 0 16px 48px rgb(7 21 34 / 18%);
+
+  /* Interaction and motion */
+  --motion-instant: 0ms;
+  --motion-fast: 140ms;
+  --motion-standard: 240ms;
+  --motion-deliberate: 420ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --focus-ring-color: #1658d4;
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 4px;
+}

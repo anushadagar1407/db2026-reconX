@@ -6,7 +6,9 @@ import com.dbtraining.reconx.repository.CounterpartyRepository;
 import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Optional;
 
@@ -24,7 +26,9 @@ class TradeServiceSoftDeleteTest {
             tradeRepository,
             mock(CounterpartyRepository.class),
             mock(InstrumentRepository.class),
-            mock(TradeMetrics.class));
+            mock(TradeMetrics.class),
+            mock(ApplicationEventPublisher.class),
+            new ObjectMapper().findAndRegisterModules());
 
     @Test
     void softDeleteMarksAndSavesTheLoadedTrade() {
@@ -34,7 +38,7 @@ class TradeServiceSoftDeleteTest {
         service.softDelete(42L, "delete-actor");
 
         assertThat(trade.getDeletedAt()).isNotNull();
-        verify(tradeRepository).save(trade);
+        verify(tradeRepository).saveAndFlush(trade);
     }
 
     @Test
@@ -58,6 +62,6 @@ class TradeServiceSoftDeleteTest {
                 .isInstanceOf(TradeNotFoundException.class)
                 .hasMessage("id=42");
         assertThat(trade.getDeletedAt()).isNotNull();
-        verify(tradeRepository, times(1)).save(trade);
+        verify(tradeRepository, times(1)).saveAndFlush(trade);
     }
 }

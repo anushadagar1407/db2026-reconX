@@ -1,10 +1,15 @@
 package com.dbtraining.reconx.kafka;
 
-import com.dbtraining.reconx.dto.TradeEvent;
-import com.dbtraining.reconx.repository.AuditLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.dbtraining.reconx.dto.TradeEvent;
+import com.dbtraining.reconx.repository.AuditLogRepository;
+import com.dbtraining.reconx.repository.entity.AuditLogEntry;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * ============================================================================
@@ -19,24 +24,6 @@ import org.springframework.stereotype.Component;
  * OBSERVE: After a POST /api/v1/trades, query audit_log -> one new row with
  *          the same eventId.
  * ============================================================================
- *
- *  TODO(TICKET-ADV132):
- *    @KafkaListener(topics = "trade-events", groupId = "audit-service")
- *    public void onTradeEvent(TradeEvent e) {
- *        repo.save(new AuditLogEntry(
- *            e.eventId().toString(),
- *            e.tradeRef(),
- *            e.eventType().name(),
- *            e.timestamp(),
- *            e.actor(),
- *            e.before(),
- *            e.after()));
- *        log.debug("Audit row persisted for eventId={}", e.eventId());
- *    }
- *
- *  HINT: The consumer is on a DIFFERENT groupId from ReconciliationConsumer
- *        so Kafka delivers each message to both groups independently.
- * ============================================================================
  */
 @Component
 public class AuditEventConsumer {
@@ -46,7 +33,30 @@ public class AuditEventConsumer {
 
     public AuditEventConsumer(AuditLogRepository repo) { this.repo = repo; }
 
+    @KafkaListener(
+            topics = "trade-events",
+            groupId = "audit-service",
+            containerFactory = "tradeEventListenerContainerFactory")
+    @Transactional
     public void onTradeEvent(TradeEvent e) {
-        throw new UnsupportedOperationException("TICKET-ADV132");
+        String eventId = e.eventId().toString();
+        if (repo.existsByEventId(eventId)) {
+            log.debug("Audit row already exists for eventId={}", eventId);
+            return;
+        }
+        repo.save(new AuditLogEntry(
+                eventId,
+                e.tradeRef(),
+                e.eventType().name(),
+                e.timestamp(),
+                e.actor(),
+                json(e.before()),
+                json(e.after())));
+        log.debug("Audit row persisted for eventId={} tradeRef={}",
+                e.eventId(), e.tradeRef());
+    }
+
+    private static String json(JsonNode snapshot) {
+        return snapshot == null || snapshot.isNull() ? null : snapshot.toString();
     }
 }

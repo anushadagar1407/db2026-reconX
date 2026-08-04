@@ -1,0 +1,67 @@
+name: Presentation exports
+
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  export:
+    name: Generate presentation artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 22.22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.22.0
+          cache: npm
+          cache-dependency-path: presentation/package-lock.json
+
+      - name: Install presentation dependencies
+        id: install
+        working-directory: presentation
+        run: npm ci
+
+      - name: Install Playwright Chromium and Linux dependencies
+        id: browser
+        if: ${{ steps.install.outcome == 'success' }}
+        working-directory: presentation
+        run: npx playwright install --with-deps chromium
+
+      - name: Export all slide images
+        if: ${{ steps.browser.outcome == 'success' }}
+        working-directory: presentation
+        run: npm run export:slides
+
+      - name: Export delivery PDF
+        if: ${{ always() && steps.browser.outcome == 'success' }}
+        working-directory: presentation
+        run: npm run export:pdf
+
+      - name: Upload commit-specific presentation exports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: presentation-exports-${{ github.sha }}
+          path: |
+            presentation/slide-renders/
+            presentation/pdf-export/
+          if-no-files-found: warn
+          retention-days: 14
