@@ -7,9 +7,9 @@
     "playwrightVersion": "1.61.0",
     "pdfjsVersion": "5.4.296"
   },
-  "generatedAt": "2026-08-04T09:38:54.143Z",
-  "sourceCommit": "f243ca23d098d5ad2383862157b0e726faf0a272",
-  "sourceDirty": true,
+  "generatedAt": "2026-08-04T09:49:33.883Z",
+  "sourceCommit": "4240db26b6e6415ab3a5a348a39e67e6ad7ef3a6",
+  "sourceDirty": false,
   "worktreeDirtyBeforeExport": true,
   "capture": {
     "source": "local-preview",
@@ -32,7 +32,7 @@
   },
   "output": {
     "filename": "reconx-presentation.pdf",
-    "sha256": "196b8c437327396231d1599967a018230c5fa99b096c9d5d5289edb1c13bbf52",
+    "sha256": "14fae60fa4a60848e3ffc820e3d06dd1e625d5d681f631fbfd9e695b08543a25",
     "bytes": 104609,
     "pageCount": 1,
     "pageDimensions": {
