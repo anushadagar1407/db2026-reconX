@@ -7,6 +7,7 @@ import com.dbtraining.reconx.repository.DlqMessageRepository;
 import com.dbtraining.reconx.repository.entity.DlqMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -23,14 +25,14 @@ class DlqAdminControllerTest {
 
     private final DlqMessageRepository repository = mock(DlqMessageRepository.class);
     private final TradeEventProducer producer = mock(TradeEventProducer.class);
-    private final TradeEventJsonCodec codec = new TradeEventJsonCodec(
-            new ObjectMapper().findAndRegisterModules());
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final TradeEventJsonCodec codec = new TradeEventJsonCodec(objectMapper);
     private final DlqAdminController controller =
             new DlqAdminController(repository, producer, codec);
 
     @Test
     void dryRunReturnsPreviewWithoutPublishingOrDeleting() {
-        TradeEvent event = TradeEvent.created("TRD-PREVIEW");
+        TradeEvent event = createdEvent("TRD-PREVIEW");
         DlqMessage message = messageFor(event);
         when(repository.findByEventId(event.eventId().toString()))
                 .thenReturn(Optional.of(message));
@@ -42,15 +44,20 @@ class DlqAdminControllerTest {
                 .containsEntry("dryRun", true)
                 .containsEntry("eventId", event.eventId())
                 .containsEntry("wouldReplayTo", "trade-events")
-                .containsEntry("tradeRef", "TRD-PREVIEW")
-                .containsEntry("payload", event);
-        verify(producer, never()).publish(event);
+                .containsEntry("tradeRef", "TRD-PREVIEW");
+        TradeEvent preview = (TradeEvent) response.getBody().get("payload");
+        assertThat(preview.eventId()).isEqualTo(event.eventId());
+        assertThat(preview.actor()).isEqualTo("dlq-admin@db.com");
+        assertThat(preview.after()).isEqualTo(event.after());
+        assertThat(preview.after().path("details").path("status").asText())
+                .isEqualTo("PENDING");
+        verify(producer, never()).publish(any(TradeEvent.class));
         verify(repository, never()).delete(message);
     }
 
     @Test
     void replayPublishesEventAndDeletesStoredMessage() {
-        TradeEvent event = TradeEvent.created("TRD-REPLAY");
+        TradeEvent event = createdEvent("TRD-REPLAY");
         DlqMessage message = messageFor(event);
         when(repository.findByEventId(event.eventId().toString()))
                 .thenReturn(Optional.of(message));
@@ -63,8 +70,24 @@ class DlqAdminControllerTest {
                 .containsEntry("eventId", event.eventId())
                 .containsEntry("topic", "trade-events")
                 .containsEntry("tradeRef", event.tradeRef());
-        verify(producer).publish(event);
+        ArgumentCaptor<TradeEvent> replayed = ArgumentCaptor.forClass(TradeEvent.class);
+        verify(producer).publish(replayed.capture());
+        assertThat(replayed.getValue().eventId()).isEqualTo(event.eventId());
+        assertThat(replayed.getValue().actor()).isEqualTo("dlq-admin@db.com");
+        assertThat(replayed.getValue().after()).isEqualTo(event.after());
+        assertThat(replayed.getValue().after().path("details").path("status").asText())
+                .isEqualTo("PENDING");
         verify(repository).delete(message);
+    }
+
+    private TradeEvent createdEvent(String tradeRef) {
+        return TradeEvent.created(
+                tradeRef,
+                "dlq-admin@db.com",
+                objectMapper.createObjectNode()
+                        .put("tradeRef", tradeRef)
+                        .set("details", objectMapper.createObjectNode()
+                                .put("status", "PENDING")));
     }
 
     private DlqMessage messageFor(TradeEvent event) {

@@ -3,6 +3,7 @@ package com.dbtraining.reconx.kafka;
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.repository.DlqMessageRepository;
 import com.dbtraining.reconx.repository.entity.DlqMessage;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
@@ -18,10 +19,13 @@ class DlqConsumerTest {
     @Test
     void persistsFailedEventWithOriginalKafkaCoordinates() {
         DlqMessageRepository repository = mock(DlqMessageRepository.class);
-        TradeEventJsonCodec codec = new TradeEventJsonCodec(
-                new ObjectMapper().findAndRegisterModules());
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        TradeEventJsonCodec codec = new TradeEventJsonCodec(objectMapper);
         DlqConsumer consumer = new DlqConsumer(repository, codec);
-        TradeEvent event = TradeEvent.created("TRD-DLQ-1");
+        JsonNode after = objectMapper.createObjectNode()
+                .put("tradeRef", "TRD-DLQ-1")
+                .set("details", objectMapper.createObjectNode().put("status", "PENDING"));
+        TradeEvent event = TradeEvent.created("TRD-DLQ-1", "consumer@db.com", after);
         ConsumerRecord<String, TradeEvent> record =
                 new ConsumerRecord<>("trade-events-dlq", 2, 9L, event.tradeRef(), event);
         when(repository.existsByEventId(event.eventId().toString())).thenReturn(false);
@@ -43,7 +47,15 @@ class DlqConsumerTest {
         assertThat(saved.getOriginalPartition()).isEqualTo(2);
         assertThat(saved.getOriginalOffset()).isEqualTo(7L);
         assertThat(saved.getReason()).isEqualTo("reconciliation failed");
-        assertThat(codec.decode(saved.getPayload())).isEqualTo(event);
+        TradeEvent restored = codec.decode(saved.getPayload());
+        assertThat(restored.eventId()).isEqualTo(event.eventId());
+        assertThat(restored.tradeRef()).isEqualTo(event.tradeRef());
+        assertThat(restored.eventType()).isEqualTo(event.eventType());
+        assertThat(restored.timestamp()).isEqualTo(event.timestamp());
+        assertThat(restored.actor()).isEqualTo("consumer@db.com");
+        assertThat(restored.after()).isEqualTo(event.after());
+        assertThat(restored.after().path("details").path("status").asText())
+                .isEqualTo("PENDING");
         assertThat(saved.getFirstSeen()).isNotNull();
     }
 }

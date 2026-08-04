@@ -15,6 +15,7 @@ import com.dbtraining.reconx.repository.entity.ReconBreak;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
 import com.dbtraining.reconx.service.TradeStreamService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -459,7 +460,7 @@ class SecurityConfigTest {
 
         @Bean
         AuditController auditController(AuditLogRepository auditRepo) {
-            return new AuditController(auditRepo);
+            return new AuditController(auditRepo, new ObjectMapper());
         }
 
         @Bean

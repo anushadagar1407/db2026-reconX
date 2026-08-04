@@ -2,6 +2,7 @@ package com.dbtraining.reconx.kafka;
 
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.service.ReconciliationEngine;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.mock;
@@ -15,7 +16,8 @@ class ReconciliationConsumerTest {
 
     @Test
     void schedulesReconciliationForCreatedTrade() {
-        consumer.onTradeEvent(TradeEvent.created("TRD-NEW"));
+        consumer.onTradeEvent(TradeEvent.created(
+                "TRD-NEW", JsonNodeFactory.instance.objectNode()));
 
         verify(reconEngine).scheduleRecon("TRD-NEW");
         verifyNoMoreInteractions(reconEngine);
@@ -23,7 +25,10 @@ class ReconciliationConsumerTest {
 
     @Test
     void schedulesReconciliationForUpdatedTrade() {
-        consumer.onTradeEvent(TradeEvent.updated("TRD-UPDATED"));
+        consumer.onTradeEvent(TradeEvent.updated(
+                "TRD-UPDATED",
+                JsonNodeFactory.instance.objectNode(),
+                JsonNodeFactory.instance.objectNode()));
 
         verify(reconEngine).scheduleRecon("TRD-UPDATED");
         verifyNoMoreInteractions(reconEngine);
@@ -31,7 +36,8 @@ class ReconciliationConsumerTest {
 
     @Test
     void cancelsPendingReconciliationForCancelledTrade() {
-        consumer.onTradeEvent(TradeEvent.cancelled("TRD-CANCELLED"));
+        consumer.onTradeEvent(TradeEvent.cancelled(
+                "TRD-CANCELLED", JsonNodeFactory.instance.objectNode()));
 
         verify(reconEngine).cancelPendingRecon("TRD-CANCELLED");
         verifyNoMoreInteractions(reconEngine);

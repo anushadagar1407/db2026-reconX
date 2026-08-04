@@ -3,6 +3,9 @@ package com.dbtraining.reconx.controller;
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.repository.AuditLogRepository;
 import com.dbtraining.reconx.repository.entity.AuditLogEntry;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,8 +26,12 @@ import java.util.UUID;
 public class AuditController {
 
     private final AuditLogRepository auditRepo;
+    private final ObjectMapper objectMapper;
 
-    public AuditController(AuditLogRepository auditRepo) { this.auditRepo = auditRepo; }
+    public AuditController(AuditLogRepository auditRepo, ObjectMapper objectMapper) {
+        this.auditRepo = auditRepo;
+        this.objectMapper = objectMapper;
+    }
 
     @GetMapping("/trades/{tradeRef}")
     @Operation(summary = "Get audit history for a trade (by tradeRef)")
@@ -42,7 +49,7 @@ public class AuditController {
     public List<TradeEvent> events(@PathVariable String tradeRef) {
         return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef).stream()
                 .filter(AuditController::isTradeEvent)
-                .map(AuditController::toTradeEvent)
+                .map(this::toTradeEvent)
                 .toList();
     }
 
@@ -55,14 +62,38 @@ public class AuditController {
         }
     }
 
-    private static TradeEvent toTradeEvent(AuditLogEntry entry) {
+    private TradeEvent toTradeEvent(AuditLogEntry entry) {
         return new TradeEvent(
                 UUID.fromString(entry.getEventId()),
                 entry.getTradeRef(),
                 TradeEvent.EventType.valueOf(entry.getEventType()),
                 entry.getEventTimestamp(),
                 entry.getActor(),
-                entry.getBeforeState(),
-                entry.getAfterState());
+                parseSnapshot(entry.getBeforeState(), "before", entry.getEventId()),
+                parseSnapshot(entry.getAfterState(), "after", entry.getEventId()));
+    }
+
+    private JsonNode parseSnapshot(String storedJson, String field, String eventId) {
+        if (storedJson == null) {
+            return null;
+        }
+        if (storedJson.isBlank()) {
+            throw invalidSnapshot(field, eventId, null);
+        }
+        try {
+            JsonNode snapshot = objectMapper.readTree(storedJson);
+            if (snapshot == null) {
+                throw invalidSnapshot(field, eventId, null);
+            }
+            return snapshot;
+        } catch (JsonProcessingException exception) {
+            throw invalidSnapshot(field, eventId, exception);
+        }
+    }
+
+    private static IllegalStateException invalidSnapshot(
+            String field, String eventId, Exception cause) {
+        return new IllegalStateException(
+                "Invalid " + field + "-state JSON for eventId=" + eventId, cause);
     }
 }

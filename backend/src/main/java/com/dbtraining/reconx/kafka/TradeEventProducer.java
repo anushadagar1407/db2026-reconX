@@ -1,10 +1,13 @@
 package com.dbtraining.reconx.kafka;
 
 import com.dbtraining.reconx.dto.TradeEvent;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * ============================================================================
@@ -18,18 +21,6 @@ import org.springframework.stereotype.Component;
  *          impossible (you'd "apply" CREATE after UPDATE).
  * OBSERVE: Kafdrop -> `trade-events` shows one message per published event,
  *          partitioned by tradeRef.
- * ============================================================================
- *
- *  TODO(TICKET-ADV129):
- *    public void publish(TradeEvent event) {
- *        log.debug("Publishing TradeEvent eventId={} ref={} type={}",
- *                  event.eventId(), event.tradeRef(), event.eventType());
- *        template.send(TOPIC, event.tradeRef(), event);
- *    }
- *
- *  GOTCHA: NEVER let a Kafka publish failure roll back the DB transaction.
- *          Publish AFTER commit (use TransactionSynchronizationManager or
- *          @TransactionalEventListener), or accept eventual consistency.
  * ============================================================================
  */
 @Component
@@ -46,7 +37,37 @@ public class TradeEventProducer {
 
     public void publish(TradeEvent event) {
         log.debug("Publishing TradeEvent eventId={} ref={} type={}",
-              event.eventId(), event.tradeRef(), event.eventType());
-        template.send(TOPIC, event.tradeRef(), event);
+                event.eventId(), event.tradeRef(), event.eventType());
+        try {
+            template.send(TOPIC, event.tradeRef(), event)
+                    .whenComplete((result, failure) -> {
+                        if (failure != null) {
+                            log.error("Failed to publish TradeEvent eventId={} ref={}",
+                                    event.eventId(), event.tradeRef(), failure);
+                            return;
+                        }
+                        try {
+                            RecordMetadata metadata = result.getRecordMetadata();
+                            log.debug(
+                                    "Published TradeEvent eventId={} ref={} partition={} offset={}",
+                                    event.eventId(),
+                                    event.tradeRef(),
+                                    metadata.partition(),
+                                    metadata.offset());
+                        } catch (RuntimeException metadataFailure) {
+                            log.error(
+                                    "Failed to read publish metadata for TradeEvent eventId={} ref={}",
+                                    event.eventId(), event.tradeRef(), metadataFailure);
+                        }
+                    });
+        } catch (RuntimeException failure) {
+            log.error("Failed to initiate TradeEvent publish eventId={} ref={}",
+                    event.eventId(), event.tradeRef(), failure);
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onTradeEventCommitted(TradeEvent event) {
+        publish(event);
     }
 }
