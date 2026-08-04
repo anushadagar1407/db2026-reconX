@@ -8,7 +8,6 @@ import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import org.junit.jupiter.api.Test;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
-import com.dbtraining.reconx.kafka.AlertProducer;
 
 
 import java.util.Optional;
@@ -28,8 +27,7 @@ class TradeServiceSoftDeleteTest {
             mock(CounterpartyRepository.class),
             mock(InstrumentRepository.class),
             mock(TradeMetrics.class),
-            mock(TradeEventProducer.class),
-            mock(AlertProducer.class));
+            mock(TradeEventProducer.class));
 
     @Test
     void softDeleteMarksAndSavesTheLoadedTrade() {
