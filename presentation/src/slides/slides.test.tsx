@@ -1,0 +1,75 @@
+import type { ReactNode } from 'react';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { ArchitectureSlide } from './ArchitectureSlide';
+import { DeliverySlide } from './DeliverySlide';
+import { LearningsSlide } from './LearningsSlide';
+import { LiveDemoSlide } from './LiveDemoSlide';
+import { MonitoringSlide } from './MonitoringSlide';
+import { ProblemSlide } from './ProblemSlide';
+import { QuestionsSlide } from './QuestionsSlide';
+import { ReconciliationSlide } from './ReconciliationSlide';
+import { TechStackSlide } from './TechStackSlide';
+import { TitleSlide } from './TitleSlide';
+
+vi.mock('@revealjs/react', () => ({
+  Slide: ({ children }: { children: ReactNode }) => <section data-testid="slide">{children}</section>,
+}));
+
+const slides = [
+  <TitleSlide key="title" />,
+  <ProblemSlide key="problem" />,
+  <ArchitectureSlide key="architecture" />,
+  <TechStackSlide key="stack" />,
+  <LiveDemoSlide key="demo" demoUrl="https://demo.example.test" />,
+  <ReconciliationSlide key="reconciliation" />,
+  <DeliverySlide key="delivery" />,
+  <MonitoringSlide key="monitoring" />,
+  <LearningsSlide key="learnings" />,
+  <QuestionsSlide key="questions" />,
+];
+
+describe('flat slide components', () => {
+  it('renders one Reveal slide for each of the ten individual components in order', () => {
+    const { container } = render(<>{slides}</>);
+    const renderedSlides = Array.from(container.querySelectorAll('[data-testid="slide"]'));
+
+    expect(renderedSlides).toHaveLength(10);
+    expect(renderedSlides.map((slide) => slide.querySelector('.type-slide-label')?.textContent)).toEqual([
+      'DAY 10 · 20-MINUTE DEMO',
+      '02 / OPERATIONS PROBLEM',
+      '03 / CURRENT RUNTIME BOUNDARY',
+      '04 / STACK BY RESPONSIBILITY',
+      '05 / LIVE TRADE JOURNEY',
+      '06 / RECONCILIATION TRUTH LINE',
+      '07 / CI/CD DELIVERY RAIL · 11:00–12:40',
+      '08 / MONITORING & LOAD EVIDENCE · 12:40–14:25',
+      '09 / AFTER-ACTION NOTES',
+      '10 / OPEN FLOOR',
+    ]);
+    expect(renderedSlides.every((slide) => slide.querySelector('.slide-canvas'))).toBe(true);
+  });
+
+  it('keeps evidence boundaries visible in the source-backed narrative', () => {
+    render(<>{slides}</>);
+
+    expect(screen.getByText('KAFKA APPLICATION ORCHESTRATION — GAP')).toBeInTheDocument();
+    expect(screen.getByText('Queue has no worker; no application listener result is observed.')).toBeInTheDocument();
+    expect(screen.getByText('push: false')).toBeInTheDocument();
+    expect(screen.getByText('runtime capture pending')).toBeInTheDocument();
+    expect(screen.getByText('Presenter reflection pending')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'https://github.com/anushadagar1407/db2026-reconX' })).toBeInTheDocument();
+  });
+
+  it('keeps the live demo idle and retains the recovery link', () => {
+    render(<LiveDemoSlide demoUrl="https://demo.example.test" />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Demo: idle');
+    expect(screen.getByRole('button', { name: 'Launch embedded demo' })).toBeInTheDocument();
+    expect(screen.queryByTitle('ReconX live demo')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open full demo' })).toHaveAttribute(
+      'href',
+      'https://demo.example.test',
+    );
+  });
+});
