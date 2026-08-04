@@ -206,7 +206,7 @@ The raw Compose alternatives target the profiled one-shot services explicitly:
 mkdir -p .verification-reports/backend/target
 docker compose up --build --force-recreate --abort-on-container-exit --exit-code-from test-backend test-backend
 docker compose cp test-backend:/workspace/backend/target/. .verification-reports/backend/target/
-docker compose rm --force --stop test-backend test-postgres
+docker compose rm --force --stop test-backend test-postgres test-kafka test-zookeeper
 
 mkdir -p .verification-reports/frontend/test-results
 docker compose up --build --force-recreate --abort-on-container-exit --exit-code-from test-frontend test-frontend

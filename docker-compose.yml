@@ -85,6 +85,34 @@ services:
     ports: ["5173:80"]
     networks: [reconx]
 
+  test-zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    profiles: ["test"]
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME:   2000
+    networks: [reconx]
+
+  test-kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    profiles: ["test"]
+    depends_on:
+      test-zookeeper: {condition: service_started}
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: test-zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://test-kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server test-kafka:29092 --list || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [reconx]
+
   test-postgres:
     image: postgres:16-alpine
     profiles: ["test"]
@@ -116,8 +144,10 @@ services:
       TEST_POSTGRES_DB: reconx_test
       TEST_POSTGRES_USER: reconx_test
       TEST_POSTGRES_PASSWORD: reconx_test
+      TEST_KAFKA_BOOTSTRAP_SERVERS: test-kafka:29092
     depends_on:
       test-postgres: {condition: service_healthy}
+      test-kafka: {condition: service_healthy}
     networks: [reconx]
 
   test-frontend:
