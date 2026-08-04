@@ -1375,7 +1375,7 @@
 .title-slide {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 0;
+  gap: var(--space-lg);
 }
 
 .title-slide__header {
@@ -1392,13 +1392,13 @@
   align-self: center;
   justify-self: start;
   width: 100%;
-  max-width: 76rem;
+  max-width: 92rem;
   margin: 0;
   gap: var(--space-md);
 }
 
 .reveal .title-slide__content .type-slide-title {
-  max-width: 23ch;
+  max-width: 30ch;
   font-size: var(--type-display-size);
 }
 
@@ -1415,6 +1415,138 @@
 
 .title-slide__footer .type-body {
   font-size: calc((var(--type-body-size) + var(--type-label-size)) / 2);
+}
+
+.title-slide__middle {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--space-lg);
+  min-width: 0;
+  min-height: 0;
+}
+
+.title-slide__contributors {
+  min-width: 0;
+  padding-top: var(--space-sm);
+  border-top: var(--border-hairline) solid var(--slide-rule);
+}
+
+.title-slide__contributors-header {
+  align-items: baseline;
+  min-width: 0;
+  margin-bottom: var(--space-sm);
+}
+
+.reveal .title-slide__contributors-heading {
+  max-width: none;
+  color: var(--slide-ink);
+  font-size: var(--type-body-size);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.02em;
+}
+
+.title-slide__contributors-meta {
+  flex: none;
+  color: var(--slide-muted-ink);
+  font-size: var(--type-label-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.title-slide__portrait-ribbon {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.8fr) repeat(7, minmax(0, 1fr));
+  gap: var(--space-md);
+  min-width: 0;
+  align-items: start;
+}
+
+.title-slide__roster-label {
+  display: flex;
+  min-width: 0;
+  min-height: calc(var(--space-2xl) + var(--space-md));
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2xs);
+  padding-inline-start: var(--space-sm);
+  border-inline-start: var(--border-emphasis) solid var(--slide-accent);
+}
+
+.title-slide__roster-label span {
+  color: var(--slide-ink);
+  font-size: var(--type-body-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--type-leading-heading);
+}
+
+.title-slide__roster-label small {
+  max-width: 14ch;
+  color: var(--slide-muted-ink);
+  font-size: var(--type-label-size);
+  line-height: var(--type-leading-body);
+}
+
+.title-slide__contributor {
+  display: grid;
+  min-width: 0;
+  justify-items: start;
+  align-content: start;
+  gap: var(--space-2xs);
+}
+
+.title-slide__portrait-frame {
+  width: min(100%, calc(var(--space-2xl) + var(--space-sm)));
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-bottom: var(--border-emphasis) solid var(--slide-accent);
+  background: var(--primitive-neutral-900);
+}
+
+.title-slide__portrait,
+.title-slide__portrait-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.title-slide__portrait {
+  object-fit: cover;
+}
+
+.title-slide__portrait-fallback {
+  display: grid;
+  place-items: center;
+  color: var(--primitive-white);
+  background: var(--primitive-neutral-900);
+  font-size: var(--type-body-size);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+}
+
+.title-slide__contributor-name,
+.title-slide__contributor-login {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.title-slide__contributor-name {
+  min-height: calc(var(--type-label-size) * 2.2);
+  color: var(--slide-ink);
+  font-size: var(--type-label-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.1;
+}
+
+.title-slide__contributor-login {
+  min-height: calc(var(--type-label-size) * 1.2);
+  color: var(--slide-muted-ink);
+  font-family: var(--font-code);
+  font-size: calc(var(--type-label-size) - (var(--space-2xs) / 4));
+  line-height: 1.2;
 }
 
 /* Slide 2 */
@@ -2266,6 +2398,30 @@
 }
 
 @media (max-width: 1100px) {
+  .title-slide__middle {
+    overflow-y: auto;
+  }
+
+  .title-slide__portrait-ribbon {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-sm);
+  }
+
+  .title-slide__roster-label {
+    grid-column: 1 / -1;
+    min-height: 0;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 0 var(--space-2xs);
+    border-inline-start: 0;
+    border-block-end: var(--border-emphasis) solid var(--slide-accent);
+  }
+
+  .title-slide__roster-label small {
+    max-width: none;
+  }
+
   .problem-slide__content,
   .architecture-slide__branches {
     gap: var(--space-md);

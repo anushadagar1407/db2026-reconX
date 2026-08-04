@@ -11,6 +11,7 @@ import { QuestionsSlide } from './QuestionsSlide';
 import { ReconciliationSlide } from './ReconciliationSlide';
 import { TechStackSlide } from './TechStackSlide';
 import { TitleSlide } from './TitleSlide';
+import { contributors } from './contributors';
 
 vi.mock('@revealjs/react', () => ({
   Slide: ({ children }: { children: ReactNode }) => <section data-testid="slide">{children}</section>,
@@ -35,6 +36,7 @@ describe('flat slide components', () => {
     const renderedSlides = Array.from(container.querySelectorAll('[data-testid="slide"]'));
 
     expect(renderedSlides).toHaveLength(10);
+    expect(renderedSlides[10]).toBeUndefined();
     expect(renderedSlides.map((slide) => slide.querySelector('.type-slide-label')?.textContent)).toEqual([
       'DAY 10 · 20-MINUTE DEMO',
       '02 / OPERATIONS PROBLEM',
@@ -48,6 +50,30 @@ describe('flat slide components', () => {
       '10 / OPEN FLOOR',
     ]);
     expect(renderedSlides.every((slide) => slide.querySelector('.slide-canvas'))).toBe(true);
+  });
+
+  it('renders the complete local public contributor roster on the title slide', () => {
+    render(<TitleSlide />);
+
+    expect(screen.getByRole('heading', { name: 'Contributors' })).toBeInTheDocument();
+    expect(screen.getByText('PUBLIC GITHUB RECORD · 7')).toBeInTheDocument();
+    expect(contributors).toHaveLength(7);
+
+    contributors.forEach(({ displayName, login, avatarSrc }) => {
+      expect(screen.getByText(displayName, { exact: true })).toBeInTheDocument();
+      expect(screen.getByText(`@${login}`, { exact: true })).toBeInTheDocument();
+
+      const avatar = screen.getByRole('img', {
+        name: `Portrait of ${displayName}; GitHub login @${login}`,
+      });
+
+      expect(avatar).toHaveAttribute('src', avatarSrc);
+      expect(avatar.getAttribute('src')).toMatch(/^\/assets\/contributors\/[a-z0-9-]+\.jpg$/);
+      expect(avatar.getAttribute('src')).not.toMatch(/^https?:/);
+      expect(avatar).toHaveAttribute('alt', `Portrait of ${displayName}; GitHub login @${login}`);
+    });
+
+    expect(screen.queryByText(/^@?sidoncode$/i)).not.toBeInTheDocument();
   });
 
   it('keeps evidence boundaries visible in the source-backed narrative', () => {
