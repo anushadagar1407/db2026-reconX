@@ -66,6 +66,8 @@ public class SecurityConfig {
                         .hasAnyRole("TRADER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/v1/trades/**")
                         .hasRole("ADMIN")
+                        .requestMatchers("/v1/admin/**")
+                        .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/v1/recon/**")
                         .hasAnyRole("VIEWER", "RECON_ANALYST", "ADMIN")
                         .requestMatchers("/v1/recon/**")
