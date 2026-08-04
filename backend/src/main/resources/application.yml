@@ -83,6 +83,9 @@ management:
       probes:
         enabled: true
   metrics:
+    binders:
+      kafka:
+        enabled: true
     distribution:
       percentiles-histogram:
         http.server.requests: true
