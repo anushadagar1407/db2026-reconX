@@ -74,7 +74,7 @@ export function TitleSlide() {
               </BodyText>
             </Stack>
 
-            <section className="title-slide__contributors" aria-labelledby="contributors-heading">
+            <div className="title-slide__contributors" role="group" aria-labelledby="contributors-heading">
               <Cluster className="title-slide__contributors-header" justify="between" align="end" wrap={false}>
                 <SectionHeading id="contributors-heading" className="title-slide__contributors-heading">
                   Contributors
@@ -90,7 +90,7 @@ export function TitleSlide() {
                   <ContributorPortrait key={contributor.login} {...contributor} />
                 ))}
               </div>
-            </section>
+            </div>
           </div>
 
           <Cluster className="title-slide__footer" justify="between" align="end" wrap={false}>

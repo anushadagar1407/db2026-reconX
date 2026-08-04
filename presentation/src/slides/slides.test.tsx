@@ -56,6 +56,7 @@ describe('flat slide components', () => {
     render(<TitleSlide />);
 
     expect(screen.getByRole('heading', { name: 'Contributors' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Contributors' }).tagName).toBe('DIV');
     expect(screen.getByText('PUBLIC GITHUB RECORD · 7')).toBeInTheDocument();
     expect(contributors).toHaveLength(7);
 
