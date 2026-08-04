@@ -15,6 +15,7 @@ import com.dbtraining.reconx.repository.entity.ReconBreak;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
 import com.dbtraining.reconx.service.TradeStreamService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -387,19 +388,20 @@ class SecurityConfigTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"VIEWER", "RECON_ANALYST", "ADMIN"})
-    void readOnlyRolesCanReadAuditEvents(String role) throws Exception {
+    @ValueSource(strings = {"RECON_ANALYST", "ADMIN"})
+    void authorizedRolesCanReadAuditEvents(String role) throws Exception {
         mockMvc.perform(get("/api/v1/audit/trades/TRD-1/events")
                         .contextPath(CONTEXT_PATH)
                         .with(bearer(role)))
                 .andExpect(status().isOk());
     }
 
-    @Test
-    void traderCannotReadAuditEvents() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"VIEWER", "TRADER"})
+    void unauthorizedRolesCannotReadAuditEvents(String role) throws Exception {
         mockMvc.perform(get("/api/v1/audit/trades/TRD-1/events")
                         .contextPath(CONTEXT_PATH)
-                        .with(bearer("TRADER")))
+                        .with(bearer(role)))
                 .andExpect(status().isForbidden());
     }
 
@@ -458,7 +460,7 @@ class SecurityConfigTest {
 
         @Bean
         AuditController auditController(AuditLogRepository auditRepo) {
-            return new AuditController(auditRepo);
+            return new AuditController(auditRepo, new ObjectMapper());
         }
 
         @Bean

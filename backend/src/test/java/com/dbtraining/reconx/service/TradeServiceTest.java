@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.InvalidTradeException;
@@ -14,6 +15,7 @@ import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -44,12 +46,13 @@ class TradeServiceTest {
     private final CounterpartyRepository counterpartyRepository = mock(CounterpartyRepository.class);
     private final InstrumentRepository instrumentRepository = mock(InstrumentRepository.class);
     private final TradeMetrics tradeMetrics = mock(TradeMetrics.class);
+    private final ApplicationEventPublisher applicationEvents = mock(ApplicationEventPublisher.class);
     private final TradeService service = new TradeService(
             tradeRepository,
             counterpartyRepository,
             instrumentRepository,
             tradeMetrics,
-            mock(ApplicationEventPublisher.class),
+            applicationEvents,
             new ObjectMapper().findAndRegisterModules());
 
     @Test
@@ -219,6 +222,14 @@ class TradeServiceTest {
         assertThat(trade.getTradeDate()).isEqualTo(LocalDate.of(2026, 7, 30));
 
         verify(tradeRepository, times(1)).saveAndFlush(trade);
+        ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(applicationEvents).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue()).isInstanceOf(TradeEvent.class);
+        TradeEvent event = (TradeEvent) eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(TradeEvent.EventType.TRADE_UPDATED);
+        assertThat(event.actor()).isEqualTo("trader");
+        assertThat(event.before().path("status").asText()).isEqualTo("PENDING");
+        assertThat(event.after().path("status").asText()).isEqualTo("MATCHED");
     }
 
     @Test
