@@ -6,11 +6,11 @@
     "packageVersion": "0.1.0",
     "playwrightVersion": "1.61.0"
   },
-  "generatedAt": "2026-08-04T09:49:31.908Z",
+  "generatedAt": "2026-08-04T11:46:23.996Z",
   "exportMode": "full",
-  "sourceCommit": "4240db26b6e6415ab3a5a348a39e67e6ad7ef3a6",
+  "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
   "sourceDirty": false,
-  "worktreeDirtyBeforeExport": false,
+  "worktreeDirtyBeforeExport": true,
   "capture": {
     "source": "local-preview",
     "externalUrl": null,
@@ -20,9 +20,18 @@
     },
     "deviceScaleFactor": 1,
     "fragmentPolicy": "all-visible",
-    "discoveredSlideCount": 1,
+    "discoveredSlideCount": 10,
     "refreshedSlides": [
-      1
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
     ]
   },
   "slides": [
@@ -31,15 +40,618 @@
       "horizontalIndex": 0,
       "verticalIndex": 0,
       "filename": "slide-001.png",
-      "title": "ReconX presentation scaffold",
-      "capturedAt": "2026-08-04T09:49:31.906Z",
-      "sourceCommit": "4240db26b6e6415ab3a5a348a39e67e6ad7ef3a6",
+      "title": "Slide 1: ReconX title",
+      "capturedAt": "2026-08-04T11:46:22.772Z",
+      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
       "sourceDirty": false,
       "image": {
         "width": 1920,
         "height": 1080,
-        "sha256": "c0926064b92c935468b6df39decf54c866d19cf634a2b00aa9eadb745b300424",
-        "bytes": 63405
+        "sha256": "c5545081724cb4ca4379bf48570d1cbb96b2ce86a1a33b82534826c8a2ba45ac",
+        "bytes": 82778
+      },
+      "diagnostics": {
+        "fragmentPolicy": "all-visible",
+        "overflow": {
+          "detected": false,
+          "missingSlideCanvas": false,
+          "document": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "slide": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "canvas": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeFrame": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeArea": {
+            "clientWidth": 1696,
+            "clientHeight": 904,
+            "scrollWidth": 1696,
+            "scrollHeight": 904,
+            "horizontal": false,
+            "vertical": false,
+            "inset": "safe",
+            "enforcement": "safe-content"
+          },
+          "outsideSafeArea": [],
+          "autoFit": []
+        }
+      }
+    },
+    {
+      "ordinal": 2,
+      "horizontalIndex": 1,
+      "verticalIndex": 0,
+      "filename": "slide-002.png",
+      "title": "Slide 2: Operations problem",
+      "capturedAt": "2026-08-04T11:46:22.921Z",
+      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "sourceDirty": false,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "sha256": "1a134bb979350507de36bd9a870f9aff2bee74b1738e41d95c6f39e00511f75f",
+        "bytes": 160858
+      },
+      "diagnostics": {
+        "fragmentPolicy": "all-visible",
+        "overflow": {
+          "detected": false,
+          "missingSlideCanvas": false,
+          "document": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "slide": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "canvas": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeFrame": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeArea": {
+            "clientWidth": 1696,
+            "clientHeight": 904,
+            "scrollWidth": 1696,
+            "scrollHeight": 904,
+            "horizontal": false,
+            "vertical": false,
+            "inset": "safe",
+            "enforcement": "safe-content"
+          },
+          "outsideSafeArea": [],
+          "autoFit": []
+        }
+      }
+    },
+    {
+      "ordinal": 3,
+      "horizontalIndex": 2,
+      "verticalIndex": 0,
+      "filename": "slide-003.png",
+      "title": "Slide 3: Current runtime architecture",
+      "capturedAt": "2026-08-04T11:46:23.050Z",
+      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "sourceDirty": false,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "sha256": "3b54c64ad6cc30d477b9b26d98b3acc260eece6b0da2d78b3bc0e3b98d890b2b",
+        "bytes": 148164
+      },
+      "diagnostics": {
+        "fragmentPolicy": "all-visible",
+        "overflow": {
+          "detected": false,
+          "missingSlideCanvas": false,
+          "document": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "slide": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "canvas": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeFrame": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeArea": {
+            "clientWidth": 1696,
+            "clientHeight": 904,
+            "scrollWidth": 1696,
+            "scrollHeight": 904,
+            "horizontal": false,
+            "vertical": false,
+            "inset": "safe",
+            "enforcement": "safe-content"
+          },
+          "outsideSafeArea": [],
+          "autoFit": []
+        }
+      }
+    },
+    {
+      "ordinal": 4,
+      "horizontalIndex": 3,
+      "verticalIndex": 0,
+      "filename": "slide-004.png",
+      "title": "Slide 4: Technology stack",
+      "capturedAt": "2026-08-04T11:46:23.184Z",
+      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "sourceDirty": false,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "sha256": "a7ad1bfa913832f1353eb8927c870d9696fa0c435e08fbeab4cf89343854b9d4",
+        "bytes": 169851
+      },
+      "diagnostics": {
+        "fragmentPolicy": "all-visible",
+        "overflow": {
+          "detected": false,
+          "missingSlideCanvas": false,
+          "document": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "slide": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "canvas": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeFrame": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeArea": {
+            "clientWidth": 1696,
+            "clientHeight": 904,
+            "scrollWidth": 1696,
+            "scrollHeight": 904,
+            "horizontal": false,
+            "vertical": false,
+            "inset": "safe",
+            "enforcement": "safe-content"
+          },
+          "outsideSafeArea": [],
+          "autoFit": []
+        }
+      }
+    },
+    {
+      "ordinal": 5,
+      "horizontalIndex": 4,
+      "verticalIndex": 0,
+      "filename": "slide-005.png",
+      "title": "Slide 5: Live trade journey",
+      "capturedAt": "2026-08-04T11:46:23.309Z",
+      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "sourceDirty": false,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "sha256": "390607b187905134dfc189ae98c64391735d9198a921cdf281c2871a46bf9de2",
+        "bytes": 105841
+      },
+      "diagnostics": {
+        "fragmentPolicy": "all-visible",
+        "overflow": {
+          "detected": false,
+          "missingSlideCanvas": false,
+          "document": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "slide": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "canvas": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeFrame": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeArea": {
+            "clientWidth": 1696,
+            "clientHeight": 904,
+            "scrollWidth": 1696,
+            "scrollHeight": 904,
+            "horizontal": false,
+            "vertical": false,
+            "inset": "safe",
+            "enforcement": "safe-content"
+          },
+          "outsideSafeArea": [],
+          "autoFit": []
+        }
+      }
+    },
+    {
+      "ordinal": 6,
+      "horizontalIndex": 5,
+      "verticalIndex": 0,
+      "filename": "slide-006.png",
+      "title": "Slide 6: Reconciliation truth line",
+      "capturedAt": "2026-08-04T11:46:23.464Z",
+      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "sourceDirty": false,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "sha256": "cd706d8644c66afb36142694cb41ab019349f006dbb021aeb2950a4a668dccbd",
+        "bytes": 126463
+      },
+      "diagnostics": {
+        "fragmentPolicy": "all-visible",
+        "overflow": {
+          "detected": false,
+          "missingSlideCanvas": false,
+          "document": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "slide": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "canvas": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeFrame": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeArea": {
+            "clientWidth": 1696,
+            "clientHeight": 904,
+            "scrollWidth": 1696,
+            "scrollHeight": 904,
+            "horizontal": false,
+            "vertical": false,
+            "inset": "safe",
+            "enforcement": "safe-content"
+          },
+          "outsideSafeArea": [],
+          "autoFit": []
+        }
+      }
+    },
+    {
+      "ordinal": 7,
+      "horizontalIndex": 6,
+      "verticalIndex": 0,
+      "filename": "slide-007.png",
+      "title": "Slide 7: CI/CD delivery rail",
+      "capturedAt": "2026-08-04T11:46:23.599Z",
+      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "sourceDirty": false,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "sha256": "9af256c61ab7fe40b336fecb1a85f03f190398a2484a39f1cfda4fddb167ca07",
+        "bytes": 151214
+      },
+      "diagnostics": {
+        "fragmentPolicy": "all-visible",
+        "overflow": {
+          "detected": false,
+          "missingSlideCanvas": false,
+          "document": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "slide": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "canvas": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeFrame": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeArea": {
+            "clientWidth": 1696,
+            "clientHeight": 904,
+            "scrollWidth": 1696,
+            "scrollHeight": 904,
+            "horizontal": false,
+            "vertical": false,
+            "inset": "safe",
+            "enforcement": "safe-content"
+          },
+          "outsideSafeArea": [],
+          "autoFit": []
+        }
+      }
+    },
+    {
+      "ordinal": 8,
+      "horizontalIndex": 7,
+      "verticalIndex": 0,
+      "filename": "slide-008.png",
+      "title": "Slide 8: Monitoring and load evidence",
+      "capturedAt": "2026-08-04T11:46:23.739Z",
+      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "sourceDirty": false,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "sha256": "3a49c10b7e528eddca7bc88c60059ba8537ff22be590bcb000f55de3766125cd",
+        "bytes": 195103
+      },
+      "diagnostics": {
+        "fragmentPolicy": "all-visible",
+        "overflow": {
+          "detected": false,
+          "missingSlideCanvas": false,
+          "document": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "slide": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "canvas": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeFrame": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeArea": {
+            "clientWidth": 1696,
+            "clientHeight": 904,
+            "scrollWidth": 1696,
+            "scrollHeight": 904,
+            "horizontal": false,
+            "vertical": false,
+            "inset": "safe",
+            "enforcement": "safe-content"
+          },
+          "outsideSafeArea": [],
+          "autoFit": []
+        }
+      }
+    },
+    {
+      "ordinal": 9,
+      "horizontalIndex": 8,
+      "verticalIndex": 0,
+      "filename": "slide-009.png",
+      "title": "Slide 9: Learnings",
+      "capturedAt": "2026-08-04T11:46:23.866Z",
+      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "sourceDirty": false,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "sha256": "d69616c48f09bb25994f6e30ba40ec5987409f10673e530f4cfac3783a84bcd3",
+        "bytes": 156845
+      },
+      "diagnostics": {
+        "fragmentPolicy": "all-visible",
+        "overflow": {
+          "detected": false,
+          "missingSlideCanvas": false,
+          "document": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "slide": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "canvas": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeFrame": {
+            "clientWidth": 1920,
+            "clientHeight": 1080,
+            "scrollWidth": 1920,
+            "scrollHeight": 1080,
+            "horizontal": false,
+            "vertical": false
+          },
+          "safeArea": {
+            "clientWidth": 1696,
+            "clientHeight": 904,
+            "scrollWidth": 1696,
+            "scrollHeight": 904,
+            "horizontal": false,
+            "vertical": false,
+            "inset": "safe",
+            "enforcement": "safe-content"
+          },
+          "outsideSafeArea": [],
+          "autoFit": []
+        }
+      }
+    },
+    {
+      "ordinal": 10,
+      "horizontalIndex": 9,
+      "verticalIndex": 0,
+      "filename": "slide-010.png",
+      "title": "Slide 10: Questions and repository navigation",
+      "capturedAt": "2026-08-04T11:46:23.996Z",
+      "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
+      "sourceDirty": false,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "sha256": "f3402e226ada00365e9da0b07d8da50eee78c6965b7652867b67deb638a1cd9f",
+        "bytes": 109634
       },
       "diagnostics": {
         "fragmentPolicy": "all-visible",

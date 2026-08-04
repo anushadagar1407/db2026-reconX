@@ -7,8 +7,8 @@
     "playwrightVersion": "1.61.0",
     "pdfjsVersion": "5.4.296"
   },
-  "generatedAt": "2026-08-04T09:49:33.883Z",
-  "sourceCommit": "4240db26b6e6415ab3a5a348a39e67e6ad7ef3a6",
+  "generatedAt": "2026-08-04T11:46:34.236Z",
+  "sourceCommit": "6d470df9bc56744dcd2e09a76e48bb1ed0baff60",
   "sourceDirty": false,
   "worktreeDirtyBeforeExport": true,
   "capture": {
@@ -28,13 +28,13 @@
       "tolerancePoints": 0.05,
       "derivation": "1920x1080 Reveal canvas with configured 0.02 print margin"
     },
-    "slideCount": 1
+    "slideCount": 10
   },
   "output": {
     "filename": "reconx-presentation.pdf",
-    "sha256": "14fae60fa4a60848e3ffc820e3d06dd1e625d5d681f631fbfd9e695b08543a25",
-    "bytes": 104609,
-    "pageCount": 1,
+    "sha256": "b4f7122a4eeed0d33f5afb21f0a992ccf7b5b8725c9b679d431763af019151f7",
+    "bytes": 274906,
+    "pageCount": 10,
     "pageDimensions": {
       "widthPoints": 1469.04,
       "heightPoints": 826.08,
