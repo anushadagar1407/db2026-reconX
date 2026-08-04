@@ -1,9 +1,10 @@
 // TICKET-ADV122 — Lazy + Suspense for route-based code splitting
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@components/Layout.jsx';
 import PageSkeleton from '@components/PageSkeleton.jsx';
 import { withErrorBoundary } from '@components/withErrorBoundary.jsx';
+import { announcePresentationReady } from '@services/presentationBridge.js';
 
 const Dashboard = lazy(() => import('@pages/Dashboard.jsx'));
 const Trades = lazy(() => import('@pages/Trades.jsx'));
@@ -13,6 +14,10 @@ const Audit = lazy(() => import('@pages/Audit.jsx'));
 const Login = lazy(() => import('@pages/Login.jsx'));
 
 function App() {
+  useEffect(() => {
+    announcePresentationReady();
+  }, []);
+
   return (
     <Layout>
       <Suspense fallback={<PageSkeleton />}>
