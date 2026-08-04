@@ -160,6 +160,41 @@
         "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "DLQ message count",
+      "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "targets": [
+        {
+          "expr": "sum(kafka_consumer_records_consumed_total{topic=\"trade-events-dlq\"} or kafka_consumer_fetch_manager_records_consumed_total{topic=\"trade-events-dlq\"})",
+          "legendFormat": "DLQ messages",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 33 }
     }
   ],
   "refresh": "10s",
