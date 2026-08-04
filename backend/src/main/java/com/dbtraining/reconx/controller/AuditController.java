@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.controller;
 
+import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.repository.AuditLogRepository;
 import com.dbtraining.reconx.repository.entity.AuditLogEntry;
 import io.swagger.v3.oas.annotations.Operation;
@@ -8,8 +9,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * TICKET-ADV071 — GET /api/v1/audit/trades/{tradeRef}
@@ -37,10 +38,31 @@ public class AuditController {
 
     @GetMapping("/trades/{tradeRef}/events")
     @Operation(summary = "Stream of all Kafka-sourced events for a trade")
-    @PreAuthorize("hasAnyRole('VIEWER', 'RECON_ANALYST', 'ADMIN')")
-    public List<AuditLogEntry> events(@PathVariable String tradeRef) {
-        // TODO(TICKET-ADV138): once the audit-log Kafka consumer is in place,
-        //   return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef).
-        return Collections.emptyList();
+    @PreAuthorize("hasAnyRole('RECON_ANALYST', 'ADMIN')")
+    public List<TradeEvent> events(@PathVariable String tradeRef) {
+        return auditRepo.findByTradeRefOrderByEventTimestampAsc(tradeRef).stream()
+                .filter(AuditController::isTradeEvent)
+                .map(AuditController::toTradeEvent)
+                .toList();
+    }
+
+    private static boolean isTradeEvent(AuditLogEntry entry) {
+        try {
+            TradeEvent.EventType.valueOf(entry.getEventType());
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    private static TradeEvent toTradeEvent(AuditLogEntry entry) {
+        return new TradeEvent(
+                UUID.fromString(entry.getEventId()),
+                entry.getTradeRef(),
+                TradeEvent.EventType.valueOf(entry.getEventType()),
+                entry.getEventTimestamp(),
+                entry.getActor(),
+                entry.getBeforeState(),
+                entry.getAfterState());
     }
 }
