@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ArchitectureSlide } from './ArchitectureSlide';
 import { DeliverySlide } from './DeliverySlide';
@@ -53,11 +53,11 @@ describe('flat slide components', () => {
   });
 
   it('renders the complete local public contributor roster on the title slide', () => {
-    render(<TitleSlide />);
+    const { container } = render(<TitleSlide />);
 
     expect(screen.getByRole('heading', { name: 'Contributors' })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Contributors' }).tagName).toBe('DIV');
-    expect(screen.getByText('PUBLIC GITHUB RECORD · 7')).toBeInTheDocument();
+    expect(screen.getByText('VERIFIED PUBLIC GITHUB ROSTER · 7')).toBeInTheDocument();
     expect(contributors).toHaveLength(7);
 
     contributors.forEach(({ displayName, login, avatarSrc }) => {
@@ -74,7 +74,18 @@ describe('flat slide components', () => {
       expect(avatar).toHaveAttribute('alt', `Portrait of ${displayName}; GitHub login @${login}`);
     });
 
-    expect(screen.queryByText(/^@?sidoncode$/i)).not.toBeInTheDocument();
+    expect(container).not.toHaveTextContent(/sidoncode/i);
+  });
+
+  it('replaces an unavailable contributor portrait with accessible initials', () => {
+    render(<TitleSlide />);
+
+    const portraitName = 'Portrait of Tobias Becher; GitHub login @TB-DevAcc';
+    fireEvent.error(screen.getByRole('img', { name: portraitName }));
+
+    const fallback = screen.getByRole('img', { name: portraitName });
+    expect(fallback.tagName).toBe('DIV');
+    expect(fallback).toHaveTextContent('TB');
   });
 
   it('keeps evidence boundaries visible in the source-backed narrative', () => {

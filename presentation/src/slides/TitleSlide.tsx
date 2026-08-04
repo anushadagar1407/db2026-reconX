@@ -79,13 +79,11 @@ export function TitleSlide() {
                 <SectionHeading id="contributors-heading" className="title-slide__contributors-heading">
                   Contributors
                 </SectionHeading>
-                <span className="title-slide__contributors-meta">PUBLIC GITHUB RECORD · {contributors.length}</span>
+                <span className="title-slide__contributors-meta">
+                  VERIFIED PUBLIC GITHUB ROSTER · {contributors.length}
+                </span>
               </Cluster>
               <div className="title-slide__portrait-ribbon">
-                <div className="title-slide__roster-label">
-                  <span>Verified roster</span>
-                  <small>Names shown as published</small>
-                </div>
                 {contributors.map((contributor) => (
                   <ContributorPortrait key={contributor.login} {...contributor} />
                 ))}
