@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.config.CacheConfig;
+import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.observability.ReconConfigMBean;
 import com.dbtraining.reconx.repository.InstrumentRepository;
@@ -101,8 +102,8 @@ class InstrumentServiceCacheTest {
         }
 
         @Bean
-        InstrumentService instrumentService(InstrumentRepository repository) {
-            return new InstrumentService(repository);
+        InstrumentService instrumentService(InstrumentRepository repository, ReconConfig reconConfig) {
+            return new InstrumentService(repository, reconConfig);
         }
 
     }

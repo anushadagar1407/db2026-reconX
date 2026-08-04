@@ -21,13 +21,11 @@ public class InstrumentService {
 
     private final InstrumentRepository repo;
 
-    public InstrumentService(InstrumentRepository repo) { this.repo = repo; }
+    public InstrumentService(InstrumentRepository repo) {
+        this.repo = repo;
+    }
 
-    @Cacheable(
-            value = "instruments",
-            key = "#symbol",
-            condition = "@reconConfigMBean.isCachingEnabled()"
-    )
+    @Cacheable(value = "instruments", key = "#symbol", condition = "@reconConfig.isCachingEnabled()")
     public Instrument findBySymbol(String symbol) {
         log.info("DB hit for {}", symbol);
         return repo.findBySymbol(symbol)

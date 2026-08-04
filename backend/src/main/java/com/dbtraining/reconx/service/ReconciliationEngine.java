@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.BondTrade;
 import com.dbtraining.reconx.model.DerivativeTrade;
@@ -7,7 +8,6 @@ import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.TradeType;
-import com.dbtraining.reconx.observability.ReconConfigMBean;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Service;
@@ -41,14 +41,14 @@ import java.util.stream.Collectors;
 public class ReconciliationEngine {
 
     private final Timer reconciliationTimer;
-    private final ReconConfigMBean reconConfig;
+    private final ReconConfig reconConfig;
 
-    public ReconciliationEngine(MeterRegistry meterRegistry, ReconConfigMBean reconConfig) {
-        this.reconConfig = reconConfig;
+    public ReconciliationEngine(MeterRegistry meterRegistry, ReconConfig reconConfig) {
         this.reconciliationTimer = Timer.builder("reconciliation_duration")
                 .description("Time spent reconciling internal and external trades")
                 .publishPercentileHistogram()
                 .register(meterRegistry);
+        this.reconConfig = reconConfig;
     }
 
     public List<ReconResult> reconcile(List<TradeType> internal,

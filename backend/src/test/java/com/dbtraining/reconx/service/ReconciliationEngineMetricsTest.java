@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class ReconciliationEngineMetricsTest {
 
@@ -24,7 +26,7 @@ class ReconciliationEngineMetricsTest {
     void recordsEveryReconcileInvocationAndPreservesResults() {
         PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         ReconciliationEngine engine = new ReconciliationEngine(
-                registry, new ReconConfigMBean(new ConcurrentMapCacheManager()));
+                registry, new ReconConfig(new ConcurrentMapCacheManager()));
 
         List<ReconResult> matched = engine.reconcile(
                 List.of(equity("ABC-20260729-0001", "100.00", "10")),

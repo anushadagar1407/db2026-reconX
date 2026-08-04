@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
 import com.dbtraining.reconx.observability.ReconConfigMBean;
@@ -20,7 +21,7 @@ import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
  */
 class ReconciliationEngineTest {
 
-    private final ReconConfigMBean reconConfig = new ReconConfigMBean(new ConcurrentMapCacheManager());
+    private final ReconConfig reconConfig = new ReconConfigMBean(new ConcurrentMapCacheManager());
     private final ReconciliationEngine engine = new ReconciliationEngine(
             new SimpleMeterRegistry(), reconConfig);
 

@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * ============================================================================
@@ -78,14 +79,14 @@ public enum ReconciliationRule {
                            BigDecimal externalPrice,
                            BigDecimal externalQty,
                            BigDecimal effectivePriceTolerance) {
-        if (effectivePriceTolerance.signum() < 0) {
+        if (effectivePriceTolerance == null || effectivePriceTolerance.signum() < 0 ) {
             throw new IllegalArgumentException("price tolerance must not be negative");
         }
 
-        BigDecimal priceDiff = internalPrice.add(externalPrice.negate()).abs();
+        BigDecimal priceDiff = internalPrice.subtract(externalPrice).abs();
         BigDecimal priceDiffPct;
         if (internalPrice.compareTo(BigDecimal.ZERO) > 0) {
-            priceDiffPct = priceDiff.divide(internalPrice);
+            priceDiffPct = priceDiff.divide(internalPrice, 6, RoundingMode.HALF_UP);
         } else if (priceDiff.compareTo(BigDecimal.ZERO) == 0) {
             priceDiffPct = BigDecimal.ZERO;
         } else {
