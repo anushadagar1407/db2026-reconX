@@ -1,17 +1,16 @@
 .group-b-slide {
-  --group-b-line: rgb(255 255 255 / 30%);
+  --group-b-line: var(--slide-rule);
   --group-b-muted: var(--slide-muted-ink);
   --group-b-highlight: var(--primitive-blue-100);
   height: 100%;
 }
 
 .group-b-slide--demo {
-  --group-b-line: rgb(255 255 255 / 36%);
   --group-b-highlight: var(--primitive-white);
 }
 
 .group-b-slide--reconciliation {
-  --group-b-line: rgb(255 255 255 / 24%);
+  --group-b-highlight: var(--primitive-blue-100);
 }
 
 .group-b-demo-layout,
@@ -251,8 +250,8 @@
   min-height: 96px;
   place-items: center;
   padding: var(--space-xs);
-  border: var(--border-emphasis) dashed var(--color-status-critical);
-  color: var(--primitive-white);
+  border: var(--border-emphasis) dashed var(--primitive-blue-600);
+  color: var(--primitive-blue-100);
   background: var(--primitive-neutral-1000);
   font-size: var(--type-label-size);
   font-weight: var(--font-weight-bold);
