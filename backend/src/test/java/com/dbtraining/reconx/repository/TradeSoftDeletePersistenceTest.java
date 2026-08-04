@@ -3,14 +3,15 @@ package com.dbtraining.reconx.repository;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.service.TradeService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
-import com.dbtraining.reconx.kafka.TradeEventProducer;
 
 import java.sql.Timestamp;
 
@@ -40,7 +41,8 @@ class TradeSoftDeletePersistenceTest {
                 mock(CounterpartyRepository.class),
                 mock(InstrumentRepository.class),
                 mock(TradeMetrics.class),
-                mock(TradeEventProducer.class));
+                mock(ApplicationEventPublisher.class),
+                new ObjectMapper().findAndRegisterModules());
     }
 
     @Test

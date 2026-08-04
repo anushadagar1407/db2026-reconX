@@ -1,6 +1,8 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.dto.TradeRequest;
+import com.dbtraining.reconx.dto.TradeSnapshot;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
@@ -10,7 +12,10 @@ import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,11 +23,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import com.dbtraining.reconx.kafka.TradeEventProducer;
-import com.dbtraining.reconx.dto.TradeEvent;
-
 
 import java.time.LocalDate;
 
@@ -45,18 +45,21 @@ public class TradeService {
     private final CounterpartyRepository cpRepo;
     private final InstrumentRepository instRepo;
     private final TradeMetrics metrics;
-    private final TradeEventProducer events;
+    private final ApplicationEventPublisher applicationEvents;
+    private final ObjectMapper objectMapper;
 
     public TradeService(TradeRepository tradeRepo,
             CounterpartyRepository cpRepo,
             InstrumentRepository instRepo,
             TradeMetrics metrics,
-            TradeEventProducer events) {
+            ApplicationEventPublisher applicationEvents,
+            ObjectMapper objectMapper) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
         this.metrics = metrics;
-        this.events = events;
+        this.applicationEvents = applicationEvents;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
@@ -73,7 +76,7 @@ public class TradeService {
         //   their repos (throw TradeNotFoundException on miss), status = "PENDING",
         //   save, then:
         //     - metrics.incrementTradeCreated() + metrics.recordTradeValue(qty*price) — TICKET-ADV083
-        //     - events.publish(new TradeEvent(... TRADE_CREATED ... actor ...)) — TICKET-ADV129
+        //     - raise a TRADE_CREATED event for after-commit Kafka delivery — TICKET-ADV129
         if (tradeRepo.findByTradeRef(req.tradeRef()).isPresent()) {
             throw new DuplicateTradeRefException(
                     "Trade with reference " + req.tradeRef() + " already exists");
@@ -97,8 +100,9 @@ public class TradeService {
 
         
         try {
-            Trade saved = tradeRepo.save(trade);
-            events.publish(TradeEvent.created(saved.getTradeRef()));
+            Trade saved = tradeRepo.saveAndFlush(trade);
+            applicationEvents.publishEvent(TradeEvent.created(
+                    saved.getTradeRef(), actor, snapshot(saved)));
             metrics.incrementTradeCreated();
             metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
             return saved;
@@ -139,6 +143,7 @@ public class TradeService {
                 .orElseThrow(()
                         -> new TradeNotFoundException("Trade not found: id=" + id));
 
+        JsonNode before = snapshot(trade);
         trade.setTradeRef(req.tradeRef());
 
         trade.setInstrument(
@@ -160,9 +165,11 @@ public class TradeService {
         trade.setQuantity(req.quantity());
         trade.setPrice(req.price());
         trade.setTradeDate(req.tradeDate());
-        events.publish(TradeEvent.updated(trade.getTradeRef()));
 
-        return tradeRepo.save(trade);
+        Trade saved = tradeRepo.saveAndFlush(trade);
+        applicationEvents.publishEvent(TradeEvent.updated(
+                saved.getTradeRef(), actor, before, snapshot(saved)));
+        return saved;
     }
 
     @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
@@ -181,19 +188,24 @@ public class TradeService {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException("Trade not found: id=" + id));
 
+        JsonNode before = snapshot(trade);
         trade.setStatus(tradeStatus);
 
-        return tradeRepo.save(trade);
+        Trade saved = tradeRepo.saveAndFlush(trade);
+        applicationEvents.publishEvent(TradeEvent.updated(
+                saved.getTradeRef(), actor, before, snapshot(saved)));
+        return saved;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     public void softDelete(Long id, String actor) {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException("id=" + id));
+        JsonNode before = snapshot(trade);
         trade.softDelete();
-        events.publish(TradeEvent.cancelled(trade.getTradeRef()));
-
-        tradeRepo.save(trade);
+        tradeRepo.saveAndFlush(trade);
+        applicationEvents.publishEvent(TradeEvent.cancelled(
+                trade.getTradeRef(), actor, before));
     }
 
     @Transactional(readOnly = true)
@@ -207,5 +219,9 @@ public class TradeService {
                 .and(hasStatus(tradeStatus))
                 .and(forCounterparty(counterpartyId));
         return tradeRepo.findAll(specification, pageable);
+    }
+
+    private JsonNode snapshot(Trade trade) {
+        return objectMapper.valueToTree(TradeSnapshot.from(trade));
     }
 }
