@@ -32,7 +32,7 @@ export function DeliverySlide() {
     <Slide aria-label="Slide 7: CI/CD delivery rail">
       <SlideCanvas className="delivery-slide-canvas" contentClassName="delivery-slide">
         <Stack gap="lg" className="delivery-slide__stack">
-          <Cluster className="delivery-slide__header" align="end" justify="between" wrap={false}>
+          <Cluster className="delivery-slide__header" align="start" justify="between" wrap={false}>
             <Stack gap="xs" className="delivery-slide__heading">
               <SlideLabel>07 / CI/CD DELIVERY RAIL · 11:00–12:40</SlideLabel>
               <SlideTitle>CI verifies the build — then stops</SlideTitle>

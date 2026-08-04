@@ -14,7 +14,7 @@ export function ProblemSlide() {
     <Slide aria-label="Slide 2: Operations problem">
       <SlideCanvas background="paper" className="problem-slide-canvas">
         <Stack className="problem-slide" gap="lg">
-          <Stack gap="sm">
+          <Stack className="problem-slide__header" gap="sm">
             <SlideLabel>02 / OPERATIONS PROBLEM</SlideLabel>
             <SlideTitle>Mismatches need a controlled path</SlideTitle>
           </Stack>
@@ -36,7 +36,7 @@ export function ProblemSlide() {
             <div className="problem-slide__ledger" aria-label="Illustrative internal and external trade ledger">
               <div className="problem-slide__ledger-caption">ILLUSTRATIVE DISCREPANCY · NOT PRODUCTION DATA</div>
               <div className="problem-slide__ledger-table">
-                <div className="problem-slide__ledger-cell problem-slide__ledger-cell--blank" />
+                <div className="problem-slide__ledger-cell problem-slide__ledger-cell--field-heading">FIELD</div>
                 <div className="problem-slide__ledger-cell problem-slide__ledger-cell--heading">INTERNAL RECORD</div>
                 <div className="problem-slide__ledger-cell problem-slide__ledger-cell--heading">EXTERNAL RECORD</div>
 

@@ -30,7 +30,7 @@ export function LiveDemoSlide({ demoUrl }: LiveDemoSlideProps) {
             <Stack gap="xs" className="live-demo-slide__heading-block">
               <SlideLabel>05 / LIVE TRADE JOURNEY</SlideLabel>
               <SlideTitle>Live demo runway</SlideTitle>
-              <BodyText variant="lede">
+              <BodyText variant="lede" className="live-demo-slide__lede">
                 Login → validated trade → live update. The slide stays useful if the app does not.
               </BodyText>
             </Stack>

@@ -50,6 +50,40 @@ button:focus-visible {
   box-shadow: var(--elevation-raised);
 }
 
+.live-demo__idle {
+  display: grid;
+  flex: 1 1 0;
+  min-height: 0;
+  align-content: center;
+  justify-items: start;
+  gap: var(--space-xs);
+  padding: var(--space-md) var(--space-lg);
+  color: var(--primitive-blue-200);
+  text-align: left;
+}
+
+.live-demo__idle-label {
+  color: var(--primitive-white);
+  font-size: var(--type-label-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.live-demo__idle strong {
+  max-width: 42ch;
+  color: var(--primitive-white);
+  font-size: var(--type-body-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--type-leading-heading);
+}
+
+.live-demo__idle > span:last-child {
+  max-width: 68ch;
+  font-size: var(--type-label-size);
+  line-height: var(--type-leading-body);
+}
+
 .live-demo__toolbar {
   display: flex;
   flex: none;

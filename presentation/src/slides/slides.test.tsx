@@ -71,6 +71,9 @@ describe('flat slide components', () => {
     render(<LiveDemoSlide demoUrl="https://demo.example.test" />);
 
     expect(screen.getByRole('status')).toHaveTextContent('Demo: idle');
+    expect(screen.getByLabelText('Embedded demo idle state')).toHaveTextContent(
+      'No runtime capture is claimed here.',
+    );
     expect(screen.getByRole('button', { name: 'Launch embedded demo' })).toBeInTheDocument();
     expect(screen.queryByTitle('ReconX live demo')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open full demo' })).toHaveAttribute(

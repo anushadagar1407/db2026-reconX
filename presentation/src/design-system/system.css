@@ -53,7 +53,7 @@
   position: absolute;
   top: 0;
   z-index: 0;
-  height: 10px;
+  height: var(--space-2xs);
   content: "";
 }
 
@@ -64,8 +64,8 @@
 }
 
 .slide-canvas::after {
-  left: 0;
-  width: 240px;
+  left: var(--slide-safe-inline);
+  width: var(--space-3xl);
   background: var(--slide-accent);
 }
 
@@ -74,9 +74,9 @@
 }
 
 .slide-canvas--soft {
-  --slide-surface: var(--primitive-neutral-025);
+  --slide-surface: var(--primitive-white);
 
-  background: var(--color-surface-muted);
+  background: var(--primitive-blue-050);
 }
 
 .slide-canvas--ink {

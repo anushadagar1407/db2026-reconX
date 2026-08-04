@@ -68,6 +68,14 @@ export function LiveDemoFrame({ src, loadTimeoutMs = 10_000 }: LiveDemoFrameProp
         />
       )}
 
+      {loadState === 'idle' && (
+        <div className="live-demo__idle" aria-label="Embedded demo idle state">
+          <span className="live-demo__idle-label">Guarded live window · export-safe idle state</span>
+          <strong>Activate the frame only when the presenter is ready.</strong>
+          <span>No runtime capture is claimed here. The full-demo link and source/API walkthrough remain available.</span>
+        </div>
+      )}
+
       {loadState === 'unavailable' && (
         <div className="live-demo__fallback" role="alert">
           The embedded app did not become available. Use the full-demo link or switch to a source/API walkthrough.

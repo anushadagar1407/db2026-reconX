@@ -11,9 +11,13 @@ describe('LiveDemoFrame', () => {
     render(<LiveDemoFrame src="http://localhost:5173" />);
 
     expect(screen.queryByTitle('ReconX live demo')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Embedded demo idle state')).toHaveTextContent(
+      'No runtime capture is claimed here.',
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Launch embedded demo' }));
 
     const frame = screen.getByTitle('ReconX live demo');
+    expect(screen.queryByLabelText('Embedded demo idle state')).not.toBeInTheDocument();
     expect(frame).toHaveAttribute(
       'src',
       'http://localhost:5173/?presentationOrigin=http%3A%2F%2Flocalhost%3A3000',

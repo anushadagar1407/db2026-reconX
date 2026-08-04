@@ -57,7 +57,7 @@ export function ReconciliationSlide() {
             </div>
           </div>
 
-          <Callout tone="critical" label="Reconciliation evidence boundary" title="Not observed">
+          <Callout className="reconciliation-slide__boundary-callout" tone="critical" label="Reconciliation evidence boundary" title="Not observed">
             Queue has no worker; no application listener result is observed.
           </Callout>
         </Stack>

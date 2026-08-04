@@ -40,7 +40,7 @@ export function TechStackSlide() {
     <Slide aria-label="Slide 4: Technology stack">
       <SlideCanvas background="paper" className="tech-stack-slide-canvas">
         <Stack className="tech-stack-slide" gap="lg">
-          <Cluster justify="between" align="end" wrap={false}>
+          <Cluster className="tech-stack-slide__header" justify="between" align="start" wrap={false}>
             <Stack gap="sm">
               <SlideLabel>04 / STACK BY RESPONSIBILITY</SlideLabel>
               <SlideTitle>Stack by responsibility, not by shopping list</SlideTitle>

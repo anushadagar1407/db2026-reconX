@@ -14,9 +14,9 @@ export function TitleSlide() {
     <Slide aria-label="Slide 1: ReconX title">
       <SlideCanvas background="ink" className="title-slide-canvas">
         <Stack className="title-slide" justify="between" gap="xl">
-          <Cluster justify="between" align="start" wrap={false}>
+          <Cluster className="title-slide__header" justify="between" align="start" wrap={false}>
             <span className="title-slide__brand-lockup">
-              <BrandMark size="lg" />
+              <BrandMark size="md" />
             </span>
             <SlideLabel>DAY 10 · 20-MINUTE DEMO</SlideLabel>
           </Cluster>

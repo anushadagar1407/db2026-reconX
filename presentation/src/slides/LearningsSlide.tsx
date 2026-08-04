@@ -20,7 +20,7 @@ export function LearningsSlide() {
   return (
     <Slide aria-label="Slide 9: Learnings">
       <SlideCanvas background="paper" contentClassName="learnings-slide">
-        <Cluster className="learnings-slide__header" justify="between" align="end" wrap={false}>
+        <Cluster className="learnings-slide__header" justify="between" align="start" wrap={false}>
           <Stack gap="2xs">
             <SlideLabel>09 / AFTER-ACTION NOTES</SlideLabel>
             <SlideTitle>Learnings we can defend</SlideTitle>
@@ -44,7 +44,7 @@ export function LearningsSlide() {
             </Stack>
           </div>
 
-          <Stack className="learnings-slide__pending" gap="sm" justify="end">
+          <Stack className="learnings-slide__pending" gap="sm" justify="start">
             <div>
               <SlideLabel>DELIVERY CHECK</SlideLabel>
               <SectionHeading>Presenter reflection pending</SectionHeading>

@@ -35,7 +35,7 @@ export function ArchitectureSlide() {
     <Slide aria-label="Slide 3: Current runtime architecture">
       <SlideCanvas background="soft" className="architecture-slide-canvas">
         <Stack className="architecture-slide" gap="md">
-          <Cluster justify="between" align="end" wrap={false}>
+          <Cluster className="architecture-slide__header" justify="between" align="start" wrap={false}>
             <Stack gap="sm">
               <SlideLabel>03 / CURRENT RUNTIME BOUNDARY</SlideLabel>
               <SlideTitle>Architecture, as it runs today</SlideTitle>
@@ -79,25 +79,38 @@ export function ArchitectureSlide() {
 
               <div className="architecture-slide__branch architecture-slide__branch--infrastructure">
                 <span className="architecture-slide__branch-label">COMPOSE TOPOLOGY · CONFIGURED</span>
-                <ArchitectureNode technology="kafka" state="configured" detail="broker">Kafka</ArchitectureNode>
-                <ArchitectureNode state="configured" detail="coordination">Zookeeper</ArchitectureNode>
+                <div className="architecture-slide__infrastructure-flow">
+                  <span className="architecture-slide__branch-source">Spring API</span>
+                  <span className="architecture-slide__neutral-link" aria-hidden="true">↔</span>
+                  <ArchitectureNode technology="kafka" state="configured" detail="broker">Kafka</ArchitectureNode>
+                  <span className="architecture-slide__neutral-link" aria-hidden="true">—</span>
+                  <ArchitectureNode state="configured" detail="coordination">Zookeeper</ArchitectureNode>
+                </div>
                 <span className="architecture-slide__infra-note">Spring ↔ Kafka: bootstrap / health only</span>
               </div>
             </div>
 
             <div className="architecture-slide__gap" aria-label="Kafka application orchestration gap">
-              <Cluster justify="between" align="center" wrap={false}>
+              <Cluster className="architecture-slide__gap-layout" justify="between" align="center" wrap={false}>
                 <Stack gap="2xs">
                   <div className="architecture-slide__gap-title">KAFKA APPLICATION ORCHESTRATION — GAP</div>
                   <div className="architecture-slide__gap-copy">
                     Application event → reconciliation worker is not implemented; this is not a live arrow.
                   </div>
                 </Stack>
-                <Cluster className="architecture-slide__legend" gap="md" wrap={false}>
-                  <span><i className="architecture-slide__swatch architecture-slide__swatch--active" /> implemented</span>
-                  <span><i className="architecture-slide__swatch architecture-slide__swatch--configured" /> configured</span>
-                  <span><i className="architecture-slide__swatch architecture-slide__swatch--gap" /> gap</span>
-                </Cluster>
+                <Stack className="architecture-slide__gap-evidence" gap="xs">
+                  <div className="architecture-slide__gap-route" aria-hidden="true">
+                    <span>Spring API</span>
+                    <span className="architecture-slide__gap-dash">application event</span>
+                    <strong>STOP</strong>
+                    <span>worker</span>
+                  </div>
+                  <Cluster className="architecture-slide__legend" gap="md" wrap={false}>
+                    <span><i className="architecture-slide__swatch architecture-slide__swatch--active" /> implemented</span>
+                    <span><i className="architecture-slide__swatch architecture-slide__swatch--configured" /> configured</span>
+                    <span><i className="architecture-slide__swatch architecture-slide__swatch--gap" /> gap</span>
+                  </Cluster>
+                </Stack>
               </Cluster>
             </div>
           </div>
