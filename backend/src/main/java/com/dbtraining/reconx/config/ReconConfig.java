@@ -8,12 +8,16 @@ import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 @Component
-@ManagedResource(objectName = "reconx:type=ReconConfig", description = "Runtime recon configuration")
+@ManagedResource(
+        objectName = "reconx:type=ReconConfig",
+        description = "Runtime tuning for the reconciliation engine"
+)
 public class ReconConfig {
 
-    // Volatile ensures visibility across threads
-    private volatile double priceTolerance = 0.5;
+    private volatile double priceTolerance = 0.01;
     private volatile boolean cachingEnabled = true;
     private final CacheManager cacheManager;
 
@@ -21,31 +25,34 @@ public class ReconConfig {
         this.cacheManager = cacheManager;
     }
 
-    @ManagedAttribute(description = "Price tolerance for recon matching")
+    @ManagedAttribute(description = "Price tolerance for break detection (0.0 - 1.0)")
     public double getPriceTolerance() {
         return priceTolerance;
     }
 
-    @ManagedAttribute(description = "Update price tolerance")
+    @ManagedAttribute(description = "Update price tolerance (0.0 - 1.0)")
     public void setPriceTolerance(double priceTolerance) {
+        if (!Double.isFinite(priceTolerance) || priceTolerance < 0 || priceTolerance > 1) {
+            throw new IllegalArgumentException("price tolerance must be between 0 and 1");
+        }
         this.priceTolerance = priceTolerance;
     }
 
-    @ManagedAttribute(description = "Enable or disable caching")
+    @ManagedAttribute(description = "Enabled or disabled cache interception")
     public boolean isCachingEnabled() {
         return cachingEnabled;
     }
 
-    @ManagedAttribute(description = "Toggle caching")
+    @ManagedAttribute(description = "Toggle caching state")
     public void setCachingEnabled(boolean cachingEnabled) {
         this.cachingEnabled = cachingEnabled;
     }
 
-    @ManagedOperation(description = "Clear recon cache")
+    @ManagedOperation(description = "Evict all application caches")
     public void clearCache() {
-        cacheManager.getCacheNames().forEach(name -> {
-            Cache cache = cacheManager.getCache(name);
-            cache.clear();
-        });
+        cacheManager.getCacheNames().stream()
+                .map(cacheManager::getCache)
+                .filter(Objects::nonNull)
+                .forEach(Cache::clear);
     }
 }

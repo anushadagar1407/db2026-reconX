@@ -1,9 +1,11 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
+import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.repository.CounterpartyRepository;
 import com.dbtraining.reconx.repository.InstrumentRepository;
@@ -19,7 +21,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 import static com.dbtraining.reconx.repository.TradeSpecifications.*;
 
@@ -40,15 +44,18 @@ public class TradeService {
     private final CounterpartyRepository cpRepo;
     private final InstrumentRepository instRepo;
     private final TradeMetrics metrics;
+    private final TradeEventProducer events;
 
     public TradeService(TradeRepository tradeRepo,
             CounterpartyRepository cpRepo,
             InstrumentRepository instRepo,
-            TradeMetrics metrics) {
+            TradeMetrics metrics,
+                        TradeEventProducer events) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
         this.metrics = metrics;
+        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -92,6 +99,17 @@ public class TradeService {
             Trade saved = tradeRepo.save(trade);
             metrics.incrementTradeCreated();
             metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
+
+            // TICKET-ADV129 Publish event, dependency for TICKET-ADV131
+            events.publish(new TradeEvent(
+                    UUID.randomUUID(),
+                    saved.getTradeRef(),
+                    TradeEvent.EventType.TRADE_CREATED,
+                    Instant.now(),
+                    actor,
+                    null,
+                    null
+            ));
             return saved;
         } catch (DataIntegrityViolationException ex) {
             if (!isTradeReferenceUniqueViolation(ex)) {

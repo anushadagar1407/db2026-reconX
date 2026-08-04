@@ -39,3 +39,4 @@ management:
 logging:
   level:
     com.dbtraining.reconx: DEBUG
+

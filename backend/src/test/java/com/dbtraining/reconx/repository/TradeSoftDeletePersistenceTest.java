@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.repository;
 
 import com.dbtraining.reconx.exception.TradeNotFoundException;
+import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.service.TradeService;
 import jakarta.persistence.EntityManager;
@@ -38,7 +39,8 @@ class TradeSoftDeletePersistenceTest {
                 tradeRepository,
                 mock(CounterpartyRepository.class),
                 mock(InstrumentRepository.class),
-                mock(TradeMetrics.class));
+                mock(TradeMetrics.class),
+                mock(TradeEventProducer.class));
     }
 
     @Test

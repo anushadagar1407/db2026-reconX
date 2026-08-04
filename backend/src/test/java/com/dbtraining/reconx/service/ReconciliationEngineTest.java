@@ -3,7 +3,6 @@ package com.dbtraining.reconx.service;
 import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.dto.ReconResult;
 import com.dbtraining.reconx.model.*;
-import com.dbtraining.reconx.observability.ReconConfigMBean;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,7 @@ import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
  */
 class ReconciliationEngineTest {
 
-    private final ReconConfig reconConfig = new ReconConfigMBean(new ConcurrentMapCacheManager());
+    private final ReconConfig reconConfig = new ReconConfig(new ConcurrentMapCacheManager());
     private final ReconciliationEngine engine = new ReconciliationEngine(
             new SimpleMeterRegistry(), reconConfig);
 

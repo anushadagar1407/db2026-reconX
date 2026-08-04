@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.observability;
 
+import com.dbtraining.reconx.config.ReconConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
@@ -12,11 +13,11 @@ class ReconConfigMBeanTest {
 
     private final CacheManager cacheManager = new ConcurrentMapCacheManager(
             "instruments", "counterparties");
-    private final ReconConfigMBean config = new ReconConfigMBean(cacheManager);
+    private final ReconConfig config = new ReconConfig(cacheManager);
 
     @Test
     void exposesExpectedObjectNameAndMutableAttributes() {
-        ManagedResource managedResource = ReconConfigMBean.class.getAnnotation(ManagedResource.class);
+        ManagedResource managedResource = ReconConfig.class.getAnnotation(ManagedResource.class);
 
         assertThat(managedResource.objectName()).isEqualTo("reconx:type=ReconConfig");
         assertThat(config.getPriceTolerance()).isEqualTo(0.01);

@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.repository;
 
+import java.util.List;
 import java.util.Optional;
 import com.dbtraining.reconx.repository.entity.ReconBreak;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,4 +9,5 @@ public interface ReconBreakRepository extends JpaRepository<ReconBreak, Long> {
     /** TICKET-ADV085 — exported as recon_break_count gauge. Done */
     long countByStatus(String status);
     Optional<ReconBreak> findById(Long id);
+    List<ReconBreak> findByJobId(String jobId);
 }

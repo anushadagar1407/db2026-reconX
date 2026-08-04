@@ -2,20 +2,21 @@ package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.dto.ReconResult;
-import com.dbtraining.reconx.model.BondTrade;
-import com.dbtraining.reconx.model.DerivativeTrade;
-import com.dbtraining.reconx.model.EquityTrade;
-import com.dbtraining.reconx.model.FXTrade;
-import com.dbtraining.reconx.model.ReconciliationRule;
-import com.dbtraining.reconx.model.TradeType;
+import com.dbtraining.reconx.kafka.ReconciliationConsumer;
+import com.dbtraining.reconx.model.*;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,9 @@ public class ReconciliationEngine {
 
     private final Timer reconciliationTimer;
     private final ReconConfig reconConfig;
+    private static final Logger log = LoggerFactory.getLogger(ReconciliationEngine.class);
+
+    private final Set<String> pendingReconciliations = ConcurrentHashMap.newKeySet();
 
     public ReconciliationEngine(MeterRegistry meterRegistry, ReconConfig reconConfig) {
         this.reconciliationTimer = Timer.builder("reconciliation_duration")
@@ -49,6 +53,33 @@ public class ReconciliationEngine {
                 .publishPercentileHistogram()
                 .register(meterRegistry);
         this.reconConfig = reconConfig;
+    }
+
+    /**
+     * TICKET-ADV131 — Schedules a trade reference for async reconciliation.
+     */
+
+    public void scheduleRecon(String tradeRefValue) {
+        if (tradeRefValue == null || tradeRefValue.isBlank()) {
+            return;
+        }
+        log.info("Scheduling recon for tradeRef={}", tradeRefValue);
+        pendingReconciliations.add(tradeRefValue);
+    }
+
+    /**
+     * TICKET-ADV131 — Cancels any pending reconciliation for a cancelled trade.
+     */
+    public void cancelPendingRecon(String tradeRefValue) {
+        if (tradeRefValue == null || tradeRefValue.isBlank()) {
+            return;
+        }
+        log.info("Cancelling pending recon for tradeRef={}", tradeRefValue);
+        pendingReconciliations.remove(tradeRefValue);
+    }
+
+    public Set<String> getPendingReconciliations() {
+        return Collections.unmodifiableSet(pendingReconciliations);
     }
 
     public List<ReconResult> reconcile(List<TradeType> internal,
@@ -98,6 +129,7 @@ public class ReconciliationEngine {
                         priceTolerance))
                 .collect(Collectors.toList());
     }
+
 
     /**
      * TICKET-ADV037 — split by counterparty, reconcile each batch concurrently,

@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.service;
 
 import com.dbtraining.reconx.exception.TradeNotFoundException;
+import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.repository.CounterpartyRepository;
 import com.dbtraining.reconx.repository.InstrumentRepository;
@@ -24,7 +25,8 @@ class TradeServiceSoftDeleteTest {
             tradeRepository,
             mock(CounterpartyRepository.class),
             mock(InstrumentRepository.class),
-            mock(TradeMetrics.class));
+            mock(TradeMetrics.class),
+            mock(TradeEventProducer.class));
 
     @Test
     void softDeleteMarksAndSavesTheLoadedTrade() {

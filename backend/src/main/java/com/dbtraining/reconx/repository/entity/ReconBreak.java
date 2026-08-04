@@ -15,6 +15,9 @@ public class ReconBreak {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "job_id")
+    private String jobId;   // Links breaks to their job run
+
     @Column(name = "trade_id", nullable = false)
     private Long tradeId;
 
@@ -35,6 +38,9 @@ public class ReconBreak {
 
     public ReconBreak() {}
 
+    public String getJobId() {
+        return jobId;
+    }
     public Long getId()                { return id; }
     public Long getTradeId()           { return tradeId; }
     public String getDiscrepancyType() { return discrepancyType; }
@@ -45,7 +51,9 @@ public class ReconBreak {
 
     public void setTradeId(Long v)              { this.tradeId = v; }
     public void setDiscrepancyType(String v)    { this.discrepancyType = v; }
-
+    public void setJobId(String jobId) {
+        this.jobId = jobId;
+    }
     public void resolve(String note) {
         this.status = "RESOLVED";
         this.resolvedAt = Instant.now();

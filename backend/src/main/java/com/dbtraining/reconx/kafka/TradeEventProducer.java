@@ -45,6 +45,24 @@ public class TradeEventProducer {
     }
 
     public void publish(TradeEvent event) {
-        throw new UnsupportedOperationException("TICKET-ADV129");
+        if (event == null) {
+            log.warn("Attempted to publish null TradeEvent");
+            return;
+        }
+
+        log.debug("Publishing TradeEvent eventId={} ref={} type={}",
+                event.eventId(), event.tradeRef(), event.eventType());
+
+        // Using tradeRef as the record key ensures all events for the same trade
+        // land on the same partition, guaranteeing ordered consumption.
+        template.send(TOPIC, event.tradeRef(), event).whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.error("Failed to publish TradeEvent eventId={} ref={}",
+                        event.eventId(), event.tradeRef(), ex);
+            } else {
+                log.debug("Successfully published eventId={} to partition={}",
+                        event.eventId(), result.getRecordMetadata().partition());
+            }
+        });
     }
 }

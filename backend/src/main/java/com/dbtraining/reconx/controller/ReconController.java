@@ -60,7 +60,7 @@ public class ReconController {
     @Operation(summary = "Get results for a recon job")
     @PreAuthorize("hasAnyRole('VIEWER', 'RECON_ANALYST', 'ADMIN')")
     public List<ReconBreak> results(@PathVariable String jobId) {
-        return breaks.findAll();
+        return breaks.findByJobId(jobId);
     }
 
     @GetMapping("/results/{id}")

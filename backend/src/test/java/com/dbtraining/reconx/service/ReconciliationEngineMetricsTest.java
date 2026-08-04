@@ -6,7 +6,6 @@ import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.Side;
 import com.dbtraining.reconx.model.TradeRef;
-import com.dbtraining.reconx.observability.ReconConfigMBean;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.prometheusmetrics.PrometheusConfig;
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;

@@ -30,5 +30,6 @@
     <include file="changes/011-reconciliation-integration.xml" relativeToChangelogFile="true"/>
     <include file="changes/012-soft-delete.xml"   relativeToChangelogFile="true"/>
     <include file="changes/013-reconciliation-jobs.xml" relativeToChangelogFile="true"/>
+    <include file="changes/014-add-job-id-to-recon-breaks.xml"  relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

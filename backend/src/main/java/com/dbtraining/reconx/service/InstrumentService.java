@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.entity.Instrument;
@@ -21,7 +22,7 @@ public class InstrumentService {
 
     private final InstrumentRepository repo;
 
-    public InstrumentService(InstrumentRepository repo) {
+    public InstrumentService(InstrumentRepository repo, ReconConfig reconConfig) {
         this.repo = repo;
     }
 

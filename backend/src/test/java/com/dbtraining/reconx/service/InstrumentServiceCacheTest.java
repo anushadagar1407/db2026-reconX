@@ -3,7 +3,6 @@ package com.dbtraining.reconx.service;
 import com.dbtraining.reconx.config.CacheConfig;
 import com.dbtraining.reconx.config.ReconConfig;
 import com.dbtraining.reconx.exception.InvalidTradeException;
-import com.dbtraining.reconx.observability.ReconConfigMBean;
 import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.entity.Instrument;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +27,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = {
         CacheConfig.class,
-        ReconConfigMBean.class,
+        ReconConfig.class,
         InstrumentServiceCacheTest.TestConfig.class
 })
 class InstrumentServiceCacheTest {
@@ -43,7 +42,7 @@ class InstrumentServiceCacheTest {
     private CacheManager cacheManager;
 
     @Autowired
-    private ReconConfigMBean reconConfig;
+    private ReconConfig reconConfig;
 
     @BeforeEach
     void clearCacheAndMock() {

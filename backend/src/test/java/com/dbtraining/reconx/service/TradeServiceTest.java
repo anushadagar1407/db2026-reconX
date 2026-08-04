@@ -4,6 +4,7 @@ import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.InvalidTradeException;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
+import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.observability.TradeMetrics;
 import com.dbtraining.reconx.repository.CounterpartyRepository;
 import com.dbtraining.reconx.repository.InstrumentRepository;
@@ -42,11 +43,13 @@ class TradeServiceTest {
     private final CounterpartyRepository counterpartyRepository = mock(CounterpartyRepository.class);
     private final InstrumentRepository instrumentRepository = mock(InstrumentRepository.class);
     private final TradeMetrics tradeMetrics = mock(TradeMetrics.class);
+    private final TradeEventProducer tradeEventProducer = mock(TradeEventProducer.class);
     private final TradeService service = new TradeService(
             tradeRepository,
             counterpartyRepository,
             instrumentRepository,
-            tradeMetrics);
+            tradeMetrics,
+            tradeEventProducer);
 
     @Test
     void findByIdReturnsTrade() {

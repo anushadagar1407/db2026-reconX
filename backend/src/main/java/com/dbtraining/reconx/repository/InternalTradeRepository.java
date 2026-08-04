@@ -8,4 +8,8 @@ public interface InternalTradeRepository {
     void save(EquityTrade trade);
 
     List<EquityTrade> findAll();
+
+    List<EquityTrade> findByDateRange(java.time.LocalDate from, java.time.LocalDate to);
+
+
 }
