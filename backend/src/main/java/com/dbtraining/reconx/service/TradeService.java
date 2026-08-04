@@ -22,6 +22,8 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import com.dbtraining.reconx.kafka.TradeEventProducer;
 import com.dbtraining.reconx.dto.TradeEvent;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
 import java.time.LocalDate;
@@ -98,7 +100,8 @@ public class TradeService {
         
         try {
             Trade saved = tradeRepo.save(trade);
-            events.publish(TradeEvent.created(saved.getTradeRef()));
+            events.publish(TradeEvent.created(
+                    saved.getTradeRef(), actor, snapshot(saved)));
             metrics.incrementTradeCreated();
             metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
             return saved;
@@ -138,6 +141,7 @@ public class TradeService {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(()
                         -> new TradeNotFoundException("Trade not found: id=" + id));
+        String before = snapshot(trade);
 
         trade.setTradeRef(req.tradeRef());
 
@@ -160,9 +164,11 @@ public class TradeService {
         trade.setQuantity(req.quantity());
         trade.setPrice(req.price());
         trade.setTradeDate(req.tradeDate());
-        events.publish(TradeEvent.updated(trade.getTradeRef()));
+        Trade saved = tradeRepo.save(trade);
+        events.publish(TradeEvent.updated(
+                saved.getTradeRef(), actor, before, snapshot(saved)));
 
-        return tradeRepo.save(trade);
+        return saved;
     }
 
     @PreAuthorize("hasAnyRole('TRADER', 'ADMIN')")
@@ -181,17 +187,22 @@ public class TradeService {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException("Trade not found: id=" + id));
 
+        String before = snapshot(trade);
         trade.setStatus(tradeStatus);
+        Trade saved = tradeRepo.save(trade);
+        events.publish(TradeEvent.updated(
+                saved.getTradeRef(), actor, before, snapshot(saved)));
 
-        return tradeRepo.save(trade);
+        return saved;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     public void softDelete(Long id, String actor) {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException("id=" + id));
+        String before = snapshot(trade);
         trade.softDelete();
-        events.publish(TradeEvent.cancelled(trade.getTradeRef()));
+        events.publish(TradeEvent.cancelled(trade.getTradeRef(), actor, before));
 
         tradeRepo.save(trade);
     }
@@ -207,5 +218,34 @@ public class TradeService {
                 .and(hasStatus(tradeStatus))
                 .and(forCounterparty(counterpartyId));
         return tradeRepo.findAll(specification, pageable);
+    }
+
+    private static String snapshot(Trade trade) {
+        ObjectNode state = JsonNodeFactory.instance.objectNode();
+        if (trade.getId() != null) {
+            state.put("id", trade.getId());
+        }
+        state.put("tradeRef", trade.getTradeRef());
+        if (trade.getInstrument() != null && trade.getInstrument().getId() != null) {
+            state.put("instrumentId", trade.getInstrument().getId());
+        }
+        if (trade.getCounterparty() != null && trade.getCounterparty().getId() != null) {
+            state.put("counterpartyId", trade.getCounterparty().getId());
+        }
+        state.put("assetClass", trade.getAssetClass());
+        state.put("side", trade.getSide());
+        if (trade.getQuantity() != null) {
+            state.put("quantity", trade.getQuantity());
+        }
+        if (trade.getPrice() != null) {
+            state.put("price", trade.getPrice());
+        }
+        if (trade.getTradeDate() != null) {
+            state.put("tradeDate", trade.getTradeDate().toString());
+        }
+        if (trade.getStatus() != null) {
+            state.put("status", trade.getStatus().name());
+        }
+        return state.toString();
     }
 }

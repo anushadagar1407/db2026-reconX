@@ -31,32 +31,45 @@ public record TradeEvent(
     }
 
     public static TradeEvent created(String tradeRef) {
+        return created(tradeRef, null, null);
+    }
+
+    public static TradeEvent created(String tradeRef, String actor, String after) {
         return new TradeEvent(UUID.randomUUID(),
                             tradeRef,
                             EventType.TRADE_CREATED,
                             Instant.now(),
+                            actor,
                             null,
-                            null,
-                            null);
+                            after);
     }
 
     public static TradeEvent updated(String tradeRef) {
+        return updated(tradeRef, null, null, null);
+    }
+
+    public static TradeEvent updated(String tradeRef, String actor,
+                                     String before, String after) {
         return new TradeEvent(UUID.randomUUID(),
                             tradeRef,
                             EventType.TRADE_UPDATED,
                             Instant.now(),
-                            null,
-                            null,
-                            null);
+                            actor,
+                            before,
+                            after);
     }
 
     public static TradeEvent cancelled(String tradeRef) {
+        return cancelled(tradeRef, null, null);
+    }
+
+    public static TradeEvent cancelled(String tradeRef, String actor, String before) {
         return new TradeEvent(UUID.randomUUID(),
                             tradeRef,
                             EventType.TRADE_CANCELLED,
                             Instant.now(),
-                            null,
-                            null,
+                            actor,
+                            before,
                             null);
     }
 }

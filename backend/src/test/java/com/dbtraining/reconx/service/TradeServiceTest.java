@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.service;
 
+import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.exception.DuplicateTradeRefException;
 import com.dbtraining.reconx.exception.InvalidTradeException;
@@ -13,6 +14,7 @@ import com.dbtraining.reconx.repository.entity.Instrument;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -43,12 +45,13 @@ class TradeServiceTest {
     private final CounterpartyRepository counterpartyRepository = mock(CounterpartyRepository.class);
     private final InstrumentRepository instrumentRepository = mock(InstrumentRepository.class);
     private final TradeMetrics tradeMetrics = mock(TradeMetrics.class);
+    private final TradeEventProducer tradeEventProducer = mock(TradeEventProducer.class);
     private final TradeService service = new TradeService(
             tradeRepository,
             counterpartyRepository,
             instrumentRepository,
             tradeMetrics,
-            mock(TradeEventProducer.class));
+            tradeEventProducer);
 
     @Test
     void findByIdReturnsTrade() {
@@ -216,6 +219,13 @@ class TradeServiceTest {
         assertThat(trade.getTradeDate()).isEqualTo(LocalDate.of(2026, 7, 30));
 
         verify(tradeRepository, times(1)).save(trade);
+        ArgumentCaptor<TradeEvent> eventCaptor = ArgumentCaptor.forClass(TradeEvent.class);
+        verify(tradeEventProducer).publish(eventCaptor.capture());
+        TradeEvent event = eventCaptor.getValue();
+        assertThat(event.eventType()).isEqualTo(TradeEvent.EventType.TRADE_UPDATED);
+        assertThat(event.actor()).isEqualTo("trader");
+        assertThat(event.before()).contains("\"status\":\"PENDING\"");
+        assertThat(event.after()).contains("\"status\":\"MATCHED\"");
     }
 
     @Test
