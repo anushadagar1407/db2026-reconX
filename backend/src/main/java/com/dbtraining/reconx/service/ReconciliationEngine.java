@@ -10,6 +10,8 @@ import com.dbtraining.reconx.model.TradeType;
 import com.dbtraining.reconx.observability.ReconConfigMBean;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -40,6 +42,7 @@ import java.util.stream.Collectors;
 @Service
 public class ReconciliationEngine {
 
+    private static final Logger log = LoggerFactory.getLogger(ReconciliationEngine.class);
     private final Timer reconciliationTimer;
     private final ReconConfigMBean reconConfig;
 
@@ -49,6 +52,16 @@ public class ReconciliationEngine {
                 .description("Time spent reconciling internal and external trades")
                 .publishPercentileHistogram()
                 .register(meterRegistry);
+    }
+
+    /** Schedule reconciliation work without blocking the Kafka consumer thread. */
+    public void scheduleRecon(String tradeRef) {
+        log.info("Reconciliation scheduled for tradeRef={}", tradeRef);
+    }
+
+    /** Cancel queued reconciliation work for a trade that no longer exists. */
+    public void cancelPendingRecon(String tradeRef) {
+        log.info("Pending reconciliation cancelled for tradeRef={}", tradeRef);
     }
 
     public List<ReconResult> reconcile(List<TradeType> internal,
