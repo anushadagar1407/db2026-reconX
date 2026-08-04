@@ -2,6 +2,7 @@ package com.dbtraining.reconx.integration;
 
 import com.dbtraining.reconx.support.PostgresTestConfiguration;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,10 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,6 +29,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(PostgresTestConfiguration.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class TradeLifecycleIT {
+
+    private static KafkaContainer kafkaContainer;
+
+    @DynamicPropertySource
+    static void registerKafkaProperties(DynamicPropertyRegistry registry) {
+        String externalBootstrapServers = System.getenv("TEST_KAFKA_BOOTSTRAP_SERVERS");
+        if (externalBootstrapServers != null && !externalBootstrapServers.isBlank()) {
+            registry.add("spring.kafka.bootstrap-servers", () -> externalBootstrapServers);
+            return;
+        }
+
+        kafkaContainer = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.6.0"))
+                .withEmbeddedZookeeper();
+        kafkaContainer.start();
+        registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
+    }
+
+    @AfterAll
+    static void stopKafkaContainer() {
+        if (kafkaContainer != null) {
+            kafkaContainer.stop();
+        }
+    }
 
     @Autowired
     private TestRestTemplate http;

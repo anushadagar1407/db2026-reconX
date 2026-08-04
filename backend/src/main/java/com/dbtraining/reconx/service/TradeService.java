@@ -18,6 +18,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import com.dbtraining.reconx.kafka.TradeEventProducer;
+import com.dbtraining.reconx.dto.TradeEvent;
+
 
 import java.time.LocalDate;
 
@@ -40,15 +45,18 @@ public class TradeService {
     private final CounterpartyRepository cpRepo;
     private final InstrumentRepository instRepo;
     private final TradeMetrics metrics;
+    private final TradeEventProducer events;
 
     public TradeService(TradeRepository tradeRepo,
             CounterpartyRepository cpRepo,
             InstrumentRepository instRepo,
-            TradeMetrics metrics) {
+            TradeMetrics metrics,
+            TradeEventProducer events) {
         this.tradeRepo = tradeRepo;
         this.cpRepo = cpRepo;
         this.instRepo = instRepo;
         this.metrics = metrics;
+        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -90,6 +98,7 @@ public class TradeService {
         
         try {
             Trade saved = tradeRepo.save(trade);
+            events.publish(TradeEvent.created(saved.getTradeRef()));
             metrics.incrementTradeCreated();
             metrics.recordTradeValue(saved.getQuantity().multiply(saved.getPrice()).doubleValue());
             return saved;
@@ -151,6 +160,7 @@ public class TradeService {
         trade.setQuantity(req.quantity());
         trade.setPrice(req.price());
         trade.setTradeDate(req.tradeDate());
+        events.publish(TradeEvent.updated(trade.getTradeRef()));
 
         return tradeRepo.save(trade);
     }
@@ -181,6 +191,8 @@ public class TradeService {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException("id=" + id));
         trade.softDelete();
+        events.publish(TradeEvent.cancelled(trade.getTradeRef()));
+
         tradeRepo.save(trade);
     }
 
