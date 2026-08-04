@@ -57,7 +57,6 @@ public class TradeService {
         this.instRepo = instRepo;
         this.metrics = metrics;
         this.events = events;
-        
     }
 
     @Transactional(readOnly = true)
