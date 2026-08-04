@@ -63,7 +63,7 @@ export function DeliverySlide() {
               <div className="delivery-slide__pipeline-boundary" data-testid="push-boundary">
                 <span className="delivery-slide__pipeline-eyebrow">Build boundary</span>
                 <code>push: false</code>
-                <span>local image only</span>
+                <span>build completed · not pushed, loaded, or exported</span>
               </div>
 
               <div className="delivery-slide__release-zone">
@@ -76,18 +76,18 @@ export function DeliverySlide() {
             <Cluster className="delivery-slide__artifact-row" gap="md" align="center" wrap={false}>
               <div className="delivery-slide__artifact-spool">
                 <span className="delivery-slide__pipeline-eyebrow">Artifact spool</span>
-                <span>JUnit / Vitest reports · image build outputs</span>
+                <span>JUnit / Failsafe / Vitest / JaCoCo reports</span>
               </div>
               <div className="delivery-slide__artifact-note">
                 <TechIcon technology="github-actions" size="sm" decorative />
-                <span>attached to the named run</span>
+                <span>uploaded by full verification jobs</span>
               </div>
             </Cluster>
           </div>
 
           <Callout className="delivery-slide__evidence-callout" label="CI evidence status" title="Passed on the named run" tone="success">
             <p>Backend, frontend, and presentation verification passed; JUnit/Vitest report checks passed.</p>
-            <p className="delivery-slide__callout-muted">Load job and native fallbacks: skipped.</p>
+            <p className="delivery-slide__callout-muted">Image builds completed without push, load, or export. Load job and native fallbacks: skipped.</p>
           </Callout>
         </Stack>
       </SlideCanvas>
@@ -96,9 +96,11 @@ export function DeliverySlide() {
         30898100384, commit 4f1a939a8ac9f1fd8916f2a5899f288bc708f603 after explicit repository-scoped
         revalidation. The passed jobs are backend, frontend, and presentation container verification plus the
         JUnit/Vitest report checks. The load job and native fallback jobs were skipped. Configured workflows build
-        images with push: false; they do not prove GHCR, deployment, or release behavior. Refresh after workflow,
-        image-push setting, remote-run, or source-commit changes. ADV160 current-state CI/CD Mermaid source remains
-        a final-acceptance gap.
+        images with push: false; Buildx does not push, load, or export image outputs. Full verification uploads the
+        Surefire/Failsafe/JaCoCo and Vitest reports. The separate presentation-export workflow uploads PNG/PDF exports
+        only on pushes to develop/main or manual dispatch. No GHCR, deployment, or release behavior is evidenced.
+        Refresh after workflow, image-push setting, remote-run, or source-commit changes. The README companion flow
+        is the current-state ADV160 CI/CD source.
       </aside>
     </Slide>
   );

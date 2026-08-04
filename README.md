@@ -17,30 +17,80 @@ A near-production-grade trade reconciliation platform used (in concept) by an
 Ops team to detect and resolve mismatches between internal trade records and
 external counterparty/custodian feeds — built across 10 days, 165 tickets.
 
-```
-       ┌──────────┐        ┌──────────────────────────┐        ┌────────────┐
-       │  React   │  HTTPS │  Spring Boot REST API    │  JDBC  │ PostgreSQL │
-       │ Frontend │ ─────▶ │  recon-service (Java 25) │ ─────▶ │  (Liqui-   │
-       │  + Vite  │        │  + Spring Security/JWT   │        │   base     │
-       └────┬─────┘        │  + Actuator/Micrometer   │        │   migs)    │
-            │              └────────┬─────────────────┘        └─────┬──────┘
-            │ SSE                   │  KafkaTemplate / @KafkaListener│
-            │                       ▼                                ▼
-            │              ┌──────────────────┐               ┌────────────┐
-            └──────────────│  Apache Kafka    │               │ recon_*    │
-                           │  trade-events    │               │ audit_log  │
-                           │  recon-results   │               │ mat. views │
-                           │  system-alerts   │               └────────────┘
-                           │  + DLQ topics    │
-                           └────────┬─────────┘
-                                    ▼
-                           ┌─────────────────────────┐
-                           │ ReconConsumer (auto-rec)│
-                           │ AuditConsumer (history) │
-                           │ AlertConsumer  (notify) │
-                           └─────────────────────────┘
+## Current runtime architecture
 
-  /actuator/prometheus ─▶ Prometheus (scrape) ─▶ Grafana dashboards + alerts
+This is the current source/configuration boundary, not the aspirational Day 10
+target. Solid arrows are active paths; dotted arrows are configured-only wiring;
+the gap node is not implemented.
+
+```mermaid
+flowchart TD
+    Browser[Browser]
+    Frontend[Frontend<br/>nginx proxy]
+    Backend[Spring Boot API]
+    Postgres[(PostgreSQL<br/>Liquibase schema)]
+    Browser -->|HTTP| Frontend
+    Frontend -->|/api/* proxy| Backend
+    Backend -->|JDBC| Postgres
+    Backend -->|create-time SSE via proxy| Browser
+
+    Prometheus[Prometheus<br/>configured scrape]
+    Grafana[Grafana<br/>configured query]
+    Backend -.->|scrape target /api/actuator/prometheus| Prometheus
+    Grafana -.->|PromQL query| Prometheus
+
+    Kafka[Kafka<br/>configured broker]
+    Zookeeper[Zookeeper<br/>configured coordination]
+    Kafdrop[Kafdrop<br/>debug profile only]
+    Backend -.->|bootstrap / health only| Kafka
+    Kafka -.->|coordination| Zookeeper
+    Kafdrop -.->|optional debug profile| Kafka
+
+    Orchestration[Gap: no active trade-event<br/>producer / listener / automatic orchestration]
+    Backend -.-> Orchestration
+
+    classDef active fill:#e8f1fb,stroke:#0b5cab,color:#172b4d
+    classDef configured fill:#f3f5f7,stroke:#68737d,color:#172b4d
+    classDef gap fill:#fff2d6,stroke:#b06a00,color:#4a2a00
+    class Browser,Frontend,Backend,Postgres active
+    class Prometheus,Grafana,Kafka,Zookeeper,Kafdrop configured
+    class Orchestration gap
+```
+
+## Current CI/CD flow
+
+The flow below follows the checked-in workflows. Image builds complete with
+`push: false`; they are not pushed, loaded, or exported. GHCR, deployment, and
+release remain explicit gaps rather than active arrows.
+
+```mermaid
+flowchart LR
+    PR[Pull request<br/>to main or develop] --> CI[Build workflow]
+    Manual[Manual dispatch] --> CI
+
+    CI --> BackendBuild[Backend image build<br/>push: false]
+    CI --> FrontendBuild[Frontend image build<br/>push: false]
+    CI --> PresentationBuild[Presentation container build<br/>npm verify · push: false]
+    CI --> Verify[Full backend/frontend<br/>Compose verification<br/>qualifying PR / manual verify]
+    Verify --> Reports[upload-artifact<br/>Surefire / Failsafe / Vitest / JaCoCo]
+    Manual --> Native[Optional native fallback jobs]
+    Manual --> Load[Optional ADV097 load job]
+    Load --> LoadReports[upload-artifact<br/>load evidence]
+
+    Push[Push to develop or main] --> Exports[Presentation export workflow]
+    Manual --> Exports
+    Exports --> PresentationArtifacts[upload-artifact<br/>slide PNGs + delivery PDF]
+
+    BackendBuild -.-> ImageGap[Image output gap:<br/>not pushed / loaded / exported]
+    FrontendBuild -.-> ImageGap
+    PresentationBuild -.-> ImageGap
+    CI -.-> ReleaseGap[GHCR / deployment / release<br/>not configured]
+
+    classDef active fill:#e8f1fb,stroke:#0b5cab,color:#172b4d
+    classDef configured fill:#f3f5f7,stroke:#68737d,color:#172b4d
+    classDef gap fill:#fff2d6,stroke:#b06a00,color:#4a2a00
+    class PR,Manual,CI,BackendBuild,FrontendBuild,PresentationBuild,Verify,Reports,Native,Load,LoadReports,Push,Exports,PresentationArtifacts active
+    class ImageGap,ReleaseGap gap
 ```
 
 ---
@@ -294,10 +344,12 @@ working until its announced `Sunset` date.
 
 ---
 
-## Deploy to the demo laptop (Day 10)
+## Intended deploy runbook (Day 10)
 
-The deploy story is **GitHub Actions builds + pushes Docker images to GHCR;
-the demo laptop pulls them and runs the full stack via `docker compose up`.**
+The intended deploy story is **GitHub Actions builds + pushes Docker images to
+GHCR; the demo laptop pulls them and runs the full stack via `docker compose
+up`.** The checked-in workflow currently uses `push: false`, so no image is
+pushed, loaded, or exported; GHCR, deployment, and release remain gaps.
 No cloud hosting, no PaaS — the demo laptop *is* the deploy target.
 
 ```bash

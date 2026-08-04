@@ -70,7 +70,7 @@ export function LiveDemoFrame({ src, loadTimeoutMs = 10_000 }: LiveDemoFrameProp
 
       {loadState === 'unavailable' && (
         <div className="live-demo__fallback" role="alert">
-          The embedded app did not become available. Use the full-demo link or a prepared fallback.
+          The embedded app did not become available. Use the full-demo link or switch to a source/API walkthrough.
         </div>
       )}
     </div>

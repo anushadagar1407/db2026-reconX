@@ -47,11 +47,11 @@ export function LiveDemoSlide({ demoUrl }: LiveDemoSlideProps) {
             ))}
           </Grid>
 
-          <Cluster gap="sm" align="center" wrap={false} className="live-demo-slide__status" aria-label="Prepared fallback status">
-            <span className="live-demo-slide__status-flag">Prepared fallback</span>
-            <span>Runtime capture required before promotion</span>
+          <Cluster gap="sm" align="center" wrap={false} className="live-demo-slide__status" aria-label="Live demo fallback status">
+            <span className="live-demo-slide__status-flag">Runtime capture pending</span>
+            <span>Launch the guarded frame when ready</span>
             <span className="live-demo-slide__status-separator" aria-hidden="true">/</span>
-            <span>Launch the guarded frame only when ready</span>
+            <span>If unavailable: full-demo link or source/API walkthrough</span>
           </Cluster>
 
           <div className="live-demo-slide__frame" aria-label="Guarded ReconX live demo">
@@ -67,10 +67,10 @@ export function LiveDemoSlide({ demoUrl }: LiveDemoSlideProps) {
         Evidence status: requires fresh runtime evidence for a clean-stack login, current numeric instrument/
         counterparty IDs, a unique reference, browser readiness, HTTP 201, PostgreSQL persistence, SSE reception,
         and metric movement. Keep credentials off the slide and out of screenshots. The exporter leaves the frame
-        idle. If the live app is unavailable, use a prepared real 201 capture or Swagger/API source navigation.
-        Human input remains required for a private development account, unique reference convention, demo URL,
-        presenter ownership, and a rehearsal capture if needed. Refresh after auth, DTO, seed, SSE, metrics,
-        bridge, runtime URL, or rehearsal changes.
+        idle and no capture or recording asset ships with the deck. If the live app is unavailable, use the full-demo
+        link or switch to source/API navigation. Human input remains required for a private development account,
+        unique reference convention, demo URL, and presenter ownership. Refresh after auth, DTO, seed, SSE, metrics,
+        bridge, runtime URL, or runtime-capture changes.
       </aside>
     </Slide>
   );

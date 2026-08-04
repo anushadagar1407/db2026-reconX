@@ -56,7 +56,13 @@ describe('flat slide components', () => {
     expect(screen.getByText('KAFKA APPLICATION ORCHESTRATION — GAP')).toBeInTheDocument();
     expect(screen.getByText('Queue has no worker; no application listener result is observed.')).toBeInTheDocument();
     expect(screen.getByText('push: false')).toBeInTheDocument();
+    expect(screen.getByText('build completed · not pushed, loaded, or exported')).toBeInTheDocument();
+    expect(screen.getByText('JUnit / Failsafe / Vitest / JaCoCo reports')).toBeInTheDocument();
+    expect(screen.queryByText(/local image only/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/image build outputs/i)).not.toBeInTheDocument();
     expect(screen.getByText('runtime capture pending')).toBeInTheDocument();
+    expect(screen.getByText('If unavailable: full-demo link or source/API walkthrough')).toBeInTheDocument();
+    expect(screen.queryByText(/prepared fallback/i)).not.toBeInTheDocument();
     expect(screen.getByText('Presenter reflection pending')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'https://github.com/anushadagar1407/db2026-reconX' })).toBeInTheDocument();
   });

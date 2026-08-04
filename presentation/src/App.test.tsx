@@ -44,7 +44,10 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'ReconX — Enterprise Trade Reconciliation Platform' })).toBeInTheDocument();
     expect(screen.getByText('KAFKA APPLICATION ORCHESTRATION — GAP')).toBeInTheDocument();
     expect(screen.getByText('push: false')).toBeInTheDocument();
+    expect(screen.getByText('build completed · not pushed, loaded, or exported')).toBeInTheDocument();
+    expect(screen.queryByText(/local image only/i)).not.toBeInTheDocument();
     expect(screen.getByText('runtime capture pending')).toBeInTheDocument();
+    expect(screen.queryByText(/prepared fallback/i)).not.toBeInTheDocument();
     expect(screen.getByText('Presenter reflection pending')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Launch embedded demo' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open full demo' })).toHaveAttribute(

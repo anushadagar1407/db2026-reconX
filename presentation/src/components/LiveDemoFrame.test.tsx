@@ -50,6 +50,8 @@ describe('LiveDemoFrame', () => {
     act(() => vi.advanceTimersByTime(100));
 
     expect(screen.getByRole('alert')).toHaveTextContent('did not become available');
+    expect(screen.getByRole('alert')).toHaveTextContent('full-demo link or switch to a source/API walkthrough');
+    expect(screen.queryByText(/prepared fallback/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open full demo' })).toHaveAttribute(
       'href',

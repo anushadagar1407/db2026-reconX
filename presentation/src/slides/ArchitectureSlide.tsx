@@ -107,8 +107,8 @@ export function ArchitectureSlide() {
         Evidence status: implemented for REST capture, PostgreSQL persistence, create-time SSE, and metric
         registration; configured for the seven-service Compose topology, dependency gates, Prometheus scrape,
         and Grafana provisioning; gap for producer/listener flow, queued-job worker, audit/DLQ path, and complete
-        health proof; requires fresh runtime evidence for reachability or healthy services. Recheck against the
-        current-state ADV160 Mermaid source before final acceptance.
+        health proof; requires fresh runtime evidence for reachability or healthy services. The README companion
+        diagram is the current-state ADV160 source for these active, configured, and gap semantics.
       </aside>
     </Slide>
   );
