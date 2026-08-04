@@ -72,6 +72,8 @@ public class SecurityConfig {
                         .hasAnyRole("VIEWER", "RECON_ANALYST", "ADMIN")
                         .requestMatchers("/v1/recon/**")
                         .hasAnyRole("RECON_ANALYST", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/v1/audit/trades/*/events")
+                        .hasAnyRole("RECON_ANALYST", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/v1/audit/**")
                         .hasAnyRole("VIEWER", "RECON_ANALYST", "ADMIN")
                         .requestMatchers("/v1/audit/**")
