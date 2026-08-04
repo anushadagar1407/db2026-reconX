@@ -13,6 +13,9 @@ import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /** Listener factories for Kafka payload types other than TradeEvent. */
 @Configuration
 public class KafkaConsumerConfig {
@@ -34,7 +37,7 @@ public class KafkaConsumerConfig {
 
         DefaultKafkaConsumerFactory<String, TradeEvent> consumerFactory =
                 new DefaultKafkaConsumerFactory<>(
-                        kafkaProperties.buildConsumerProperties(null),
+                        typedConsumerProperties(kafkaProperties),
                         new StringDeserializer(),
                         new ErrorHandlingDeserializer<>(jsonDeserializer));
 
@@ -54,7 +57,7 @@ public class KafkaConsumerConfig {
 
         DefaultKafkaConsumerFactory<String, SystemAlert> consumerFactory =
                 new DefaultKafkaConsumerFactory<>(
-                        kafkaProperties.buildConsumerProperties(null),
+                        typedConsumerProperties(kafkaProperties),
                         new StringDeserializer(),
                         new ErrorHandlingDeserializer<>(jsonDeserializer));
 
@@ -62,5 +65,12 @@ public class KafkaConsumerConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
         return factory;
+    }
+
+    private Map<String, Object> typedConsumerProperties(KafkaProperties kafkaProperties) {
+        Map<String, Object> properties =
+                new HashMap<>(kafkaProperties.buildConsumerProperties(null));
+        properties.keySet().removeIf(key -> key.startsWith("spring.json."));
+        return properties;
     }
 }
