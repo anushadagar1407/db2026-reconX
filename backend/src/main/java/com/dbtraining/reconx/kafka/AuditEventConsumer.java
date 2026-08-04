@@ -1,10 +1,14 @@
 package com.dbtraining.reconx.kafka;
 
-import com.dbtraining.reconx.dto.TradeEvent;
-import com.dbtraining.reconx.repository.AuditLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.dbtraining.reconx.dto.TradeEvent;
+import com.dbtraining.reconx.repository.AuditLogRepository;
+import com.dbtraining.reconx.repository.entity.AuditLogEntry;
 
 /**
  * ============================================================================
@@ -20,7 +24,7 @@ import org.springframework.stereotype.Component;
  *          the same eventId.
  * ============================================================================
  *
- *  TODO(TICKET-ADV132):
+ *  TICKET-ADV132:
  *    @KafkaListener(topics = "trade-events", groupId = "audit-service")
  *    public void onTradeEvent(TradeEvent e) {
  *        repo.save(new AuditLogEntry(
@@ -46,7 +50,18 @@ public class AuditEventConsumer {
 
     public AuditEventConsumer(AuditLogRepository repo) { this.repo = repo; }
 
+    @KafkaListener(topics = "trade-events", groupId = "audit-service")
+    @Transactional
     public void onTradeEvent(TradeEvent e) {
-        throw new UnsupportedOperationException("TICKET-ADV132");
+        repo.save(new AuditLogEntry(
+            e.eventId().toString(),
+            e.tradeRef(),
+            e.eventType().name(),
+            e.timestamp(),
+            e.actor(),
+            e.before(),
+            e.after()));
+        log.debug("Audit row persisted for eventId={} tradeRef={}",
+                e.eventId(), e.tradeRef());
     }
 }
