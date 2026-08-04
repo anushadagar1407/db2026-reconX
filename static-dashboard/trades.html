@@ -34,24 +34,21 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
   </aside>
 
   <main class="layout__main" role="main">
-    <section aria-labelledby="kpi">
-      <h2 id="kpi">Today at a glance</h2>
-      <div class="stat-grid">
-        <article class="stat-card"><h3>Trades</h3><p>120</p></article>
-        <article class="stat-card"><h3>Matched</h3><p>105</p></article>
-        <article class="stat-card stat-card--warn"><h3>Open breaks</h3><p>15</p></article>
-        <article class="stat-card"><h3>Notional</h3><p>$24.3M</p></article>
-      </div>
-    </section>
-
-    <section aria-labelledby="feed">
-      <h2 id="feed">
-        Live trade feed
-        <span id="sse-status" class="sse-status sse-status--connecting">Connecting…</span>
-      </h2>
-      <!-- TICKET-ADV100 aria-live so screen readers announce new trades -->
-      <div id="trade-feed" role="status" aria-live="polite" aria-atomic="false"></div>
-    </section>
+    <!-- File: static-dashboard/trades.html — table fragment -->
+    <div class="table-scroll">
+      <table class="data-table" id="trades-table">
+        <thead>
+          <tr>
+            <th data-col="tradeRef"    data-dir="asc">Trade Ref <span class="resize-handle"></span></th>
+            <th data-col="symbol"      data-dir="asc">Instrument <span class="resize-handle"></span></th>
+            <th data-col="quantity"    data-dir="asc" data-type="number">Quantity <span class="resize-handle"></span></th>
+            <th data-col="price"       data-dir="asc" data-type="number">Price <span class="resize-handle"></span></th>
+            <th data-col="status"      data-dir="asc">Status <span class="resize-handle"></span></th>
+          </tr>
+        </thead>
+        <tbody id="trades-tbody"><!-- rows injected by JS --></tbody>
+      </table>
+    </div>
   </main>
 
   <footer class="layout__footer" role="contentinfo">
@@ -60,5 +57,6 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
 
   <script src="js/theme.js"></script>
   <script src="js/sse.js"></script>
+  <script src="js/table.js"></script>
 </body>
 </html>

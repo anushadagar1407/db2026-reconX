@@ -12,6 +12,7 @@ import com.dbtraining.reconx.dto.TradeResponse;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.repository.entity.TradeStatus;
 import com.dbtraining.reconx.service.TradeService;
+import com.dbtraining.reconx.service.TradeStreamService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -70,10 +71,12 @@ public class TradeController {
 
     private final TradeService service;
     private final TradeMapper mapper;
+    private final TradeStreamService stream;
 
-    public TradeController(TradeService service, TradeMapper mapper) {
+    public TradeController(TradeService service, TradeMapper mapper, TradeStreamService stream) {
         this.service = service;
         this.mapper = mapper;
+        this.stream = stream;
     }
 
     @GetMapping
@@ -138,7 +141,9 @@ public class TradeController {
         //   mapped TradeResponse body.
         Trade saved = service.create(req, String.valueOf(principal));
         URI location = URI.create("/api/v1/trades/" + saved.getId());
-        return ResponseEntity.created(location).body(mapper.toResponse(saved));
+        TradeResponse response = mapper.toResponse(saved);
+        stream.publish(response);
+        return ResponseEntity.created(location).body(response);
     }
 
     @GetMapping("/{id}")
